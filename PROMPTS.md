@@ -111,3 +111,21 @@ Work autonomously end-to-end:
     Once all acceptance criteria pass, stage and commit the changes using the Conventional Commits format specified in `AGENTS.md`.
 
 Only stop when User Story US-1.1 is fully verified, then report what was done. Wait for user approval before commiting changes.
+
+
+
+---
+
+
+
+Execute User Story US-1.2 from `USER_STORIES.md`. Adhere strictly to the rules in `AGENTS.md` and the requirements in `SPEC.md`.
+
+Work autonomously end-to-end:
+
+    Complete each step required by the story's acceptance criteria without asking for intermediate approvals.
+
+    Build and verify there are zero build or type errors. If you hit any errors, debug and resolve them independently.
+
+    Once all acceptance criteria pass, stage and commit the changes using the Conventional Commits format specified in `AGENTS.md`.
+
+Only stop when User Story US-1.2 is fully verified, then report what was done.

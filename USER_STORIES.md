@@ -21,20 +21,20 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-1.2: Ingredient Data Model & Local Persistence
+### - [x] US-1.2: Ingredient Data Model & Local Persistence
 **As a** user,  
 **I want** my available ingredients to be saved locally on my phone or browser using a structured ingredient model,  
 **So that** my ingredient list persists across app restarts without requiring an account or external database.
 
 #### Acceptance Criteria
-- [ ] An `Ingredient` model is implemented with the following fields:
+- [x] An `Ingredient` model is implemented with the following fields:
   - `name` (`String`, required): Primary identifier used for recipe matching.
   - `brand` (`String?`, optional): Product brand name.
   - `amountValue` (`double?`, optional) and `amountUnit` (`String?` / enum, optional): Supports units such as `liters`, `milliliters`, `grams`, `pieces`, `units` for future iterations.
   - `expirationDate` (`DateTime?`, optional) and `isBestBefore` (`bool?`, optional): Single date field plus boolean indicator distinguishing expiration date vs. best-before date for future iterations.
-- [ ] Serialization (`toJson` / `fromJson`) is implemented and covered by unit tests.
-- [ ] A local storage service persists and retrieves the list of ingredients locally on both Flutter Web and Android.
-- [ ] Duplicate ingredient names are handled cleanly (preventing redundant entries or consolidating them).
+- [x] Serialization (`toJson` / `fromJson`) is implemented and covered by unit tests.
+- [x] A local storage service persists and retrieves the list of ingredients locally on both Flutter Web and Android.
+- [x] Duplicate ingredient names are handled cleanly (preventing redundant entries or consolidating them).
 
 ---
 
