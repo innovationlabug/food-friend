@@ -1,0 +1,26 @@
+# Environment & Secrets (Crucial)
+.env
+.env.local
+.env.*
+*.env
+# Whitelist the example template so it gets committed
+!.env.example
+
+# Flutter & Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# Node & Vercel
+node_modules/
+.vercel/
+
+# OS & Editors
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+*.iml
