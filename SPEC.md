@@ -38,8 +38,34 @@ Our target user are adults in Guatemala adopting healthy lifestyles through heal
 
 ## 4. Data flow and user interface
 
+### Navigation & Shopping List
+- **Access shopping list:** User taps button on the main screen to navigate to the shopping list.
+- **View available ingredients:** User views the list of current ingredients.
+- **Add ingredient action:** User taps button to add new ingredients.
 
+### Adding Ingredients
+- **Manual text input with suggestions:**
+  - User types ingredient name in an input field.
+  - App presents matching suggestions from a predefined list.
+  - User picks a suggestion (or best match is auto-selected) to add the ingredient.
+- **Category browsing:**
+  - User browses hierarchical categories (up to 3–4 levels, e.g., Proteins &rarr; Chicken &rarr; Chicken breast).
+  - User selects the specific ingredient to add.
+- **Fridge photo upload:**
+  - User captures or uploads a photo of their fridge/pantry.
+  - Image is sent to backend proxy for LLM object detection.
+  - App displays detected ingredients with confidence states (high confidence checked, low unchecked).
+  - User reviews/edits checkboxes and confirms additions.
+- **Receipt photo upload:**
+  - User captures or uploads a photo of a supermarket receipt.
+  - Image is sent to backend proxy for LLM data extraction.
+  - App displays extracted food ingredients with confidence states.
+  - User reviews/edits checkboxes and confirms additions.
 
+### Recipe Generation
+- **Select ingredients:** User selects one or more ingredients from their list and requests recipes.
+- **Local recipe search:** App searches local offline recipe database for matching recipes.
+- **External API lookup:** If no local recipe matches, app queries an external recipe API (traditional API, non-LLM) and displays matching recipes.
 
 ## 5. Scope boundaries
 

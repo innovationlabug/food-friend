@@ -30,7 +30,9 @@ Implement two fast, standalone vision demos to evaluate whether Gemini can relia
 - If you need reference photos to test the demos, you can request them.
 
 
+
 -----
+
 
 
 # TASK: Standalone Feasibility Demos (Pre-Implementation Spike)
@@ -67,3 +69,23 @@ Implement two fast, standalone vision demos to evaluate whether Gemini can relia
 ## General Rules
 - Before starting implementation, ask questions if you need any clarification.
 - You can find some reference images in `demos/receipt-parser/samples`.
+
+
+
+---
+
+
+
+Use the information from `PLANNING.md`, section `Week 1 updated planning` to fill in the `Data flow and user interface` section in `SPEC.md`. Fill it with short specific interactions. Do not add detailed information in that file. We will continue populating that file as we plan and develop the next features in the app.
+
+
+
+---
+
+
+
+Use `SPEC.md` and `PLANNING.md` to create `USER_STORIES.md`.
+
+Read `SPEC.md` and `PLANNING.md`. Ask clarifying questions if needed befor proceeding. Based on all these sources, generate a comprehensive `USER_STORIES.md` file. Break the project down into small, sequential phases. `
+
+Make the project initialization the first User Story. Every user story must include specific, testable acceptance criteria.

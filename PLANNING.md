@@ -51,3 +51,70 @@ Before starting implementation, we got this team leader feedback:
 - Compare takeout with what I have in home, moneywise and nutritionwise.
 - Heuristics on food consumption.
 - Detailed instructions on how to cook (Cooking for Engineers as reference).
+
+---
+
+# Iteration 1
+
+## Demos
+
+### Fridge detector
+- User takes a photo of their refrigerator.
+- The photo is uploaded to an LLM.
+- The LLM detects the products.
+- **Result:** Feasible. The LLM (Gemini 3.8 Flash) reliably detects both international and local Guatemalan brands (e.g., Pollo Rey, Ducal, Trebolac, Campero). Obscured products, containers, and leftovers are correctly assigned medium/low confidence with estimated quantities. A confirmation UI with manual editing before saving into pantry is required.
+
+### Receipt parser
+- User takes a photo of a supermarket receipt.
+- the photo is uploaded to an LLM.
+- The LLM detects the products.
+- **Result:** Feasible. The LLM accurately decodes Guatemalan POS abbreviations (e.g., AR/BLA, FJOL/NG, CH/MEIN) and maps them to standard ingredient names. Crucially, it reliably separates food ingredients from non-food household purchases (cleaning supplies, toiletries) and extracts prices in GTQ (Q). An option to consolidate duplicate lines and manual ingredient confirmation before adding to pantry is recommended.
+
+## Week 1 updated planning
+In response to the demos' results and the feedback "start with a single feature", this is the updated plan for the first iteration.
+
+- Shopping list feature.
+    - Each ingredient will have these fields:
+        - **Ingredient name:** Used when searching recipes. This is the most important field for each product.
+        - **Brand name:** Not required. We are adding it because it was included in the demo.
+        - **Amount:** This field has two parts: numeric and unit. The unit can be `liters`, `milliliters`, `grams`, `pieces`, `units`, etc. We will use this in later iterations.
+        - **Expiration / best before date:** Only one of these fields will be used for each product. It can be a single date field, and some boolean to tell which kind of date it is. We will use this in later iterations.
+    - The main screen will have a button to enter the shoping list feature.
+    - The shopping list screen will have a button to add ingredients.
+    - The shopping list screen will have a button to check the list of available ingredients.
+
+- Add ingredient feature.
+    - A user can add a single ingredient the following ways: entering its name, picking it from a list of common ingredients.
+    - A user can add several ingredients at once the following ways: uploading a photo of the ingredients, uploading a photo of a supermarket receipts.
+    - In this iteration, only the ingredient name will be added. In later iterations we will add additional information such as amount or expiration date.
+    - **Entering an ingredient name:** A text field is presented to the user so it can write an ingredient name. While the user is writing, suggestions are pulled from a predefined list.
+        - We aim to have enough suggestions on the list, so the user is always moved to choose one of them.
+        - The suggestions are specific enough for the cooking context. For example, it should contain both `chicken breast` and `chicken wings` because some recipes may require different parts. Also include a generic `chicken` option in case the user want something more general.
+        - If the user doesn't click on a suggestion, the app should try to apply the best one available anyway.
+    - **Selecting from a list of common ingredients:** Show the user some categorized lists so they can choose some ingredient.
+        - For example, first show general categories such as `fruits`, `vegetables`, `proteins`. When the user selects `proteins` now show subcategories such as `meat`, `pork`, `chicken`, `fish`. When the user selects `chicken` now show subcategories such as `chicken breast`, `chicken wing`, `chicken`.
+        - The selection should be at most three or four steps long.
+    - **Uploading a photo of the ingredients:** Refer to the `fridge-detector` demo.
+        - The user uploads a photo of their refrigerator, pantry, etc.
+        - The photo is sent to an LLM for object detection.
+        - Structured data is received as an answer.
+        - The items with high confidence are selected, the items with low confidence are unselected. The user can select and unselect items before adding them to their ingredient list.
+    - **Uploading a photo of a receipt:** Refer to the `receipt-parser` demo.
+        - The user uploads a photo of a supermarket receipt.
+        - The photo is sent to an LLM for data extraction.
+        - A list with common abreviations may be supplied to the LLM. We will populate this list during the app development.
+        - Structered data is received as an answer.
+        - The items with high confidence are selected, the items with low confidence are unselected. The user can select and unselect items before adding them to their ingredient list.
+
+- Recipe generation feature.
+    - The ingredient screen lets the user select one or more ingredients to generate a recipe.
+    - First the app will search in its local data for a recipe, if it doesn't find a suitable one it will query an API for a recipe.
+
+- Local availability for recipes.
+    - The base app will have several different recipes available locally. They will include a list of their ingredients so they can be easily searched.
+    - Populating this list is a task for the model running here on Antigravity IDE, not a task that the app itself will perform. This task will happen one time when we start developing the app. It will not happen again unless we explicitly request it.
+
+- Access to additional recipes.
+    - Investigating and proposing some recipe API is a task for the model running here on Antigravity IDE. It should find a source of recipes we can easily query using traditional tools. 
+    - When a suitable recipe is not found locally, the source will be queried to obtain recipes.
+    - At this point in the project development, a LLM call should not be used for this.
