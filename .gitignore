@@ -24,3 +24,14 @@ Thumbs.db
 .idea/
 .vscode/
 *.iml
+
+
+# Android & Gradle
+.gradle/
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/local.properties
+**/doc/api/
+.pub-cache/
+.pub/

@@ -1,0 +1,17 @@
+{
+  "name": "food-friend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Food Friend - Cooking, shopping, and nutrition assistant backend proxy and Vercel configuration",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@vercel/node": "^5.1.7",
+    "typescript": "^5.7.2"
+  }
+}

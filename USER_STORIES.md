@@ -6,18 +6,18 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ## Phase 1: Project Initialization & Core Foundation
 
-### - [ ] US-1.1: Project Initialization & Workspace Setup
+### - [x] US-1.1: Project Initialization & Workspace Setup
 **As a** developer,  
 **I want** the Flutter application (Web and Android) and Vercel Serverless Functions project structure initialized with Material 3 theming and Spanish localization defaults,  
 **So that** all features can be built on a consistent, responsive, and secure foundation.
 
 #### Acceptance Criteria
-- [ ] A Flutter project is initialized supporting both **Web** and **Android** targets, with version-pinned dependencies in `pubspec.yaml` and a committed `pubspec.lock`.
-- [ ] `flutter_svg` is installed and configured for rendering clean SVG icons (no emojis or non-standard characters in the UI).
-- [ ] A centralized Material 3 theme (`useMaterial3: true`) is configured in the app entry point with responsive layout utilities (`LayoutBuilder` / `MediaQuery`) adapting cleanly between mobile and desktop viewports.
-- [ ] A Vercel Serverless Functions setup (`/api` directory and `package.json` with `@google/genai` and TypeScript configurations) is initialized at the project root without exposing any API keys to the client.
-- [ ] All visible UI text, titles, and labels are in Spanish, while all code comments and documentation are in English.
-- [ ] `flutter analyze` passes with zero errors and the app builds and renders its initial shell on Web and Android.
+- [x] A Flutter project is initialized supporting both **Web** and **Android** targets, with version-pinned dependencies in `pubspec.yaml` and a committed `pubspec.lock`.
+- [x] `flutter_svg` is installed and configured for rendering clean SVG icons (no emojis or non-standard characters in the UI).
+- [x] A centralized Material 3 theme (`useMaterial3: true`) is configured in the app entry point with responsive layout utilities (`LayoutBuilder` / `MediaQuery`) adapting cleanly between mobile and desktop viewports.
+- [x] A Vercel Serverless Functions setup (`/api` directory and `package.json` with `@google/genai` and TypeScript configurations) is initialized at the project root without exposing any API keys to the client.
+- [x] All visible UI text, titles, and labels are in Spanish, while all code comments and documentation are in English.
+- [x] `flutter analyze` passes with zero errors and the app builds and renders its initial shell on Web and Android.
 
 ---
 

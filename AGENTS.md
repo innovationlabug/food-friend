@@ -14,6 +14,7 @@ Cooking + shopping + nutrition assistant.
 - **Styling:** Flutter Material 3 (`useMaterial3: true`) with a centralized `ThemeData`. Use custom responsive breakpoints (`LayoutBuilder` / `MediaQuery`) to adapt fluidly across mobile and desktop browser viewports. Prefer clean SVG assets via `flutter_svg` over icon bloat or emoji characters.
 - **Package Management:** Use Dart `pub` (`flutter pub add <package>`) with version pinning in `pubspec.yaml` and committed `pubspec.lock`. For Vercel API functions, use `npm` with `package.json` scoped inside the `/api` or project root.
 - **LLM usage:** Only implement calls to LLM if strictly needed. First try to solve any problem by using traditional APIs and tools. Implement client-side or server-side fallbacks in case the LLM calls fail.
+- **Testing & Integration Testing:** Automatically create and run unit tests and end-to-end integration tests (using `package:integration_test`) when relevant to the current user story. After implementing a feature or performing a code update, create or update the associated unit and integration tests to verify both business logic and user flows, and run them to ensure zero regressions.
 
 ## Development
 - The Antigravity IDE tool is being used on Windows.
