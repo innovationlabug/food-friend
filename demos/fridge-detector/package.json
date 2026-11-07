@@ -1,0 +1,13 @@
+{
+  "name": "fridge-detector-demo",
+  "version": "1.0.0",
+  "description": "POC Demo: Guatemalan refrigerator product recognition with Gemini 3.8 Flash",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["gemini", "vision", "guatemala", "poc"],
+  "author": "",
+  "license": "ISC"
+}
+

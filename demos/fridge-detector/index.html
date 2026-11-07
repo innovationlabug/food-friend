@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Friend — Detector de Refrigerador (Gemini 3.8 Flash)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #15803d;
+      --primary-light: #dcfce7;
+      --primary-dark: #166534;
+      --secondary: #0284c7;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 18px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 20px;
+      box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .brand-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .badge-model {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .badge-model .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    main {
+      max-width: 1300px;
+      margin: 28px auto;
+      padding: 0 20px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Samples Bar */
+    .samples-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .sample-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .sample-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .sample-card.active {
+      border-color: var(--primary);
+      background: #f0fdf4;
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+
+    .sample-thumb {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #e2e8f0;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .sample-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sample-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #e0f2fe;
+      color: #0369a1;
+      margin-bottom: 4px;
+    }
+
+    .sample-name {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sample-desc {
+      font-size: 0.77rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    /* Upload Area */
+    .upload-zone {
+      background: #ffffff;
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary);
+      background: #f0fdf4;
+    }
+
+    .upload-zone input {
+      display: none;
+    }
+
+    .upload-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .upload-text {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .upload-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Main Workspace Layout */
+    .workspace {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left: Image Viewer */
+    .preview-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 96px;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .preview-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .preview-image-container {
+      width: 100%;
+      max-height: 460px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-image {
+      width: 100%;
+      max-height: 460px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .analyze-btn {
+      width: 100%;
+      margin-top: 14px;
+      padding: 12px 18px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s ease;
+      box-shadow: 0 2px 6px rgba(21, 128, 61, 0.25);
+    }
+
+    .analyze-btn:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+
+    .analyze-btn:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Right: Results */
+    .results-container {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Loading Box */
+    .loading-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 24px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      display: none;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid #e2e8f0;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .loading-subtext {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+
+    .loading-timer {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 0.82rem;
+      font-family: monospace;
+      color: var(--secondary);
+      background: #e0f2fe;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    /* Summary Card */
+    .summary-card {
+      background: linear-gradient(135deg, #f0fdf4, #ffffff);
+      border: 1.5px solid #bbf7d0;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .summary-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--primary-dark);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .summary-content {
+      font-size: 0.95rem;
+      color: #1e293b;
+      line-height: 1.5;
+    }
+
+    /* Metric stats */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+    }
+
+    .metric-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .metric-num {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+
+    .metric-label {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      background: white;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .category-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .cat-btn {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: white;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .cat-btn:hover {
+      border-color: #94a3b8;
+      color: var(--text-main);
+    }
+
+    .cat-btn.active {
+      background: var(--text-main);
+      color: white;
+      border-color: var(--text-main);
+    }
+
+    /* Items Table */
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    thead {
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      padding: 12px 16px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: #fafbfc;
+    }
+
+    .prod-name {
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .brand-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .brand-tag.local {
+      background: #fef08a;
+      color: #854d0e;
+      border: 1px solid #facc15;
+    }
+
+    .cat-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .confidence-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+
+    .conf-Alta {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .conf-Media {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .conf-Baja {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .obs-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    /* JSON Accordion */
+    details {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 12px 18px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      user-select: none;
+      background: #f8fafc;
+      border-bottom: 1px solid transparent;
+      color: var(--text-muted);
+    }
+
+    details[open] summary {
+      border-bottom-color: var(--border);
+      color: var(--text-main);
+    }
+
+    pre.json-viewer {
+      padding: 16px;
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      max-height: 380px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      background: white;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">FF</div>
+        <div>
+          <div class="brand-title">Food Friend — Reconocimiento de Refrigerador</div>
+          <div class="brand-subtitle">Demo de Factibilidad con Detección de Marcas Guatemaltecas</div>
+        </div>
+      </div>
+      <div class="badge-model">
+        <span class="dot"></span>
+        Modelo: <strong>gemini-3.8-flash</strong>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Samples Section -->
+    <div class="section-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Muestras de prueba pre-cargadas (1-clic para analizar)
+    </div>
+
+    <div class="samples-grid" id="samplesContainer">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Drag & Drop Upload -->
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
+      <div class="upload-icon">↑</div>
+      <div class="upload-text">Arrastra una fotografía aquí o haz clic para subir una imagen propia</div>
+      <div class="upload-hint">Formatos: JPG, PNG o WEBP. También puedes pegar una captura con Ctrl+V.</div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+      <!-- Left: Image Preview -->
+      <div class="preview-card">
+        <div class="preview-header">
+          <div class="preview-title" id="previewTitle">Imagen seleccionada</div>
+          <span class="sample-badge" id="previewBadge">Muestra</span>
+        </div>
+        <div class="preview-image-container">
+          <img id="previewImg" class="preview-image" src="" alt="Vista previa">
+        </div>
+        <button id="analyzeBtn" class="analyze-btn" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+          Analizar con Gemini 3.8 Flash
+        </button>
+      </div>
+
+      <!-- Right: Results -->
+      <div class="results-container">
+        <!-- Loading State -->
+        <div id="loadingCard" class="loading-card">
+          <div class="spinner"></div>
+          <div class="loading-text">Procesando imagen con Gemini 3.8 Flash...</div>
+          <div class="loading-subtext">Identificando productos de refrigerador, marcas locales y cantidades</div>
+          <div class="loading-timer" id="timerDisplay">0.0s</div>
+        </div>
+
+        <!-- Initial Placeholder State -->
+        <div id="emptyState" class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" style="margin-bottom: 12px;"><path d="M5 8h14M5 8a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V8z"/><path d="M10 12h4"/></svg>
+          <div style="font-weight: 600; color: #334155; margin-bottom: 4px;">Listo para analizar</div>
+          <div>Selecciona una de las 3 muestras arriba o sube tu propia foto para iniciar el reconocimiento.</div>
+        </div>
+
+        <!-- Active Results Block -->
+        <div id="resultsBlock" style="display: none; flex-direction: column; gap: 18px;">
+          <!-- Summary Card -->
+          <div class="summary-card">
+            <div class="summary-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Resumen del Análisis
+            </div>
+            <div class="summary-content" id="summaryText"></div>
+          </div>
+
+          <!-- Metrics Row -->
+          <div class="metrics-row">
+            <div class="metric-pill">
+              <div class="metric-num" id="metricTotal">0</div>
+              <div class="metric-label">Productos detectados</div>
+            </div>
+            <div class="metric-pill">
+              <div class="metric-num" id="metricLocal" style="color: #ca8a04;">0</div>
+              <div class="metric-label">Marcas locales (GT)</div>
+            </div>
+            <div class="metric-pill">
+              <div class="metric-num" id="metricHighConf" style="color: #15803d;">0</div>
+              <div class="metric-label">Alta confianza visual</div>
+            </div>
+            <div class="metric-pill">
+              <div class="metric-num" id="metricDuration" style="color: #0284c7;">0s</div>
+              <div class="metric-label">Tiempo de respuesta</div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Bar -->
+          <div class="filter-bar">
+            <input type="text" id="searchInput" class="search-input" placeholder="Buscar por producto o marca (ej. Campero, mostaza, salsa)...">
+            <div class="category-pills" id="categoryPills">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 28%;">Producto</th>
+                  <th style="width: 22%;">Marca</th>
+                  <th style="width: 18%;">Categoría</th>
+                  <th style="width: 18%;">Cantidad estimada</th>
+                  <th style="width: 14%;">Confianza</th>
+                </tr>
+              </thead>
+              <tbody id="itemsTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Raw JSON Accordion -->
+          <details>
+            <summary>Ver JSON estructurado retornado por Gemini 3.8 Flash</summary>
+            <pre class="json-viewer" id="jsonViewer"></pre>
+          </details>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let currentSample = null;
+    let customImageBase64 = null;
+    let customMimeType = 'image/jpeg';
+    let rawItems = [];
+    let activeCategory = 'Todos';
+    let searchQuery = '';
+    let timerInterval = null;
+
+    const samplesContainer = document.getElementById('samplesContainer');
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const previewImg = document.getElementById('previewImg');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewBadge = document.getElementById('previewBadge');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+
+    const loadingCard = document.getElementById('loadingCard');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const emptyState = document.getElementById('emptyState');
+    const resultsBlock = document.getElementById('resultsBlock');
+    const summaryText = document.getElementById('summaryText');
+    const metricTotal = document.getElementById('metricTotal');
+    const metricLocal = document.getElementById('metricLocal');
+    const metricHighConf = document.getElementById('metricHighConf');
+    const metricDuration = document.getElementById('metricDuration');
+    const searchInput = document.getElementById('searchInput');
+    const categoryPills = document.getElementById('categoryPills');
+    const itemsTableBody = document.getElementById('itemsTableBody');
+    const jsonViewer = document.getElementById('jsonViewer');
+
+    // Fetch and render sample cards
+    async function loadSamples() {
+      try {
+        const res = await fetch('/api/samples');
+        const data = await res.json();
+        samplesContainer.innerHTML = '';
+
+        data.samples.forEach((sample, idx) => {
+          const card = document.createElement('div');
+          card.className = 'sample-card' + (idx === 1 ? ' active' : '');
+          card.innerHTML = `
+            <img class="sample-thumb" src="${sample.url}" alt="${sample.title}">
+            <div class="sample-info">
+              <span class="sample-badge">${sample.badge}</span>
+              <div class="sample-name">${sample.title}</div>
+              <div class="sample-desc">${sample.description}</div>
+            </div>
+          `;
+          card.addEventListener('click', () => selectSample(sample, card));
+          samplesContainer.appendChild(card);
+
+          if (idx === 1) {
+            selectSample(sample, card);
+          }
+        });
+      } catch (e) {
+        console.error('Error cargando samples:', e);
+      }
+    }
+
+    function selectSample(sample, cardEl) {
+      document.querySelectorAll('.sample-card').forEach(c => c.classList.remove('active'));
+      if (cardEl) cardEl.classList.add('active');
+
+      currentSample = sample.fileName;
+      customImageBase64 = null;
+      previewImg.src = sample.url;
+      previewTitle.textContent = sample.title;
+      previewBadge.textContent = sample.badge;
+      analyzeBtn.disabled = false;
+    }
+
+    // Custom upload handling
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleImageFile(file);
+    });
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleImageFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    // Paste from clipboard
+    window.addEventListener('paste', (e) => {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (const item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          handleImageFile(item.getAsFile());
+          break;
+        }
+      }
+    });
+
+    function handleImageFile(file) {
+      document.querySelectorAll('.sample-card').forEach(c => c.classList.remove('active'));
+      currentSample = null;
+      customMimeType = file.type || 'image/jpeg';
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        customImageBase64 = ev.target.result;
+        previewImg.src = customImageBase64;
+        previewTitle.textContent = file.name;
+        previewBadge.textContent = 'Subida por usuario';
+        analyzeBtn.disabled = false;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Trigger analysis
+    analyzeBtn.addEventListener('click', runAnalysis);
+
+    async function runAnalysis() {
+      if (!currentSample && !customImageBase64) return;
+
+      analyzeBtn.disabled = true;
+      emptyState.style.display = 'none';
+      resultsBlock.style.display = 'none';
+      loadingCard.style.display = 'block';
+
+      let elapsed = 0;
+      timerDisplay.textContent = '0.0s';
+      clearInterval(timerInterval);
+      const startTimestamp = Date.now();
+      timerInterval = setInterval(() => {
+        elapsed = ((Date.now() - startTimestamp) / 1000).toFixed(1);
+        timerDisplay.textContent = `${elapsed}s`;
+      }, 100);
+
+      try {
+        const payload = currentSample 
+          ? { sampleName: currentSample }
+          : { imageBase64: customImageBase64, mimeType: customMimeType };
+
+        const res = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        clearInterval(timerInterval);
+
+        if (!result.ok) {
+          throw new Error(result.error || 'Error al procesar la imagen');
+        }
+
+        renderResults(result);
+      } catch (err) {
+        clearInterval(timerInterval);
+        alert('Error: ' + err.message);
+        emptyState.style.display = 'block';
+      } finally {
+        loadingCard.style.display = 'none';
+        analyzeBtn.disabled = false;
+      }
+    }
+
+    function renderResults(result) {
+      const data = result.data;
+      rawItems = data.items || [];
+
+      summaryText.textContent = data.resumen || 'Análisis completado satisfactoriamente.';
+      jsonViewer.textContent = JSON.stringify(result, null, 2);
+
+      // Metrics
+      const total = rawItems.length;
+      const localCount = rawItems.filter(i => i.es_marca_local).length;
+      const highConfCount = rawItems.filter(i => i.confianza === 'Alta').length;
+
+      metricTotal.textContent = total;
+      metricLocal.textContent = localCount;
+      metricHighConf.textContent = highConfCount;
+      metricDuration.textContent = `${result.durationSeconds}s`;
+
+      // Categories setup
+      const categories = ['Todos', ...new Set(rawItems.map(i => i.categoria).filter(Boolean))];
+      activeCategory = 'Todos';
+      searchQuery = '';
+      searchInput.value = '';
+
+      categoryPills.innerHTML = '';
+      categories.forEach(cat => {
+        const pill = document.createElement('button');
+        pill.className = 'cat-btn' + (cat === 'Todos' ? ' active' : '');
+        pill.textContent = cat;
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+          pill.classList.add('active');
+          activeCategory = cat;
+          filterTable();
+        });
+        categoryPills.appendChild(pill);
+      });
+
+      filterTable();
+      resultsBlock.style.display = 'flex';
+    }
+
+    function filterTable() {
+      const filtered = rawItems.filter(item => {
+        const matchCategory = (activeCategory === 'Todos') || (item.categoria === activeCategory);
+        const q = searchQuery.toLowerCase();
+        const matchSearch = !q || 
+          (item.producto && item.producto.toLowerCase().includes(q)) ||
+          (item.marca && item.marca.toLowerCase().includes(q)) ||
+          (item.observaciones && item.observaciones.toLowerCase().includes(q));
+        return matchCategory && matchSearch;
+      });
+
+      itemsTableBody.innerHTML = '';
+      if (filtered.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="5" style="text-align: center; color: #94a3b8; padding: 28px;">No se encontraron productos coincidentes</td>`;
+        itemsTableBody.appendChild(tr);
+        return;
+      }
+
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        const isLocalBadge = item.es_marca_local 
+          ? `<span class="brand-tag local" title="Marca guatemalteca o regional centroamericana">🇬🇹 ${escapeHtml(item.marca)}</span>`
+          : `<span class="brand-tag">${escapeHtml(item.marca || 'N/A')}</span>`;
+
+        tr.innerHTML = `
+          <td>
+            <div class="prod-name">${escapeHtml(item.producto)}</div>
+            ${item.observaciones ? `<div class="obs-text">${escapeHtml(item.observaciones)}</div>` : ''}
+          </td>
+          <td>${isLocalBadge}</td>
+          <td><span class="cat-badge">${escapeHtml(item.categoria || 'Otro')}</span></td>
+          <td style="font-weight: 500; color: #334155;">${escapeHtml(item.cantidad_estimada || '1 unidad')}</td>
+          <td><span class="confidence-badge conf-${item.confianza}">${escapeHtml(item.confianza)}</span></td>
+        `;
+        itemsTableBody.appendChild(tr);
+      });
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim();
+      filterTable();
+    });
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    loadSamples();
+  </script>
+</body>
+</html>
+

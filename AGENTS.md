@@ -31,7 +31,7 @@ Cooking + shopping + nutrition assistant.
 ## Version Control Rules
 - Clearly mark the finished features with `[x]` in `USER_STORIES.md`
 - After each feature has been completed, reviewed and aproved by the user, stage and commit your changes (`git add .` and `git commit`).
-- Use the Conventional Commits specification for the message (e.g., `feat(auth): add Next.js route handler`, `fix(ui): correct tailwind padding`).
+- Use the Conventional Commits specification for the message (e.g., `feat(recipe): implement ingredient calculation`, `fix(layout): adjust listview padding`).
 - Summarize the commit based on the specific user story completed and the actual diff of the code.
 - When the user instructs you to use multiple branches for development, only perform what you are instructed to. Do not auto merge branches without the user's explicit instruction.
 
