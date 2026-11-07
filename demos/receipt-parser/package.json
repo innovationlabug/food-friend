@@ -1,0 +1,13 @@
+{
+  "name": "receipt-parser-demo",
+  "version": "1.0.0",
+  "description": "POC Demo: Guatemalan supermarket receipt parser with Gemini 3.8 Flash for pantry tracking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["gemini", "vision", "receipts", "guatemala", "pantry", "poc"],
+  "author": "",
+  "license": "ISC"
+}
+

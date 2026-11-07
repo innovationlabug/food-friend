@@ -66,4 +66,4 @@ Implement two fast, standalone vision demos to evaluate whether Gemini can relia
 
 ## General Rules
 - Before starting implementation, ask questions if you need any clarification.
-- If you need reference photos to test the demos, you can request them.
+- You can find some reference images in `demos/receipt-parser/samples`.
