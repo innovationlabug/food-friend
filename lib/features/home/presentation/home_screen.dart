@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../../shopping_list/presentation/shopping_list_screen.dart';
 
 /// Main landing shell screen for Food Friend.
 /// Presents key navigation entry points in Spanish with a clean, responsive layout.
@@ -54,7 +55,11 @@ class HomeScreen extends StatelessWidget {
               'Gestiona tus ingredientes disponibles, despensa y lista de compras.',
           buttonLabel: 'Ir a lista de compras',
           onPressed: () {
-            // Navigation to shopping list will be wired in US-1.3
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ShoppingListScreen(),
+              ),
+            );
           },
           isPrimary: true,
         ),
@@ -99,7 +104,13 @@ class HomeScreen extends StatelessWidget {
                 description:
                     'Gestiona tus ingredientes disponibles, despensa y lista de compras.',
                 buttonLabel: 'Ir a lista de compras',
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ShoppingListScreen(),
+                    ),
+                  );
+                },
                 isPrimary: true,
               ),
             ),

@@ -24,3 +24,4 @@ class StringNormalizer {
     return normalize(a) == normalize(b);
   }
 }
+

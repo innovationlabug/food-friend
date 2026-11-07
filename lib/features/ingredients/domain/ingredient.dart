@@ -141,3 +141,4 @@ class Ingredient {
         'isBestBefore: $isBestBefore)';
   }
 }
+

@@ -38,19 +38,19 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-1.3: Main Screen & Shopping List Navigation
+### - [x] US-1.3: Main Screen & Shopping List Navigation
 **As a** user,  
 **I want** to navigate from the main screen to the shopping list feature, view my available ingredients, and access the add-ingredient flow,  
 **So that** I can easily manage the ingredients I have on hand.
 
 #### Acceptance Criteria
-- [ ] The Main Screen displays a clean, modern Spanish interface with a primary button to enter the Shopping List feature.
-- [ ] The Shopping List screen provides:
+- [x] The Main Screen displays a clean, modern Spanish interface with a primary button to enter the Shopping List feature.
+- [x] The Shopping List screen provides:
   - A button/action to add new ingredients.
   - A button/view to check the current list of available ingredients.
-- [ ] The Available Ingredients view displays all locally stored ingredients by their Spanish name, with an option to remove individual items.
-- [ ] An empty-state message in Spanish is shown when no ingredients have been added yet.
-- [ ] No pseudo-metadata badges, technical state chips, or input-method tags are displayed on ingredient items.
+- [x] The Available Ingredients view displays all locally stored ingredients by their Spanish name, with an option to remove individual items.
+- [x] An empty-state message in Spanish is shown when no ingredients have been added yet.
+- [x] No pseudo-metadata badges, technical state chips, or input-method tags are displayed on ingredient items.
 
 ---
 

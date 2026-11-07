@@ -118,7 +118,7 @@ Only stop when User Story US-1.1 is fully verified, then report what was done. W
 
 
 
-Execute User Story US-1.2 from `USER_STORIES.md`. Adhere strictly to the rules in `AGENTS.md` and the requirements in `SPEC.md`.
+Execute User Story US-1.3 from `USER_STORIES.md`. Adhere strictly to the rules in `AGENTS.md` and the requirements in `SPEC.md`.
 
 Work autonomously end-to-end:
 
@@ -128,4 +128,4 @@ Work autonomously end-to-end:
 
     Once all acceptance criteria pass, stage and commit the changes using the Conventional Commits format specified in `AGENTS.md`.
 
-Only stop when User Story US-1.2 is fully verified, then report what was done.
+Only stop when User Story US-1.3 is fully verified, then report what was done.

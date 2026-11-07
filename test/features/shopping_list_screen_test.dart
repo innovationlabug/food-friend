@@ -1,0 +1,142 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
+import 'package:food_friend/features/ingredients/domain/amount_unit.dart';
+import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
+import 'package:food_friend/main.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  Widget createTestWidget({IngredientStorageService? storageService}) {
+    return MaterialApp(
+      home: ShoppingListScreen(storageService: storageService),
+    );
+  }
+
+  group('ShoppingListScreen', () {
+    testWidgets('displays empty state when no ingredients are stored',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lista de compras'), findsOneWidget);
+      expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
+      expect(
+        find.text(
+          'Agrega los ingredientes que tienes disponibles en casa o los que necesitas comprar.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Agregar ingrediente'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('renders list of stored ingredients with Spanish labels and clean formatting',
+        (tester) async {
+      final storage = IngredientStorageService();
+      await storage.saveIngredients([
+        const Ingredient(
+          name: 'Pechuga de pollo',
+          brand: 'Pollo Rey',
+          amountValue: 500,
+          amountUnit: AmountUnit.grams,
+        ),
+        const Ingredient(name: 'Cebolla'),
+      ]);
+
+      await tester.pumpWidget(createTestWidget(storageService: storage));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ingredientes disponibles (2)'), findsOneWidget);
+      expect(find.text('Pechuga de pollo'), findsOneWidget);
+      expect(find.text('500 g • Pollo Rey'), findsOneWidget);
+      expect(find.text('Cebolla'), findsOneWidget);
+    });
+
+    testWidgets('adds new ingredient via dialog and updates view',
+        (tester) async {
+      final storage = IngredientStorageService();
+      await tester.pumpWidget(createTestWidget(storageService: storage));
+      await tester.pumpAndSettle();
+
+      // Tap on empty state button to add ingredient
+      final addButtons = find.widgetWithText(FilledButton, 'Agregar ingrediente');
+      expect(addButtons, findsOneWidget);
+      await tester.tap(addButtons);
+      await tester.pumpAndSettle();
+
+      // Verify dialog is open
+      expect(find.text('Nombre del ingrediente *'), findsOneWidget);
+
+      // Enter name and brand
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nombre del ingrediente *'),
+        'Zanahoria',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Cantidad'),
+        '4',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Marca (opcional)'),
+        'Verduras del Valle',
+      );
+
+      // Submit form
+      await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
+      await tester.pumpAndSettle();
+
+      // Verify ingredient is now rendered
+      expect(find.text('Zanahoria'), findsOneWidget);
+      expect(find.text('4 ud • Verduras del Valle'), findsOneWidget);
+      expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);
+    });
+
+    testWidgets('removes ingredient on tapping delete button',
+        (tester) async {
+      final storage = IngredientStorageService();
+      await storage.saveIngredients([
+        const Ingredient(name: 'Aguacate', amountValue: 2, amountUnit: AmountUnit.units),
+      ]);
+
+      await tester.pumpWidget(createTestWidget(storageService: storage));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Aguacate'), findsOneWidget);
+
+      // Find and tap delete button
+      final deleteBtn = find.byTooltip('Eliminar ingrediente');
+      expect(deleteBtn, findsOneWidget);
+      await tester.tap(deleteBtn);
+      await tester.pumpAndSettle();
+
+      // Verify empty state is now displayed
+      expect(find.text('Aguacate'), findsNothing);
+      expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
+    });
+
+    testWidgets('navigates from HomeScreen to ShoppingListScreen on primary button tap',
+        (tester) async {
+      await tester.pumpWidget(const FoodFriendApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
+
+      // Tap primary navigation button
+      final shoppingNavBtn = find.text('Ir a lista de compras');
+      expect(shoppingNavBtn, findsAtLeastNWidgets(1));
+      await tester.tap(shoppingNavBtn.first);
+      await tester.pumpAndSettle();
+
+      // Verify on Shopping List Screen
+      expect(find.text('Lista de compras'), findsOneWidget);
+      expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
+    });
+  });
+}
