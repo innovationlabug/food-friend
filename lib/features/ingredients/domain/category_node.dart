@@ -60,3 +60,4 @@ class CategoryNode {
   @override
   String toString() => 'CategoryNode(id: $id, name: $name, isLeaf: $isLeaf, children: ${children.length})';
 }
+

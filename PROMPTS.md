@@ -168,3 +168,13 @@ Work autonomously end-to-end for EACH user story in the sequence:
 Only stop when all specified User Stories are fully implemented, verified, and committed across their respective branches. Then, provide a comprehensive report of what was done and the test results for each story. Summarize it in `ADD_INGREDIENTS.md`.
 
 After completing the entire batch, execute `[console]::beep(800, 800)` to notify me that the task is complete.
+
+
+
+---
+
+
+
+For products such as `Harina de maiz Maseca` remove the brand `Maseca` and keep only the descriptor
+
+The products can only contain a brand if the product is explicitly known by that name (such as `Nutella` for example)

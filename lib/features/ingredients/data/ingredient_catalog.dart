@@ -181,9 +181,9 @@ class IngredientCatalog {
           name: 'Harinas y Masas',
           children: [
             CategoryNode(id: 'masa_maiz', name: 'Masa de maíz'),
-            CategoryNode(id: 'harina_maiz', name: 'Harina de maíz (Maseca)'),
+            CategoryNode(id: 'harina_maiz', name: 'Harina de maíz', synonyms: ['maseca']),
             CategoryNode(id: 'harina_trigo', name: 'Harina de trigo'),
-            CategoryNode(id: 'maicena', name: 'Fécula de maíz (Maicena)'),
+            CategoryNode(id: 'maicena', name: 'Fécula de maíz', synonyms: ['maicena']),
           ],
         ),
         CategoryNode(
@@ -392,6 +392,7 @@ class IngredientCatalog {
             CategoryNode(id: 'azucar_blanca', name: 'Azúcar blanca'),
             CategoryNode(id: 'azucar_morena', name: 'Azúcar morena'),
             CategoryNode(id: 'panela', name: 'Panela', synonyms: ['rapadura']),
+            CategoryNode(id: 'nutella', name: 'Nutella'),
           ],
         ),
         CategoryNode(
@@ -402,7 +403,7 @@ class IngredientCatalog {
             CategoryNode(id: 'vinagre_manzana', name: 'Vinagre de manzana'),
             CategoryNode(id: 'salsa_soya', name: 'Salsa de soya'),
             CategoryNode(id: 'salsa_inglesa', name: 'Salsa inglesa'),
-            CategoryNode(id: 'salsa_dulce', name: 'Salsa dulce (ketchup)'),
+            CategoryNode(id: 'salsa_dulce', name: 'Salsa dulce', synonyms: ['ketchup']),
             CategoryNode(id: 'pasta_tomate', name: 'Pasta de tomate'),
             CategoryNode(id: 'mostaza', name: 'Mostaza'),
             CategoryNode(id: 'mayonesa', name: 'Mayonesa'),
@@ -563,3 +564,4 @@ class IngredientCatalog {
     return distanceMatrix[a.length][b.length];
   }
 }
+

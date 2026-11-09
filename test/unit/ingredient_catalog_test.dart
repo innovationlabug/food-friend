@@ -23,9 +23,19 @@ void main() {
       expect(ingredients, contains('Longaniza guatemalteca'));
       expect(ingredients, contains('Chorizo negro'));
       expect(ingredients, contains('Frijoles negros'));
-      expect(ingredients, contains('Harina de maíz (Maseca)'));
+      expect(ingredients, contains('Harina de maíz'));
+      expect(ingredients, contains('Fécula de maíz'));
+      expect(ingredients, contains('Nutella'));
       expect(ingredients, contains('Plátano maduro'));
       expect(ingredients, contains('Queso seco'));
+    });
+
+    test('resolves brand query like maseca or maicena to clean descriptor via synonyms', () {
+      final masecaSuggestions = catalog.searchSuggestions('maseca');
+      expect(masecaSuggestions, contains('Harina de maíz'));
+
+      final maicenaMatch = catalog.getClosestMatch('maicena');
+      expect(maicenaMatch, equals('Fécula de maíz'));
     });
 
     test('catalog includes cooking-specific granularity alongside general options', () {
@@ -104,3 +114,4 @@ void main() {
     });
   });
 }
+

@@ -21,7 +21,7 @@ This report summarizes the implementation, verification, and end-to-end testing 
   - Subcategories (Level 2: `Pollo`, `Res`, `Cerdo`, `Pescados y Mariscos`, `Embutidos`, `Frijoles`, etc.).
   - Selectable leaf ingredients (Level 3 or 4) with cooking granularity (e.g. `Pechuga de pollo`, `Alitas de pollo`, and generic `Pollo`; `Carne molida de res`, `Posta de res`, and generic `Carne de res`).
   - Maximum depth verified strictly $\le 4$ levels across the entire tree.
-  - Includes Guatemalan staples: `Güisquil`, `Perulero`, `Miltomate`, `Chile guaque`, `Chile pasa`, `Chile cobanero`, `Samat`, `Epazote`, `Longaniza guatemalteca`, `Chorizo negro`, `Frijoles negros`, `Masa de maíz`, `Harina de maíz (Maseca)`, `Plátano maduro`, `Queso seco`, `Queso de capas`, `Crema pura`.
+  - Includes Guatemalan staples: `Güisquil`, `Perulero`, `Miltomate`, `Chile guaque`, `Chile pasa`, `Chile cobanero`, `Samat`, `Epazote`, `Longaniza guatemalteca`, `Chorizo negro`, `Frijoles negros`, `Masa de maíz`, `Harina de maíz`, `Fécula de maíz`, `Plátano maduro`, `Queso seco`, `Queso de capas`, `Crema pura`, `Nutella`.
 - **Commit:** `039c54c` - `feat(catalog): implement predefined spanish ingredient catalog and category taxonomy`
 
 ### US-2.2: Add Ingredient via Text Input with Auto-Suggestions
@@ -75,3 +75,4 @@ This report summarizes the implementation, verification, and end-to-end testing 
 022f880 feat(ingredients): implement add ingredient via text search with auto-suggestions and closest match
 039c54c feat(catalog): implement predefined spanish ingredient catalog and category taxonomy
 ```
+
