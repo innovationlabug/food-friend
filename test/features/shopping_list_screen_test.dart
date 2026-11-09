@@ -48,7 +48,7 @@ void main() {
         findsNothing,
       );
       expect(
-        find.descendant(of: appBar, matching: find.byTooltip('Borrar mis datos')),
+        find.descendant(of: appBar, matching: find.byTooltip('Borrar todos los ingredientes')),
         findsOneWidget,
       );
     });
@@ -132,7 +132,7 @@ void main() {
       expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
     });
 
-    testWidgets('clears all data when tapping Borrar mis datos button',
+    testWidgets('cancelling delete dialog preserves ingredients, confirming clears all data',
         (tester) async {
       final storage = IngredientStorageService();
       await storage.saveIngredients([
@@ -145,10 +145,35 @@ void main() {
 
       expect(find.text('Ingredientes disponibles (2)'), findsOneWidget);
 
-      // Tap delete button directly (no popup menu)
-      final clearBtn = find.byTooltip('Borrar mis datos');
+      // Tap delete button in AppBar
+      final clearBtn = find.byTooltip('Borrar todos los ingredientes');
       expect(clearBtn, findsOneWidget);
       await tester.tap(clearBtn);
+      await tester.pumpAndSettle();
+
+      // Verify confirmation dialog appears
+      expect(find.text('¿Borrar todos los ingredientes?'), findsOneWidget);
+      expect(
+        find.text(
+          'Esta acción eliminará todos los ingredientes guardados en tu lista de compras y despensa. ¿Deseas continuar?',
+        ),
+        findsOneWidget,
+      );
+
+      // 1. Test Cancel: tap 'Cancelar'
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      // Verify dialog dismissed and items still present
+      expect(find.text('¿Borrar todos los ingredientes?'), findsNothing);
+      expect(find.text('Ingredientes disponibles (2)'), findsOneWidget);
+
+      // 2. Tap delete button again and confirm
+      await tester.tap(clearBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('¿Borrar todos los ingredientes?'), findsOneWidget);
+      await tester.tap(find.text('Borrar todo'));
       await tester.pumpAndSettle();
 
       // Verify list is cleared and empty state is shown

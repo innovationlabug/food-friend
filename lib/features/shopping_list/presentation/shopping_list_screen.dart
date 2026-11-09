@@ -70,6 +70,39 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     );
   }
 
+  Future<void> _confirmClearAllData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return AlertDialog(
+          title: const Text('¿Borrar todos los ingredientes?'),
+          content: const Text(
+            'Esta acción eliminará todos los ingredientes guardados en tu lista de compras y despensa. ¿Deseas continuar?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.error,
+                foregroundColor: colorScheme.onError,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Borrar todo'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _clearAllData();
+    }
+  }
+
   Future<void> _removeIngredient(String name) async {
     final updated = await _storageService.removeIngredient(name);
 
@@ -97,13 +130,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         title: const Text('Lista de compras'),
         actions: [
           IconButton(
-            tooltip: 'Borrar mis datos',
+            tooltip: 'Borrar todos los ingredientes',
             icon: AppSvgIcon(
               assetName: 'delete',
               size: 22,
               color: colorScheme.onSurface,
             ),
-            onPressed: _clearAllData,
+            onPressed: _confirmClearAllData,
           ),
         ],
       ),
