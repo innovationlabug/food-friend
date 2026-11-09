@@ -187,14 +187,14 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-4.3: External Recipe API Investigation & Fallback Integration
+### - [x] US-4.3: External Recipe API Investigation & Fallback Integration
 **As a** user,  
 **I want** the app to query an external recipe API when no suitable local recipe matches my selected ingredients,  
 **So that** I still receive relevant cooking suggestions without relying on an LLM call.
 
 #### Acceptance Criteria
-- [ ] A traditional (non-LLM) recipe API is investigated, documented, and integrated (routed via a backend serverless proxy `/api/recipes` if API keys or Spanish normalization are required).
-- [ ] When the local recipe search returns zero suitable matches for the selected ingredients, the app automatically queries the external recipe API.
-- [ ] Recipes returned from the external source are mapped to the app's `Recipe` model with titles, ingredients, and instructions presented in Spanish.
-- [ ] If the user is offline or the external API request fails, the app gracefully falls back to showing the closest partial matches from the local dataset with an informative Spanish message.
+- [x] A traditional (non-LLM) recipe API is investigated, documented, and integrated (routed via a backend serverless proxy `/api/recipes` if API keys or Spanish normalization are required).
+- [x] When the local recipe search returns zero suitable matches for the selected ingredients, the app automatically queries the external recipe API.
+- [x] Recipes returned from the external source are mapped to the app's `Recipe` model with titles, ingredients, and instructions presented in Spanish.
+- [x] If the user is offline or the external API request fails, the app gracefully falls back to showing the closest partial matches from the local dataset with an informative Spanish message.
 

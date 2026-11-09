@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
 import 'package:food_friend/features/recipes/data/recipe_search_service.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
 import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -18,11 +21,13 @@ void main() {
   Widget createTestWidget({
     required List<String> selectedIngredients,
     RecipeSearchService? searchService,
+    ExternalRecipeService? externalService,
   }) {
     return MaterialApp(
       home: RecipeSuggestionsScreen(
         selectedIngredientNames: selectedIngredients,
         searchService: searchService,
+        externalService: externalService,
       ),
     );
   }
@@ -67,7 +72,7 @@ void main() {
     testWidgets('shows clean empty state when no matching recipes are found and allows viewing all',
         (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget(
-        selectedIngredients: ['IngredienteInexistente12345'],
+        selectedIngredients: [],
       ));
       await tester.pumpAndSettle();
 
@@ -135,6 +140,58 @@ void main() {
       // Verify navigation to RecipeSuggestionsScreen
       expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
       expect(find.text('Recetas sugeridas'), findsOneWidget);
+    });
+  });
+
+  group('US-4.3: External Recipe API & Graceful Fallback UI', () {
+    testWidgets('displays fallback notice and local partial suggestions when offline',
+        (WidgetTester tester) async {
+      final mockClient = MockClient((_) async {
+        throw http.ClientException('Sin conexión');
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['IngredienteInexistente999'],
+        externalService: externalService,
+      ));
+      await tester.pumpAndSettle();
+
+      // Verify fallback message notice is displayed
+      expect(find.textContaining('recetario externo o te encuentras sin conexión'), findsOneWidget);
+      expect(find.textContaining('receta(s) sugerida(s)'), findsOneWidget);
+
+      // Verify partial local matches are shown
+      expect(find.byType(Card), findsWidgets);
+    });
+
+    testWidgets('displays external recipe results when returned from external API',
+        (WidgetTester tester) async {
+      final mockClient = MockClient((_) async {
+        return http.Response(
+          '{"success": true, "count": 1, "recipes": ['
+          '{"id": "ext_1", "title": "Guiso Internacional de Pollo", "source": "external", "ingredients": [{"name": "curry", "displayAmount": "1 cda"}], "instructions": ["Cocinar todo."]}]}',
+          200,
+        );
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['curry'],
+        externalService: externalService,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Guiso Internacional de Pollo'), findsOneWidget);
+      expect(find.textContaining('receta(s) en línea'), findsOneWidget);
     });
   });
 }

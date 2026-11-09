@@ -1,36 +1,44 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../data/external_recipe_service.dart';
 import '../data/recipe_search_service.dart';
 import '../domain/recipe_search_result.dart';
 import 'recipe_detail_screen.dart';
 
 /// Screen presenting recipe suggestions generated from the user's selected ingredients.
-/// Displays matches ranked by match count and match percentage.
+/// Automatically prioritizes local recipes, queries external API when zero local matches,
+/// and falls back gracefully to closest partial matches when offline or on network error.
 class RecipeSuggestionsScreen extends StatefulWidget {
   const RecipeSuggestionsScreen({
     super.key,
     required this.selectedIngredientNames,
     this.searchService,
+    this.externalService,
   });
 
   /// The list of ingredient names selected by the user.
   final List<String> selectedIngredientNames;
 
-  /// Optional injected search service for testing or custom search logic.
+  /// Optional injected search service for local matching.
   final RecipeSearchService? searchService;
+
+  /// Optional injected external service for API queries and fallback coordination.
+  final ExternalRecipeService? externalService;
 
   /// Helper static method for easy navigation.
   static Future<void> navigate(
     BuildContext context, {
     required List<String> selectedIngredientNames,
     RecipeSearchService? searchService,
+    ExternalRecipeService? externalService,
   }) {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => RecipeSuggestionsScreen(
           selectedIngredientNames: selectedIngredientNames,
           searchService: searchService,
+          externalService: externalService,
         ),
       ),
     );
@@ -42,6 +50,10 @@ class RecipeSuggestionsScreen extends StatefulWidget {
 
 class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   late final RecipeSearchService _searchService;
+  late final ExternalRecipeService _externalService;
+
+  bool _isLoading = true;
+  RecipeDiscoveryResponse? _discoveryResponse;
   List<RecipeSearchResult> _results = [];
   bool _showingAllRecipes = false;
 
@@ -49,19 +61,28 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   void initState() {
     super.initState();
     _searchService = widget.searchService ?? RecipeSearchService();
-    _performSearch();
+    _externalService = widget.externalService ?? ExternalRecipeService();
+    _performDiscovery();
   }
 
-  void _performSearch() {
-    final matches = _searchService.searchRecipes(
-      selectedIngredientNames: widget.selectedIngredientNames,
-      minMatchCount: 1,
+  Future<void> _performDiscovery() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final response = await _externalService.discoverRecipes(
+      selectedIngredients: widget.selectedIngredientNames,
+      localSearchService: _searchService,
     );
 
-    setState(() {
-      _results = matches;
-      _showingAllRecipes = false;
-    });
+    if (mounted) {
+      setState(() {
+        _discoveryResponse = response;
+        _results = response.results;
+        _isLoading = false;
+        _showingAllRecipes = false;
+      });
+    }
   }
 
   void _showAllLocalRecipes() {
@@ -106,10 +127,33 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
       body: SafeArea(
         child: ResponsiveContainer(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: _results.isEmpty
-              ? _buildEmptyState(context)
-              : _buildResultsView(context),
+          child: _isLoading
+              ? _buildLoadingState(context)
+              : _results.isEmpty
+                  ? _buildEmptyState(context)
+                  : _buildResultsView(context),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(
+            'Buscando recetas sugeridas...',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -118,6 +162,10 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_discoveryResponse?.isFallback == true && !_showingAllRecipes) ...[
+          _buildFallbackNotice(context),
+          const SizedBox(height: 12),
+        ],
         _buildHeaderBanner(context),
         const SizedBox(height: 16),
         Expanded(
@@ -134,12 +182,58 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     );
   }
 
+  Widget _buildFallbackNotice(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 20,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _discoveryResponse?.fallbackMessage ??
+                  'Mostrando las sugerencias locales más cercanas disponibles.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurface,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeaderBanner(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     final count = _results.length;
     final ingredientCount = widget.selectedIngredientNames.length;
+
+    String bannerTitle = '$count receta(s) disponible(s)';
+    if (_showingAllRecipes) {
+      bannerTitle = 'Catálogo de recetas ($count)';
+    } else if (_discoveryResponse?.isExternal == true) {
+      bannerTitle = '$count receta(s) en línea';
+    } else if (_discoveryResponse?.isFallback == true) {
+      bannerTitle = '$count receta(s) sugerida(s)';
+    }
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -167,9 +261,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _showingAllRecipes
-                      ? 'Catálogo de recetas ($count)'
-                      : '$count receta(s) disponible(s)',
+                  bannerTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -375,3 +467,4 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     );
   }
 }
+
