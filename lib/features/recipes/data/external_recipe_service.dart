@@ -107,35 +107,80 @@ class ExternalRecipeService {
   Future<List<Recipe>> fetchExternalRecipes(List<String> ingredients) async {
     if (ingredients.isEmpty) return const [];
 
-    final rawUri = Uri.parse(_proxyBaseUrl);
-    final uri = (!kIsWeb && !rawUri.hasScheme)
-        ? Uri.parse('http://localhost:8080${_proxyBaseUrl.startsWith('/') ? '' : '/'}$_proxyBaseUrl')
-        : rawUri;
+    final candidateUris = _buildCandidateUris();
+    http.Response? lastResponse;
+    Object? lastError;
 
-    final response = await _client
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'ingredients': ingredients}),
-        )
-        .timeout(const Duration(seconds: 8));
+    for (final uri in candidateUris) {
+      try {
+        final response = await _client
+            .post(
+              uri,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'ingredients': ingredients}),
+            )
+            .timeout(const Duration(seconds: 8));
 
-    if (response.statusCode != 200) {
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> body =
+              jsonDecode(response.body) as Map<String, dynamic>;
+          final rawList = body['recipes'] as List<dynamic>?;
+
+          if (rawList == null || rawList.isEmpty) {
+            return const [];
+          }
+
+          return rawList
+              .map((item) => Recipe.fromJson(item as Map<String, dynamic>))
+              .toList();
+        }
+
+        lastResponse = response;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (lastResponse != null) {
       throw http.ClientException(
-        'Error al consultar el recetario externo (código: ${response.statusCode})',
-        uri,
+        'Error al consultar el recetario externo (código: ${lastResponse.statusCode})',
+        candidateUris.first,
       );
     }
 
-    final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
-    final rawList = body['recipes'] as List<dynamic>?;
-
-    if (rawList == null || rawList.isEmpty) {
-      return const [];
+    if (lastError != null) {
+      throw lastError;
     }
 
-    return rawList
-        .map((item) => Recipe.fromJson(item as Map<String, dynamic>))
-        .toList();
+    return const [];
+  }
+
+  /// Resolves candidate URLs for calling the backend proxy.
+  /// Handles production Vercel paths, test URLs, and local dev dual-server routing (localhost:8080 -> localhost:3000).
+  List<Uri> _buildCandidateUris() {
+    final rawUri = Uri.parse(_proxyBaseUrl);
+
+    // If explicit scheme is present (e.g. in tests: 'https://test/api/recipes'), use only that.
+    if (rawUri.hasScheme) {
+      return [rawUri];
+    }
+
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      final isLocalhost = host == 'localhost' || host == '127.0.0.1';
+      if (isLocalhost && Uri.base.port != 3000) {
+        // In local browser development, Flutter's shelf server on port 8080 does not host /api.
+        // Try the local Node API server on port 3000 first, then fall back to the relative path.
+        final localUri = Uri.parse('http://localhost:3000${_proxyBaseUrl.startsWith('/') ? '' : '/'}$_proxyBaseUrl');
+        return [localUri, rawUri];
+      }
+      return [rawUri];
+    }
+
+    // Non-web (Dart VM, Android, etc.)
+    return [
+      Uri.parse('http://localhost:3000${_proxyBaseUrl.startsWith('/') ? '' : '/'}$_proxyBaseUrl'),
+      Uri.parse('http://localhost:8080${_proxyBaseUrl.startsWith('/') ? '' : '/'}$_proxyBaseUrl'),
+    ];
   }
 }
