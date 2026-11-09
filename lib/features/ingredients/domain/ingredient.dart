@@ -9,6 +9,8 @@ class Ingredient {
     this.amountUnit,
     this.expirationDate,
     this.isBestBefore,
+    this.timesUsed = 0,
+    this.lastUsed,
   });
 
   /// Primary ingredient identifier (e.g. 'Pechuga de pollo', 'Tomate').
@@ -30,6 +32,13 @@ class Ingredient {
   /// or a strict expiration date (false / null).
   final bool? isBestBefore;
 
+  /// Internal usage counter tracking how many times this ingredient has been
+  /// used in cooking/recipes (starts at 0).
+  final int timesUsed;
+
+  /// Internal timestamp recording when this ingredient was last used.
+  final DateTime? lastUsed;
+
   /// Creates a copy of this [Ingredient] with optional updated fields.
   Ingredient copyWith({
     String? name,
@@ -38,6 +47,8 @@ class Ingredient {
     AmountUnit? amountUnit,
     DateTime? expirationDate,
     bool? isBestBefore,
+    int? timesUsed,
+    DateTime? lastUsed,
   }) {
     return Ingredient(
       name: name ?? this.name,
@@ -46,6 +57,16 @@ class Ingredient {
       amountUnit: amountUnit ?? this.amountUnit,
       expirationDate: expirationDate ?? this.expirationDate,
       isBestBefore: isBestBefore ?? this.isBestBefore,
+      timesUsed: timesUsed ?? this.timesUsed,
+      lastUsed: lastUsed ?? this.lastUsed,
+    );
+  }
+
+  /// Increments usage counter and updates [lastUsed] timestamp.
+  Ingredient markUsed({DateTime? usedAt}) {
+    return copyWith(
+      timesUsed: timesUsed + 1,
+      lastUsed: usedAt ?? DateTime.now(),
     );
   }
 
@@ -59,6 +80,8 @@ class Ingredient {
       if (expirationDate != null)
         'expirationDate': expirationDate!.toIso8601String(),
       if (isBestBefore != null) 'isBestBefore': isBestBefore,
+      'timesUsed': timesUsed,
+      if (lastUsed != null) 'lastUsed': lastUsed!.toIso8601String(),
     };
   }
 
@@ -84,6 +107,16 @@ class Ingredient {
     final bool? parsedBestBefore =
         rawBestBefore is bool ? rawBestBefore : null;
 
+    final rawTimesUsed = json['timesUsed'];
+    final int parsedTimesUsed =
+        rawTimesUsed is num ? rawTimesUsed.toInt() : 0;
+
+    final rawLastUsed = json['lastUsed'];
+    final DateTime? parsedLastUsed =
+        rawLastUsed is String && rawLastUsed.isNotEmpty
+            ? DateTime.tryParse(rawLastUsed)
+            : null;
+
     return Ingredient(
       name: rawName.trim(),
       brand: json['brand'] is String ? (json['brand'] as String).trim() : null,
@@ -91,6 +124,8 @@ class Ingredient {
       amountUnit: parsedUnit,
       expirationDate: parsedDate,
       isBestBefore: parsedBestBefore,
+      timesUsed: parsedTimesUsed,
+      lastUsed: parsedLastUsed,
     );
   }
 
@@ -119,7 +154,9 @@ class Ingredient {
         other.amountValue == amountValue &&
         other.amountUnit == amountUnit &&
         other.expirationDate == expirationDate &&
-        other.isBestBefore == isBestBefore;
+        other.isBestBefore == isBestBefore &&
+        other.timesUsed == timesUsed &&
+        other.lastUsed == lastUsed;
   }
 
   @override
@@ -131,6 +168,8 @@ class Ingredient {
       amountUnit,
       expirationDate,
       isBestBefore,
+      timesUsed,
+      lastUsed,
     );
   }
 
@@ -138,7 +177,8 @@ class Ingredient {
   String toString() {
     return 'Ingredient(name: $name, brand: $brand, amountValue: $amountValue, '
         'amountUnit: ${amountUnit?.key}, expirationDate: $expirationDate, '
-        'isBestBefore: $isBestBefore)';
+        'isBestBefore: $isBestBefore, timesUsed: $timesUsed, '
+        'lastUsed: $lastUsed)';
   }
 }
 

@@ -129,3 +129,42 @@ Work autonomously end-to-end:
     Once all acceptance criteria pass, stage and commit the changes using the Conventional Commits format specified in `AGENTS.md`.
 
 Only stop when User Story US-1.3 is fully verified, then report what was done.
+
+
+
+---
+
+
+
+Before proceding we need to implement an important change to the ingredients data model, add these:
+- `timesUsed` - starts at zero and will help us track the user favorite ingredients
+- `lastUsed` - will help us track when something was last used
+
+The user will almost never interact with this information, it will be mostly used internally by the app
+
+Make these modifications, then make a note in the `US-1.2` user story and any other relevant doc to add these fields
+
+
+
+---
+
+
+
+Execute the following User Stories from `USER_STORIES.md` sequentially: US-2.1 through US-2.3. These stories implement the functionality to add ingredients.
+
+Adhere strictly to the rules in `AGENTS.md` and the requirements in `SPEC.md`.
+
+Work autonomously end-to-end for EACH user story in the sequence:
+
+1. **Branch Management:** When starting, create and switch to a new Git branch named appropriately for the task. Ensure all subsequent stories related to that same feature or panel are committed to its corresponding branch.
+2. **Implementation & Tests:** Complete each step required by the current story's acceptance criteria without asking for intermediate approvals. In accordance with `AGENTS.md`, write or update the corresponding unit tests and end-to-end integration tests using `package:integration_test`.
+3. **Build & Static Verification:** Run `flutter analyze` and `flutter test` to verify there are zero lint issues, type errors, or failing unit tests. If you hit any errors, debug and resolve them independently.
+4. **End-to-End Testing:** Once static checks and unit tests pass, execute the automated integration test (e.g., `flutter test integration_test/<test_name>.dart`) to verify the app flow:
+    * Start with a clean session state (if local data persists, trigger the `Borrar mis datos` routine first).
+    * Navigate through the ingredient input flow, input the test ingredients, and verify they appear correctly in the list.
+    * Ensure there are no layout overflows (`RenderFlex` errors) or uncaught exceptions during execution.
+5. **Committing:** After the story is fully implemented, verified, and marked with `[x]` in `USER_STORIES.md`, stage and commit the changes using the Conventional Commits specification (e.g., `feat(ingredients): ...`). Make exactly one commit per story.
+
+Only stop when all specified User Stories are fully implemented, verified, and committed across their respective branches. Then, provide a comprehensive report of what was done and the test results for each story. Summarize it in `ADD_INGREDIENTS.md`.
+
+After completing the entire batch, execute `[console]::beep(800, 800)` to notify me that the task is complete.

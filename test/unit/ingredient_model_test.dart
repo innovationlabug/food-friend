@@ -85,6 +85,8 @@ void main() {
         amountUnit: AmountUnit.liters,
         expirationDate: testDate,
         isBestBefore: true,
+        timesUsed: 3,
+        lastUsed: testDate,
       );
 
       final json = ingredient.toJson();
@@ -95,18 +97,21 @@ void main() {
       expect(json['amountUnit'], equals('liters'));
       expect(json['expirationDate'], equals(testDate.toIso8601String()));
       expect(json['isBestBefore'], isTrue);
+      expect(json['timesUsed'], equals(3));
+      expect(json['lastUsed'], equals(testDate.toIso8601String()));
     });
 
     test('serializes to JSON omitting optional null fields', () {
       const ingredient = Ingredient(name: 'Sal');
       final json = ingredient.toJson();
 
-      expect(json, equals(<String, dynamic>{'name': 'Sal'}));
+      expect(json, equals(<String, dynamic>{'name': 'Sal', 'timesUsed': 0}));
       expect(json.containsKey('brand'), isFalse);
       expect(json.containsKey('amountValue'), isFalse);
       expect(json.containsKey('amountUnit'), isFalse);
       expect(json.containsKey('expirationDate'), isFalse);
       expect(json.containsKey('isBestBefore'), isFalse);
+      expect(json.containsKey('lastUsed'), isFalse);
     });
 
     test('deserializes from JSON correctly', () {
@@ -117,6 +122,8 @@ void main() {
         'amountUnit': 'grams',
         'expirationDate': testDate.toIso8601String(),
         'isBestBefore': false,
+        'timesUsed': 4,
+        'lastUsed': testDate.toIso8601String(),
       };
 
       final ingredient = Ingredient.fromJson(json);
@@ -127,9 +134,11 @@ void main() {
       expect(ingredient.amountUnit, equals(AmountUnit.grams));
       expect(ingredient.expirationDate, equals(testDate));
       expect(ingredient.isBestBefore, isFalse);
+      expect(ingredient.timesUsed, equals(4));
+      expect(ingredient.lastUsed, equals(testDate));
     });
 
-    test('deserializes minimal JSON with only name', () {
+    test('deserializes minimal JSON with only name, defaulting timesUsed to 0', () {
       final json = <String, dynamic>{'name': 'Cebolla blanca'};
       final ingredient = Ingredient.fromJson(json);
 
@@ -139,6 +148,23 @@ void main() {
       expect(ingredient.amountUnit, isNull);
       expect(ingredient.expirationDate, isNull);
       expect(ingredient.isBestBefore, isNull);
+      expect(ingredient.timesUsed, equals(0));
+      expect(ingredient.lastUsed, isNull);
+    });
+
+    test('markUsed increments timesUsed and sets lastUsed', () {
+      final ingredient = Ingredient(name: 'Ajo');
+      expect(ingredient.timesUsed, equals(0));
+      expect(ingredient.lastUsed, isNull);
+
+      final usedOnce = ingredient.markUsed(usedAt: testDate);
+      expect(usedOnce.timesUsed, equals(1));
+      expect(usedOnce.lastUsed, equals(testDate));
+
+      final nextDate = testDate.add(const Duration(days: 2));
+      final usedTwice = usedOnce.markUsed(usedAt: nextDate);
+      expect(usedTwice.timesUsed, equals(2));
+      expect(usedTwice.lastUsed, equals(nextDate));
     });
 
     test('throws FormatException if name is missing or empty', () {

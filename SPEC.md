@@ -25,6 +25,7 @@ Our target user are adults in Guatemala adopting healthy lifestyles through heal
 ### Shopping assistant
 - User can add their shopping list in the app.
 - App will recognize which are the user's favorite ingredients and help keep track how much they have left and when do they expire (for spices, sauces, and other slowly consumed ingredients).
+    - Ingredients track `timesUsed` (starts at 0) and `lastUsed` internally to identify favorites and monitor slowly consumed ingredients. The user will almost never interact directly with this information.
 - App will use the recipe history to help the user plan their shopping.
 - If the user gives GPS access to the app, the app will notify them when they are near some market or supermarket and they are low on some ingredient.
     - Validate first: Since we will use some multi-platform tool such as Flutter, check if we can access the device GPS.

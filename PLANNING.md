@@ -79,6 +79,9 @@ In response to the demos' results and the feedback "start with a single feature"
         - **Brand name:** Not required. We are adding it because it was included in the demo.
         - **Amount:** This field has two parts: numeric and unit. The unit can be `liters`, `milliliters`, `grams`, `pieces`, `units`, etc. We will use this in later iterations.
         - **Expiration / best before date:** Only one of these fields will be used for each product. It can be a single date field, and some boolean to tell which kind of date it is. We will use this in later iterations.
+        - **Times used (`timesUsed`):** Internal counter starting at 0 to track the user's favorite ingredients.
+        - **Last used (`lastUsed`):** Internal timestamp tracking when an ingredient was last used.
+        - *Note:* The user will almost never interact with `timesUsed` and `lastUsed`; they are used internally by the app.
     - The main screen will have a button to enter the shoping list feature.
     - The shopping list screen will have a button to add ingredients.
     - The shopping list screen will have a button to check the list of available ingredients.

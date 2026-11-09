@@ -32,6 +32,9 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
   - `brand` (`String?`, optional): Product brand name.
   - `amountValue` (`double?`, optional) and `amountUnit` (`String?` / enum, optional): Supports units such as `liters`, `milliliters`, `grams`, `pieces`, `units` for future iterations.
   - `expirationDate` (`DateTime?`, optional) and `isBestBefore` (`bool?`, optional): Single date field plus boolean indicator distinguishing expiration date vs. best-before date for future iterations.
+  - `timesUsed` (`int`, default `0`): Internal counter tracking how many times the ingredient has been used in recipes.
+  - `lastUsed` (`DateTime?`, optional): Internal timestamp indicating when the ingredient was last used.
+  > **Note on internal fields**: `timesUsed` and `lastUsed` are internal tracking fields used by the app's heuristics (e.g., identifying user favorite ingredients and cooking frequency). The user will almost never interact directly with this information.
 - [x] Serialization (`toJson` / `fromJson`) is implemented and covered by unit tests.
 - [x] A local storage service persists and retrieves the list of ingredients locally on both Flutter Web and Android.
 - [x] Duplicate ingredient names are handled cleanly (preventing redundant entries or consolidating them).

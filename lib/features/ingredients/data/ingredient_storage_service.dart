@@ -134,6 +134,17 @@ class IngredientStorageService {
       resolvedDate = incoming.expirationDate ?? base.expirationDate;
     }
 
+    final resolvedTimesUsed = base.timesUsed + incoming.timesUsed;
+
+    DateTime? resolvedLastUsed;
+    if (base.lastUsed != null && incoming.lastUsed != null) {
+      resolvedLastUsed = base.lastUsed!.isAfter(incoming.lastUsed!)
+          ? base.lastUsed
+          : incoming.lastUsed;
+    } else {
+      resolvedLastUsed = incoming.lastUsed ?? base.lastUsed;
+    }
+
     return Ingredient(
       name: base.name, // Retain primary existing name casing
       brand: incoming.brand ?? base.brand,
@@ -141,6 +152,33 @@ class IngredientStorageService {
       amountUnit: resolvedUnit,
       expirationDate: resolvedDate,
       isBestBefore: incoming.isBestBefore ?? base.isBestBefore,
+      timesUsed: resolvedTimesUsed,
+      lastUsed: resolvedLastUsed,
     );
+  }
+
+  /// Records that an ingredient was used, incrementing its [timesUsed] counter
+  /// and updating its [lastUsed] timestamp.
+  Future<List<Ingredient>> recordIngredientUsage(
+    String name, {
+    DateTime? usedAt,
+  }) async {
+    final currentList = await getIngredients();
+    final updatedList = <Ingredient>[];
+    bool found = false;
+
+    for (final item in currentList) {
+      if (!found && StringNormalizer.areEquivalent(item.name, name)) {
+        updatedList.add(item.markUsed(usedAt: usedAt));
+        found = true;
+      } else {
+        updatedList.add(item);
+      }
+    }
+
+    if (found) {
+      await saveIngredients(updatedList);
+    }
+    return updatedList;
   }
 }

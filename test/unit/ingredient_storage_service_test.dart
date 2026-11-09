@@ -149,6 +149,40 @@ void main() {
       expect(tomato.amountValue, equals(6.0));
       expect(tomato.amountUnit, equals(AmountUnit.units));
     });
+
+    test('consolidates timesUsed (sum) and lastUsed (latest date)', () async {
+      final earlier = DateTime(2026, 11, 1);
+      final later = DateTime(2026, 11, 8);
+
+      await storageService.addIngredient(
+        Ingredient(name: 'Ajo', timesUsed: 3, lastUsed: earlier),
+      );
+
+      final updated = await storageService.addIngredient(
+        Ingredient(name: 'ajo', timesUsed: 2, lastUsed: later),
+      );
+
+      expect(updated.length, equals(1));
+      expect(updated.first.timesUsed, equals(5));
+      expect(updated.first.lastUsed, equals(later));
+    });
+
+    test('recordIngredientUsage increments timesUsed and updates lastUsed', () async {
+      await storageService.addIngredient(
+        const Ingredient(name: 'Cilantro'),
+      );
+
+      final usageDate = DateTime(2026, 11, 9, 14, 0);
+      final updated = await storageService.recordIngredientUsage('cilantro', usedAt: usageDate);
+
+      expect(updated.length, equals(1));
+      expect(updated.first.timesUsed, equals(1));
+      expect(updated.first.lastUsed, equals(usageDate));
+
+      final retrieved = await storageService.getIngredients();
+      expect(retrieved.first.timesUsed, equals(1));
+      expect(retrieved.first.lastUsed, equals(usageDate));
+    });
   });
 }
 
