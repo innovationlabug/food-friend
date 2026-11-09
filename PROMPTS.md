@@ -175,7 +175,7 @@ After completing the entire batch, execute `[console]::beep(800, 800)` to notify
 
 
 
-Execute the following User Stories from `USER_STORIES.md` sequentially: US-2.1 through US-2.3. These stories implement the functionality to add ingredients.
+Execute the following User Stories from `USER_STORIES.md` sequentially: US-4.1 through US-4.3. These stories implement the functionality to get recipes.
 
 Adhere strictly to the rules in `AGENTS.md` and the requirements in `SPEC.md`.
 
@@ -188,8 +188,10 @@ Work autonomously end-to-end for EACH user story in the sequence:
     * Start with a clean session state (if local data persists, trigger the `Borrar mis datos` routine first).
     * Navigate through the ingredient input flow, input the test ingredients, and verify they appear correctly in the list.
     * Ensure there are no layout overflows (`RenderFlex` errors) or uncaught exceptions during execution.
-5. **Committing:** After the story is fully implemented, verified, and marked with `[x]` in `USER_STORIES.md`, stage and commit the changes using the Conventional Commits specification (e.g., `feat(ingredients): ...`). Make exactly one commit per story.
+5. **Committing:** After the story is fully implemented, verified, and marked with `[x]` in `USER_STORIES.md`, stage and commit the changes using the Conventional Commits specification (e.g., `feat(recetas): ...`). Make exactly one commit per story.
 
-Only stop when all specified User Stories are fully implemented, verified, and committed across their respective branches. Then, provide a comprehensive report of what was done and the test results for each story. Summarize it in `ADD_INGREDIENTS.md`.
+Only stop when all specified User Stories are fully implemented, verified, and committed across their respective branches. Then, provide a comprehensive report of what was done and the test results for each story. Summarize it in `GET_RECIPES.md`.
 
 After completing the entire batch, execute `[console]::beep(800, 800)` to notify me that the task is complete.
+
+
