@@ -99,8 +99,8 @@ void main() {
     await tester.tap(frijolLeaf);
     await tester.pumpAndSettle();
 
-    // Still on screen! Tap "Listo" to return to shopping list
-    await tester.tap(find.text('Listo'));
+    // Still on screen! Tap "Ver lista" to return to shopping list
+    await tester.tap(find.text('Ver lista'));
     await tester.pumpAndSettle();
 
     // 6. Verify shopping list now has all 3 ingredients

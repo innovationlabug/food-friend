@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/widgets/app_svg_icon.dart';
+import '../../shopping_list/presentation/shopping_list_screen.dart';
 import '../data/ingredient_catalog.dart';
 import '../data/ingredient_storage_service.dart';
 import '../domain/category_node.dart';
@@ -14,6 +16,7 @@ class AddIngredientScreen extends StatefulWidget {
     super.key,
     this.storageService,
     this.initialTab = 0,
+    this.openedFromShoppingList = false,
   });
 
   /// Storage service used to persist ingredients.
@@ -22,17 +25,22 @@ class AddIngredientScreen extends StatefulWidget {
   /// Initial tab index (0 = Buscar, 1 = Categorías).
   final int initialTab;
 
+  /// Whether this screen was opened from the shopping list screen.
+  final bool openedFromShoppingList;
+
   /// Helper to navigate to this screen.
   static Future<Ingredient?> navigate(
     BuildContext context, {
     IngredientStorageService? storageService,
     int initialTab = 0,
+    bool openedFromShoppingList = true,
   }) {
     return Navigator.of(context).push<Ingredient>(
       MaterialPageRoute(
         builder: (_) => AddIngredientScreen(
           storageService: storageService,
           initialTab: initialTab,
+          openedFromShoppingList: openedFromShoppingList,
         ),
       ),
     );
@@ -157,6 +165,20 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
     _selectAndAddIngredient(chosenName);
   }
 
+  void _goToIngredientList() {
+    if (widget.openedFromShoppingList) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => ShoppingListScreen(
+            storageService: _storageService,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -179,9 +201,13 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
           title: const Text('Agregar ingrediente'),
           actions: [
             TextButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Listo'),
+              onPressed: _goToIngredientList,
+              icon: AppSvgIcon(
+                assetName: 'shopping_cart',
+                size: 18,
+                color: colorScheme.primary,
+              ),
+              label: const Text('Ver lista'),
             ),
           ],
           bottom: TabBar(
@@ -398,12 +424,6 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                   onPressed: () => _selectAndAddIngredient(name),
                 );
               }).toList(),
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: () => _tabController.animateTo(1),
-              icon: const Icon(Icons.category_outlined),
-              label: const Text('Explorar ingredientes por categorías'),
             ),
           ],
         ],

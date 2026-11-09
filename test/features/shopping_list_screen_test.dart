@@ -84,8 +84,8 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
       await tester.pumpAndSettle();
 
-      // Tap Listo to return to shopping list
-      await tester.tap(find.text('Listo'));
+      // Tap Ver lista to return to shopping list
+      await tester.tap(find.text('Ver lista'));
       await tester.pumpAndSettle();
 
       // Verify ingredient is now rendered

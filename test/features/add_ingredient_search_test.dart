@@ -156,6 +156,21 @@ void main() {
       expect(stored.length, equals(1));
       expect(stored.first.name, equals('Tomate'));
     });
+
+    testWidgets('has "Ver lista" action button in AppBar to navigate to shopping list',
+        (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      final listButton = find.text('Ver lista');
+      expect(listButton, findsOneWidget);
+
+      await tester.tap(listButton);
+      await tester.pumpAndSettle();
+
+      // Successfully navigates to ShoppingListScreen
+      expect(find.text('Lista de compras'), findsOneWidget);
+    });
   });
 }
 

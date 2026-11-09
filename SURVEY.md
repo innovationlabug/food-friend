@@ -10,14 +10,14 @@ Esta encuesta recopila retroalimentación sobre la usabilidad, fluidez y patrone
 Al agregar un ingrediente (ya sea mediante búsqueda de texto o navegando por categorías), **¿prefieres que la aplicación permanezca en la pantalla de "Agregar ingrediente" para continuar añadiendo más productos, o que regrese automáticamente a la lista de compras después de cada adición?**
 
 - [ ] **A) Permanecer en la pantalla de "Agregar ingrediente" (Comportamiento actual):**
-  * *Razón:* Permite ingresar múltiples ingredientes de forma rápida y consecutiva sin tener que volver a abrir la pantalla cada vez, regresando a la lista con el botón "Listo" o la flecha de regreso.
+  * *Razón:* Permite ingresar múltiples ingredientes de forma rápida y consecutiva sin tener que volver a abrir la pantalla cada vez, accediendo a la lista con el botón "Ver lista" o regresando con la flecha atrás.
 - [ ] **B) Regresar automáticamente a la lista de compras:**
   * *Razón:* Prefiero ver de inmediato la lista de compras actualizada y confirmar visualmente el ingrediente añadido antes de decidir agregar otro.
 - [ ] **C) Configurable / Modo múltiple opcional:**
   * *Razón:* Me gustaría tener un interruptor o casilla (ej. "Modo agregar varios") para elegir según la ocasión.
 
 #### Comentarios adicionales sobre este flujo:
-> *(Escribe aquí si encontraste el botón "Listo" o la navegación intuitiva)*
+> *(Escribe aquí si encontraste el botón "Ver lista" o la navegación intuitiva)*
 
 ---
 
@@ -50,3 +50,4 @@ Al escribir nombres de ingredientes con faltas de ortografía o abreviaciones (p
 ## 4. Sugerencias y Mejoras Generales
 
 > ¿Tienes alguna sugerencia para mejorar la experiencia de uso al planificar tus compras y cocinar en Guatemala?
+

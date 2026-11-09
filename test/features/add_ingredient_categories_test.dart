@@ -30,14 +30,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check category tab header exists
-      expect(find.text('Categorías'), findsOneWidget);
+      final categoryTab = find.text('Categorías');
+      expect(categoryTab, findsOneWidget);
 
-      // Check button in search tab to explore categories
-      final exploreBtn = find.text('Explorar ingredientes por categorías');
-      expect(exploreBtn, findsOneWidget);
-
-      // Tap button and verify transition to category view
-      await tester.tap(exploreBtn);
+      // Tap category tab and verify transition to category view
+      await tester.tap(categoryTab);
       await tester.pumpAndSettle();
 
       expect(find.text('Selecciona una categoría de alimentos:'), findsOneWidget);
