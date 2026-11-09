@@ -27,16 +27,10 @@ void main() {
     expect(find.text('Lista de compras'), findsOneWidget);
 
     // Clean session state using "Borrar mis datos" routine
-    final menuButton = find.byTooltip('Opciones');
-    if (menuButton.evaluate().isNotEmpty) {
-      await tester.tap(menuButton);
+    final clearButton = find.byTooltip('Borrar mis datos');
+    if (clearButton.evaluate().isNotEmpty) {
+      await tester.tap(clearButton);
       await tester.pumpAndSettle();
-
-      final clearOption = find.text('Borrar mis datos');
-      if (clearOption.evaluate().isNotEmpty) {
-        await tester.tap(clearOption);
-        await tester.pumpAndSettle();
-      }
     }
 
     // Verify clean empty state
@@ -111,9 +105,7 @@ void main() {
     expect(find.text('Ingredientes disponibles (3)'), findsOneWidget);
 
     // 7. Verify clean session state routine can clear all data
-    await tester.tap(find.byTooltip('Opciones'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Borrar mis datos'));
+    await tester.tap(find.byTooltip('Borrar mis datos'));
     await tester.pumpAndSettle();
 
     expect(find.text('No tienes ingredientes guardados'), findsOneWidget);

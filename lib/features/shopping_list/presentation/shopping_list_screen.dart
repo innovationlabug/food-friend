@@ -97,27 +97,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         title: const Text('Lista de compras'),
         actions: [
           IconButton(
-            tooltip: 'Agregar ingrediente',
+            tooltip: 'Borrar mis datos',
             icon: AppSvgIcon(
-              assetName: 'plus',
+              assetName: 'delete',
               size: 22,
               color: colorScheme.onSurface,
             ),
-            onPressed: _openAddIngredientScreen,
-          ),
-          PopupMenuButton<String>(
-            tooltip: 'Opciones',
-            onSelected: (value) {
-              if (value == 'clear') {
-                _clearAllData();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem<String>(
-                value: 'clear',
-                child: Text('Borrar mis datos'),
-              ),
-            ],
+            onPressed: _clearAllData,
           ),
         ],
       ),

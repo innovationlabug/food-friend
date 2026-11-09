@@ -37,6 +37,22 @@ void main() {
       expect(find.text('Agregar ingrediente'), findsAtLeastNWidgets(1));
     });
 
+    testWidgets('AppBar does not contain redundant + action button and shows direct delete action',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final appBar = find.byType(AppBar);
+      expect(
+        find.descendant(of: appBar, matching: find.byTooltip('Agregar ingrediente')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: appBar, matching: find.byTooltip('Borrar mis datos')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('renders list of stored ingredients with Spanish labels and clean formatting',
         (tester) async {
       final storage = IngredientStorageService();
@@ -116,7 +132,7 @@ void main() {
       expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
     });
 
-    testWidgets('clears all data when selecting Borrar mis datos option',
+    testWidgets('clears all data when tapping Borrar mis datos button',
         (tester) async {
       final storage = IngredientStorageService();
       await storage.saveIngredients([
@@ -129,15 +145,10 @@ void main() {
 
       expect(find.text('Ingredientes disponibles (2)'), findsOneWidget);
 
-      // Open popup menu and select Borrar mis datos
-      final menuBtn = find.byTooltip('Opciones');
-      expect(menuBtn, findsOneWidget);
-      await tester.tap(menuBtn);
-      await tester.pumpAndSettle();
-
-      final clearItem = find.text('Borrar mis datos');
-      expect(clearItem, findsOneWidget);
-      await tester.tap(clearItem);
+      // Tap delete button directly (no popup menu)
+      final clearBtn = find.byTooltip('Borrar mis datos');
+      expect(clearBtn, findsOneWidget);
+      await tester.tap(clearBtn);
       await tester.pumpAndSettle();
 
       // Verify list is cleared and empty state is shown
