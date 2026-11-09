@@ -3,7 +3,7 @@ import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
-import 'widgets/add_ingredient_dialog.dart';
+import '../../ingredients/presentation/add_ingredient_screen.dart';
 
 /// Screen presenting the user's shopping list and available pantry ingredients.
 /// Allows viewing, adding, and removing ingredients with local persistence.
@@ -47,24 +47,27 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     }
   }
 
-  Future<void> _openAddIngredientDialog() async {
-    final newIngredient = await AddIngredientDialog.show(context);
-    if (newIngredient == null || !mounted) return;
-
-    final updated = await _storageService.addIngredient(newIngredient);
-
+  Future<void> _openAddIngredientScreen() async {
+    await AddIngredientScreen.navigate(
+      context,
+      storageService: _storageService,
+    );
     if (mounted) {
-      setState(() {
-        _ingredients = updated;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ingrediente "${newIngredient.name}" guardado'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      await _loadIngredients();
     }
+  }
+
+  Future<void> _clearAllData() async {
+    await _storageService.clearIngredients();
+    if (!mounted) return;
+    await _loadIngredients();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Datos borrados'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _removeIngredient(String name) async {
@@ -100,12 +103,26 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               size: 22,
               color: colorScheme.onSurface,
             ),
-            onPressed: _openAddIngredientDialog,
+            onPressed: _openAddIngredientScreen,
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Opciones',
+            onSelected: (value) {
+              if (value == 'clear') {
+                _clearAllData();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'clear',
+                child: Text('Borrar mis datos'),
+              ),
+            ],
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddIngredientDialog,
+        onPressed: _openAddIngredientScreen,
         icon: AppSvgIcon(
           assetName: 'plus',
           size: 20,
@@ -166,7 +183,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: _openAddIngredientDialog,
+              onPressed: _openAddIngredientScreen,
               icon: AppSvgIcon(
                 assetName: 'plus',
                 size: 18,
@@ -199,7 +216,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 ),
               ),
               TextButton.icon(
-                onPressed: _openAddIngredientDialog,
+                onPressed: _openAddIngredientScreen,
                 icon: AppSvgIcon(
                   assetName: 'plus',
                   size: 16,

@@ -74,27 +74,18 @@ void main() {
       // Verify dialog is open
       expect(find.text('Nombre del ingrediente *'), findsOneWidget);
 
-      // Enter name and brand
+      // Enter name
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Nombre del ingrediente *'),
         'Zanahoria',
       );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Cantidad'),
-        '4',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Marca (opcional)'),
-        'Verduras del Valle',
-      );
 
-      // Submit form
+      // Submit form via Guardar button
       await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
       await tester.pumpAndSettle();
 
       // Verify ingredient is now rendered
       expect(find.text('Zanahoria'), findsOneWidget);
-      expect(find.text('4 ud • Verduras del Valle'), findsOneWidget);
       expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);
     });
 
@@ -119,6 +110,36 @@ void main() {
       // Verify empty state is now displayed
       expect(find.text('Aguacate'), findsNothing);
       expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
+    });
+
+    testWidgets('clears all data when selecting Borrar mis datos option',
+        (tester) async {
+      final storage = IngredientStorageService();
+      await storage.saveIngredients([
+        const Ingredient(name: 'Tomate'),
+        const Ingredient(name: 'Cebolla'),
+      ]);
+
+      await tester.pumpWidget(createTestWidget(storageService: storage));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ingredientes disponibles (2)'), findsOneWidget);
+
+      // Open popup menu and select Borrar mis datos
+      final menuBtn = find.byTooltip('Opciones');
+      expect(menuBtn, findsOneWidget);
+      await tester.tap(menuBtn);
+      await tester.pumpAndSettle();
+
+      final clearItem = find.text('Borrar mis datos');
+      expect(clearItem, findsOneWidget);
+      await tester.tap(clearItem);
+      await tester.pumpAndSettle();
+
+      // Verify list is cleared and empty state is shown
+      expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
+      final remaining = await storage.getIngredients();
+      expect(remaining, isEmpty);
     });
 
     testWidgets('navigates from HomeScreen to ShoppingListScreen on primary button tap',

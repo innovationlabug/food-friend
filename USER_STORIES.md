@@ -71,17 +71,17 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-2.2: Add Ingredient via Text Input with Auto-Suggestions
+### - [x] US-2.2: Add Ingredient via Text Input with Auto-Suggestions
 **As a** user,  
 **I want** to type an ingredient name and receive real-time suggestions from the predefined list,  
 **So that** my ingredients are added using standardized names that match recipes accurately.
 
 #### Acceptance Criteria
-- [ ] The Add Ingredient screen presents a text field in Spanish where the user can type an ingredient name.
-- [ ] While typing, matching suggestions from the predefined catalog are displayed in real time (case- and accent-insensitive matching in Spanish).
-- [ ] Tapping a suggestion immediately selects and adds that ingredient name to the user's available ingredients list.
-- [ ] If the user submits text without tapping a suggestion, the app automatically selects and applies the closest available match from the predefined catalog.
-- [ ] Only the ingredient name is required and saved in this iteration.
+- [x] The Add Ingredient screen presents a text field in Spanish where the user can type an ingredient name.
+- [x] While typing, matching suggestions from the predefined catalog are displayed in real time (case- and accent-insensitive matching in Spanish).
+- [x] Tapping a suggestion immediately selects and adds that ingredient name to the user's available ingredients list.
+- [x] If the user submits text without tapping a suggestion, the app automatically selects and applies the closest available match from the predefined catalog.
+- [x] Only the ingredient name is required and saved in this iteration.
 
 ---
 
