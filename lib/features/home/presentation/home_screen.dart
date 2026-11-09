@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../../ingredients/presentation/add_ingredient_screen.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 
 /// Main landing shell screen for Food Friend.
@@ -66,6 +67,22 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 16),
         _buildFeatureCard(
           context: context,
+          iconName: 'plus',
+          title: 'Agregar ingredientes',
+          description:
+              'Busca o explora ingredientes por categoría para añadirlos rápidamente a tu despensa o lista.',
+          buttonLabel: 'Agregar ingredientes',
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AddIngredientScreen(),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildFeatureCard(
+          context: context,
           iconName: 'restaurant',
           title: '¿Qué cocino hoy?',
           description:
@@ -99,6 +116,25 @@ class HomeScreen extends StatelessWidget {
             Expanded(
               child: _buildFeatureCard(
                 context: context,
+                iconName: 'plus',
+                title: 'Agregar ingredientes',
+                description:
+                    'Busca o explora ingredientes por categoría para añadirlos rápidamente a tu despensa.',
+                buttonLabel: 'Agregar ingredientes',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AddIngredientScreen(),
+                    ),
+                  );
+                },
+                isPrimary: true,
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: _buildFeatureCard(
+                context: context,
                 iconName: 'shopping_cart',
                 title: 'Lista de compras',
                 description:
@@ -111,7 +147,6 @@ class HomeScreen extends StatelessWidget {
                     ),
                   );
                 },
-                isPrimary: true,
               ),
             ),
             const SizedBox(width: 20),
@@ -164,6 +199,22 @@ class HomeScreen extends StatelessWidget {
           style: theme.textTheme.bodyLarge?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
+        ),
+        const SizedBox(height: 12),
+        FilledButton.tonalIcon(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AddIngredientScreen(),
+              ),
+            );
+          },
+          icon: AppSvgIcon(
+            assetName: 'plus',
+            size: 18,
+            color: colorScheme.primary,
+          ),
+          label: const Text('Agregar ingredientes'),
         ),
       ],
     );

@@ -59,20 +59,15 @@ void main() {
     // Tap suggestion
     final suggestion = find.text('Pechuga de pollo');
     expect(suggestion, findsOneWidget);
+    await tester.ensureVisible(suggestion);
+    await tester.pumpAndSettle();
     await tester.tap(suggestion);
     await tester.pumpAndSettle();
 
-    // Verify back on shopping list with Pechuga de pollo
-    expect(find.text('Pechuga de pollo'), findsOneWidget);
-    expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);
+    // Verify user STAYS on Add Ingredient screen
+    expect(find.text('Agregar ingrediente'), findsOneWidget);
 
-    // 4. Flow US-2.2: Add ingredient via closest match fallback
-    final fabAdd = find.byType(FloatingActionButton);
-    expect(fabAdd, findsOneWidget);
-    await tester.tap(fabAdd);
-    await tester.pumpAndSettle();
-
-    // Enter a typo with no direct selection
+    // 4. Flow US-2.2: Add ingredient via closest match fallback without leaving screen
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Nombre del ingrediente *'),
       'tomte',
@@ -83,15 +78,10 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
     await tester.pumpAndSettle();
 
-    // Verify closest match "Tomate" was applied
-    expect(find.text('Tomate'), findsOneWidget);
-    expect(find.text('Ingredientes disponibles (2)'), findsOneWidget);
+    // Verify still on Add Ingredient screen
+    expect(find.text('Agregar ingrediente'), findsOneWidget);
 
-    // 5. Flow US-2.3: Add ingredient via Category Browsing
-    await tester.tap(find.byType(FloatingActionButton));
-    await tester.pumpAndSettle();
-
-    // Switch to Categorías tab
+    // 5. Flow US-2.3: Add ingredient via Category Browsing without leaving screen
     await tester.tap(find.text('Categorías'));
     await tester.pumpAndSettle();
 
@@ -109,10 +99,15 @@ void main() {
     await tester.tap(frijolLeaf);
     await tester.pumpAndSettle();
 
+    // Still on screen! Tap "Listo" to return to shopping list
+    await tester.tap(find.text('Listo'));
+    await tester.pumpAndSettle();
+
     // 6. Verify shopping list now has all 3 ingredients
     expect(find.text('Pechuga de pollo'), findsOneWidget);
     expect(find.text('Tomate'), findsOneWidget);
     expect(find.text('Frijoles negros'), findsOneWidget);
+    expect(find.text('Ingredientes disponibles (3)'), findsOneWidget);
     expect(find.text('Ingredientes disponibles (3)'), findsOneWidget);
 
     // 7. Verify clean session state routine can clear all data

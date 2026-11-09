@@ -4,7 +4,10 @@
   "private": true,
   "description": "Food Friend - Cooking, shopping, and nutrition assistant backend proxy and Vercel configuration",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "serve": "flutter run -d web-server --web-port 8080 --web-hostname localhost",
+    "serve:chrome": "flutter run -d chrome",
+    "dev": "flutter run -d web-server --web-port 8080 --web-hostname localhost"
   },
   "dependencies": {
     "@google/genai": "^3.0.0"

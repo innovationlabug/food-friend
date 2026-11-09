@@ -178,3 +178,20 @@ After completing the entire batch, execute `[console]::beep(800, 800)` to notify
 For products such as `Harina de maiz Maseca` remove the brand `Maseca` and keep only the descriptor
 
 The products can only contain a brand if the product is explicitly known by that name (such as `Nutella` for example)
+
+
+
+---
+
+
+
+Improve the UI:
+- Add a direct link to the Add Ingredient section on the main screen.
+
+Improve the UX:
+- Make some tooltip pop-up the first time a user starts inputing text for an ingredient, it should explain that pressing enter will auto-add the first ingredient in the list.
+- After adding some ingredient, we shouldn't move to the ingredient list but stay on the Add Ingredient section.
+   - Create a file `SURVEY.md` and add a question about this UX detail on it, write that file in spanish
+
+Is it possible to add a shorter alias to run the server?
+

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../data/ingredient_catalog.dart';
 import '../data/ingredient_storage_service.dart';
@@ -49,6 +50,8 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
 
   List<String> _suggestions = [];
   bool _isSaving = false;
+  bool _hasSeenEnterTip = false;
+  bool _showEnterTip = false;
 
   // Category navigation stack for US-2.3
   final List<CategoryNode> _categoryStack = [];
@@ -63,6 +66,14 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       initialIndex: widget.initialTab,
     );
     _searchController.addListener(_onSearchChanged);
+    _loadTipPreference();
+  }
+
+  Future<void> _loadTipPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      _hasSeenEnterTip = prefs.getBool('has_seen_enter_tip') ?? false;
+    }
   }
 
   @override
@@ -84,6 +95,15 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       return;
     }
 
+    // Trigger enter tip on the user's first text input
+    if (!_hasSeenEnterTip && !_showEnterTip) {
+      _showEnterTip = true;
+      _hasSeenEnterTip = true;
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setBool('has_seen_enter_tip', true);
+      });
+    }
+
     final results = IngredientCatalog.instance.searchSuggestions(query);
     setState(() {
       _suggestions = results;
@@ -100,13 +120,20 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
     await _storageService.addIngredient(newIngredient);
 
     if (mounted) {
+      _searchController.clear();
+      setState(() {
+        _suggestions = [];
+        _isSaving = false;
+        _showEnterTip = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Ingrediente "$ingredientName" agregado'),
           duration: const Duration(seconds: 2),
         ),
       );
-      Navigator.of(context).pop(newIngredient);
+      // Stay on the Add Ingredient section as requested
     }
   }
 
@@ -122,9 +149,10 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       return;
     }
 
-    // Apply closest match from catalog as required by US-2.2
-    final match = IngredientCatalog.instance.getClosestMatch(rawInput);
-    final chosenName = match ?? rawInput;
+    // Pressing enter auto-adds the first ingredient in the list
+    final chosenName = _suggestions.isNotEmpty
+        ? _suggestions.first
+        : (IngredientCatalog.instance.getClosestMatch(rawInput) ?? rawInput);
 
     _selectAndAddIngredient(chosenName);
   }
@@ -149,6 +177,13 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Agregar ingrediente'),
+          actions: [
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('Listo'),
+            ),
+          ],
           bottom: TabBar(
             controller: _tabController,
             tabs: const [
@@ -227,6 +262,47 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               ),
             ],
           ),
+          if (_showEnterTip) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Consejo: Al presionar Enter se agregará automáticamente el primer ingrediente de la lista.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    tooltip: 'Cerrar consejo',
+                    onPressed: () {
+                      setState(() {
+                        _showEnterTip = false;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           if (query.isNotEmpty) ...[
             if (_suggestions.isNotEmpty) ...[

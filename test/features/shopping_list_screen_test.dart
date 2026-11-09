@@ -84,6 +84,10 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
       await tester.pumpAndSettle();
 
+      // Tap Listo to return to shopping list
+      await tester.tap(find.text('Listo'));
+      await tester.pumpAndSettle();
+
       // Verify ingredient is now rendered
       expect(find.text('Zanahoria'), findsOneWidget);
       expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);

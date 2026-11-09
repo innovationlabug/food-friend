@@ -69,6 +69,8 @@ void main() {
       expect(suggestion, findsOneWidget);
 
       // Tap suggestion
+      await tester.ensureVisible(suggestion);
+      await tester.pumpAndSettle();
       await tester.tap(suggestion);
       await tester.pumpAndSettle();
 
@@ -78,6 +80,45 @@ void main() {
       expect(stored.first.name, equals('Frijoles negros'));
       expect(stored.first.amountValue, isNull);
       expect(stored.first.brand, isNull);
+    });
+
+    testWidgets('shows tooltip on first text input explaining Enter auto-adds first ingredient',
+        (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      // Before typing, tip is not displayed
+      expect(
+        find.text(
+          'Consejo: Al presionar Enter se agregará automáticamente el primer ingrediente de la lista.',
+        ),
+        findsNothing,
+      );
+
+      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+      await tester.enterText(input, 'p');
+      await tester.pumpAndSettle();
+
+      // Now tip is displayed
+      expect(
+        find.text(
+          'Consejo: Al presionar Enter se agregará automáticamente el primer ingrediente de la lista.',
+        ),
+        findsOneWidget,
+      );
+
+      // Close tip
+      final closeBtn = find.byTooltip('Cerrar consejo');
+      expect(closeBtn, findsOneWidget);
+      await tester.tap(closeBtn);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Consejo: Al presionar Enter se agregará automáticamente el primer ingrediente de la lista.',
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('submitting text without tapping suggestion selects closest match automatically',
