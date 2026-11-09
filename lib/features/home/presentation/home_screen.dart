@@ -71,7 +71,7 @@ class HomeScreen extends StatelessWidget {
           title: 'Agregar ingredientes',
           description:
               'Busca o explora ingredientes por categoría para añadirlos rápidamente a tu despensa o lista.',
-          buttonLabel: 'Agregar ingredientes',
+          buttonLabel: 'Añadir ingredientes',
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -116,15 +116,15 @@ class HomeScreen extends StatelessWidget {
             Expanded(
               child: _buildFeatureCard(
                 context: context,
-                iconName: 'plus',
-                title: 'Agregar ingredientes',
+                iconName: 'shopping_cart',
+                title: 'Lista de compras',
                 description:
-                    'Busca o explora ingredientes por categoría para añadirlos rápidamente a tu despensa.',
-                buttonLabel: 'Agregar ingredientes',
+                    'Gestiona tus ingredientes disponibles, despensa y lista de compras.',
+                buttonLabel: 'Ir a lista de compras',
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const AddIngredientScreen(),
+                      builder: (_) => const ShoppingListScreen(),
                     ),
                   );
                 },
@@ -135,15 +135,15 @@ class HomeScreen extends StatelessWidget {
             Expanded(
               child: _buildFeatureCard(
                 context: context,
-                iconName: 'shopping_cart',
-                title: 'Lista de compras',
+                iconName: 'plus',
+                title: 'Agregar ingredientes',
                 description:
-                    'Gestiona tus ingredientes disponibles, despensa y lista de compras.',
-                buttonLabel: 'Ir a lista de compras',
+                    'Busca o explora ingredientes por categoría para añadirlos rápidamente a tu despensa.',
+                buttonLabel: 'Añadir ingredientes',
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const ShoppingListScreen(),
+                      builder: (_) => const AddIngredientScreen(),
                     ),
                   );
                 },
@@ -199,22 +199,6 @@ class HomeScreen extends StatelessWidget {
           style: theme.textTheme.bodyLarge?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
-        ),
-        const SizedBox(height: 12),
-        FilledButton.tonalIcon(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const AddIngredientScreen(),
-              ),
-            );
-          },
-          icon: AppSvgIcon(
-            assetName: 'plus',
-            size: 18,
-            color: colorScheme.primary,
-          ),
-          label: const Text('Agregar ingredientes'),
         ),
       ],
     );
