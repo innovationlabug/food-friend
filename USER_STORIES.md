@@ -171,19 +171,19 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-4.2: Ingredient Selection & Recipe Generation UI
+### - [x] US-4.2: Ingredient Selection & Recipe Generation UI
 **As a** user,  
 **I want** to select one or more ingredients from my available ingredients list and generate matching recipes,  
 **So that** I can decide what to cook with what I already have at home.
 
 #### Acceptance Criteria
-- [ ] On the Available Ingredients screen, the user can select one or more ingredients (with quick actions to select/deselect) and tap a button in Spanish to search/generate recipes.
-- [ ] The app searches the local recipe dataset first and displays matching recipes in a clean, responsive list.
-- [ ] Selecting a recipe opens a Recipe Detail view showing:
+- [x] On the Available Ingredients screen, the user can select one or more ingredients (with quick actions to select/deselect) and tap a button in Spanish to search/generate recipes.
+- [x] The app searches the local recipe dataset first and displays matching recipes in a clean, responsive list.
+- [x] Selecting a recipe opens a Recipe Detail view showing:
   - Recipe title in Spanish.
   - Required ingredients (highlighting which ones the user already has vs. any additional ingredients needed).
   - Step-by-step cooking instructions in Spanish.
-- [ ] UI remains clutter-free without internal technical badges or source chips.
+- [x] UI remains clutter-free without internal technical badges or source chips.
 
 ---
 

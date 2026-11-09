@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/presentation/add_ingredient_screen.dart';
+import '../../recipes/presentation/recipe_suggestions_screen.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 
 /// Main landing shell screen for Food Friend.
 /// Presents key navigation entry points in Spanish with a clean, responsive layout.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  Future<void> _openRecipeSuggestions(BuildContext context) async {
+    final storageService = IngredientStorageService();
+    final ingredients = await storageService.getIngredients();
+    if (!context.mounted) return;
+
+    RecipeSuggestionsScreen.navigate(
+      context,
+      selectedIngredientNames: ingredients.map((i) => i.name).toList(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +101,7 @@ class HomeScreen extends StatelessWidget {
           description:
               'Descubre recetas saludables y variadas basadas en lo que tienes a mano.',
           buttonLabel: 'Ver sugerencias',
-          onPressed: () {},
+          onPressed: () => _openRecipeSuggestions(context),
         ),
         const SizedBox(height: 16),
         _buildFeatureCard(
@@ -158,7 +171,7 @@ class HomeScreen extends StatelessWidget {
                 description:
                     'Descubre recetas saludables y variadas basadas en lo que tienes a mano.',
                 buttonLabel: 'Ver sugerencias',
-                onPressed: () {},
+                onPressed: () => _openRecipeSuggestions(context),
               ),
             ),
             const SizedBox(width: 20),

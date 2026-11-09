@@ -103,4 +103,47 @@ void main() {
     // Cleanup
     await storage.clearIngredients();
   });
+
+  testWidgets('E2E integration test: discovers matching recipes and opens recipe detail',
+      (WidgetTester tester) async {
+    final storage = IngredientStorageService();
+    await storage.clearIngredients();
+
+    // Add ingredients for salad: Aguacate, Tomate, Pepino
+    await storage.addIngredient(const Ingredient(name: 'Aguacate'));
+    await storage.addIngredient(const Ingredient(name: 'Tomate'));
+    await storage.addIngredient(const Ingredient(name: 'Pepino'));
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // Navigate to Shopping List
+    await tester.tap(find.text('Ir a lista de compras').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ingredientes disponibles (3)'), findsOneWidget);
+    expect(find.text('Buscar recetas (3)'), findsOneWidget);
+
+    // Tap Buscar recetas
+    await tester.tap(find.text('Buscar recetas (3)'));
+    await tester.pumpAndSettle();
+
+    // Verify suggestions screen
+    expect(find.text('Recetas sugeridas'), findsOneWidget);
+    final ensaladaCard = find.text('Ensalada Chapina de Aguacate y Tomate');
+    expect(ensaladaCard, findsOneWidget);
+
+    // Tap card to open detail
+    await tester.tap(ensaladaCard);
+    await tester.pumpAndSettle();
+
+    // Verify recipe detail screen
+    expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsAtLeastNWidgets(1));
+    expect(find.text('Ingredientes requeridos'), findsOneWidget);
+    expect(find.text('Tienes en casa (3)'), findsOneWidget);
+    expect(find.text('Instrucciones de preparación'), findsOneWidget);
+
+    // Cleanup
+    await storage.clearIngredients();
+  });
 }

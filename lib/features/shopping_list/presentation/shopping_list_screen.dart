@@ -4,9 +4,10 @@ import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
 import '../../ingredients/presentation/add_ingredient_screen.dart';
+import '../../recipes/presentation/recipe_suggestions_screen.dart';
 
 /// Screen presenting the user's shopping list and available pantry ingredients.
-/// Allows viewing, adding, and removing ingredients with local persistence.
+/// Allows viewing, selecting, adding, and removing ingredients with local persistence.
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({
     super.key,
@@ -23,6 +24,7 @@ class ShoppingListScreen extends StatefulWidget {
 class _ShoppingListScreenState extends State<ShoppingListScreen> {
   late final IngredientStorageService _storageService;
   List<Ingredient> _ingredients = [];
+  final Set<String> _selectedIngredientNames = {};
   bool _isLoading = true;
 
   @override
@@ -42,6 +44,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     if (mounted) {
       setState(() {
         _ingredients = items;
+        // Default newly loaded ingredients to selected
+        for (final item in items) {
+          _selectedIngredientNames.add(item.name);
+        }
+        // Remove items that no longer exist
+        final currentNames = items.map((i) => i.name).toSet();
+        _selectedIngredientNames.retainWhere(currentNames.contains);
         _isLoading = false;
       });
     }
@@ -60,6 +69,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   Future<void> _clearAllData() async {
     await _storageService.clearIngredients();
     if (!mounted) return;
+    _selectedIngredientNames.clear();
     await _loadIngredients();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -109,6 +119,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     if (mounted) {
       setState(() {
         _ingredients = updated;
+        _selectedIngredientNames.remove(name);
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -118,6 +129,34 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         ),
       );
     }
+  }
+
+  void _toggleSelectAll() {
+    setState(() {
+      if (_selectedIngredientNames.length == _ingredients.length) {
+        _selectedIngredientNames.clear();
+      } else {
+        _selectedIngredientNames.addAll(_ingredients.map((i) => i.name));
+      }
+    });
+  }
+
+  void _toggleIngredientSelection(String name) {
+    setState(() {
+      if (_selectedIngredientNames.contains(name)) {
+        _selectedIngredientNames.remove(name);
+      } else {
+        _selectedIngredientNames.add(name);
+      }
+    });
+  }
+
+  void _openRecipeSuggestions() {
+    if (_selectedIngredientNames.isEmpty) return;
+    RecipeSuggestionsScreen.navigate(
+      context,
+      selectedIngredientNames: _selectedIngredientNames.toList(),
+    );
   }
 
   @override
@@ -140,15 +179,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddIngredientScreen,
-        icon: AppSvgIcon(
-          assetName: 'plus',
-          size: 20,
-          color: colorScheme.onPrimaryContainer,
-        ),
-        label: const Text('Agregar ingrediente'),
-      ),
+      floatingActionButton: _ingredients.isEmpty
+          ? FloatingActionButton.extended(
+              onPressed: _openAddIngredientScreen,
+              icon: AppSvgIcon(
+                assetName: 'plus',
+                size: 20,
+                color: colorScheme.onPrimaryContainer,
+              ),
+              label: const Text('Agregar ingrediente'),
+            )
+          : null,
       body: SafeArea(
         child: ResponsiveContainer(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -220,18 +261,23 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final allSelected = _ingredients.isNotEmpty &&
+        _selectedIngredientNames.length == _ingredients.length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 12, top: 4),
+          padding: const EdgeInsets.only(bottom: 8, top: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Ingredientes disponibles (${_ingredients.length})',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  'Ingredientes disponibles (${_ingredients.length})',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               TextButton.icon(
@@ -246,6 +292,28 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${_selectedIngredientNames.length} de ${_ingredients.length} seleccionados',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              TextButton(
+                onPressed: _toggleSelectAll,
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Text(allSelected ? 'Deseleccionar todos' : 'Seleccionar todos'),
+              ),
+            ],
+          ),
+        ),
         Expanded(
           child: ListView.separated(
             itemCount: _ingredients.length,
@@ -256,6 +324,21 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             },
           ),
         ),
+        if (_selectedIngredientNames.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _openRecipeSuggestions,
+              icon: AppSvgIcon(
+                assetName: 'restaurant',
+                size: 20,
+                color: colorScheme.onPrimary,
+              ),
+              label: Text('Buscar recetas (${_selectedIngredientNames.length})'),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -263,6 +346,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   Widget _buildIngredientCard(BuildContext context, Ingredient item) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isSelected = _selectedIngredientNames.contains(item.name);
 
     final details = <String>[];
     if (item.formattedAmount != null) {
@@ -273,56 +357,64 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     }
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _toggleIngredientSelection(item.name),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            children: [
+              Checkbox(
+                value: isSelected,
+                onChanged: (_) => _toggleIngredientSelection(item.name),
               ),
-              child: AppSvgIcon(
-                assetName: 'restaurant',
-                size: 20,
-                color: colorScheme.onPrimaryContainer,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: AppSvgIcon(
+                  assetName: 'restaurant',
+                  size: 18,
+                  color: colorScheme.onPrimaryContainer,
+                ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    item.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (details.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Text(
-                      details.join(' • '),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      item.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (details.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        details.join(' • '),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            IconButton(
-              tooltip: 'Eliminar ingrediente',
-              icon: AppSvgIcon(
-                assetName: 'delete',
-                size: 20,
-                color: colorScheme.error,
+              IconButton(
+                tooltip: 'Eliminar ingrediente',
+                icon: AppSvgIcon(
+                  assetName: 'delete',
+                  size: 20,
+                  color: colorScheme.error,
+                ),
+                onPressed: () => _removeIngredient(item.name),
               ),
-              onPressed: () => _removeIngredient(item.name),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
