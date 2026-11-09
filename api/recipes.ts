@@ -1,52 +1,293 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 /**
- * Traditional recipe ingredient mapping from Spanish to English
+ * Comprehensive Spanish to English ingredient mapping
  * for querying TheMealDB (non-LLM public REST API).
+ * Maps Guatemalan and standard Spanish culinary terms to TheMealDB ingredient names.
  */
 const SPANISH_TO_ENGLISH_INGREDIENTS: Record<string, string> = {
+  // Vegetables / Hortalizas
   tomate: 'tomato',
   miltomate: 'tomatillo',
   cebolla: 'onion',
   'cebolla blanca': 'onion',
   'cebolla morada': 'red_onion',
+  'cebolla con tallo': 'spring_onions',
+  cebollin: 'spring_onions',
+  cebollino: 'spring_onions',
   ajo: 'garlic',
-  pollo: 'chicken',
-  'pechuga de pollo': 'chicken_breast',
-  'alitas de pollo': 'chicken',
-  papa: 'potato',
-  zanahoria: 'carrot',
+  papa: 'potatoes',
+  patata: 'potatoes',
+  zanahoria: 'carrots',
   aguacate: 'avocado',
+  palta: 'avocado',
   pepino: 'cucumber',
   espinaca: 'spinach',
   lechuga: 'lettuce',
+  acelga: 'chard',
+  berenjena: 'aubergine',
+  aubergine: 'aubergine',
+  eggplant: 'aubergine',
+  yuca: 'cassava',
+  mandioca: 'cassava',
+  cassava: 'cassava',
+  camote: 'sweet_potato',
+  batata: 'sweet_potato',
+  remolacha: 'beetroot',
+  betabel: 'beetroot',
+  rabano: 'radish',
+  repollo: 'cabbage',
+  'repollo blanco': 'cabbage',
+  'repollo morado': 'cabbage',
+  col: 'cabbage',
+  berro: 'watercress',
+  guisquil: 'chayote',
+  chayote: 'chayote',
+  perulero: 'chayote',
+  ayote: 'squash',
+  calabaza: 'squash',
+  pipian: 'squash',
+  calabacita: 'courgettes',
+  zucchini: 'courgettes',
+  courgette: 'courgettes',
+  puerro: 'leek',
+  ejote: 'green_beans',
+  'judia verde': 'green_beans',
+  habichuela: 'green_beans',
+  arveja: 'peas',
+  chicharo: 'peas',
+  elote: 'corn',
+  maiz: 'corn',
+  choclo: 'corn',
+  chile: 'chilli',
+  'chile pimiento': 'peppers',
+  pimiento: 'peppers',
+  'chile jalapeño': 'jalapeno',
+  'chile serrano': 'chilli',
+  champiñon: 'mushrooms',
+  champiñones: 'mushrooms',
+  hongos: 'mushrooms',
+  apio: 'celery',
+
+  // Herbs & Spices
+  cilantro: 'coriander',
+  culantro: 'coriander',
+  perejil: 'parsley',
+  hierbabuena: 'mint',
+  menta: 'mint',
+  albahaca: 'basil',
+  laurel: 'bay_leaf',
+  tomillo: 'thyme',
+  oregano: 'oregano',
+  romero: 'rosemary',
+  canela: 'cinnamon',
+  pimienta: 'pepper',
+  sal: 'salt',
+  comino: 'cumin',
+  curry: 'curry',
+
+  // Proteins / Meats / Poultry / Seafood
+  pollo: 'chicken',
+  'pechuga de pollo': 'chicken_breast',
+  'alitas de pollo': 'chicken',
+  'muslos de pollo': 'chicken_thighs',
+  res: 'beef',
+  'carne de res': 'beef',
+  'carne molida de res': 'minced_beef',
+  'carne molida': 'minced_beef',
+  'costilla de res': 'beef',
+  'lomo de res': 'beef',
+  'posta de res': 'beef',
+  cerdo: 'pork',
+  'carne de cerdo': 'pork',
+  'chuleta de cerdo': 'pork_chops',
+  'costilla de cerdo': 'pork',
+  'lomo de cerdo': 'pork',
+  'posta de cerdo': 'pork',
+  tocino: 'bacon',
+  bacon: 'bacon',
+  panceta: 'bacon',
+  pescado: 'fish',
+  'filete de pescado': 'fish',
+  tilapia: 'fish',
+  robalo: 'fish',
+  salmon: 'salmon',
+  atun: 'tuna',
+  'atun en lata': 'tuna',
+  camaron: 'prawns',
+  camarones: 'prawns',
+  longaniza: 'sausage',
+  chorizo: 'sausage',
+  salchicha: 'sausage',
+  jamon: 'ham',
+
+  // Grains / Legumes / Pasta
   arroz: 'rice',
   'arroz blanco': 'rice',
   frijol: 'beans',
   frijoles: 'beans',
   'frijoles negros': 'black_beans',
+  'frijoles colorados': 'kidney_beans',
+  'frijoles blancos': 'white_beans',
   lentejas: 'lentils',
-  pescado: 'fish',
-  'filete de pescado': 'fish',
-  res: 'beef',
-  'carne de res': 'beef',
-  'carne molida de res': 'minced_beef',
-  huevo: 'egg',
+  garbanzos: 'chickpeas',
+  avena: 'oats',
+  pasta: 'pasta',
+  espagueti: 'spaghetti',
+  fideos: 'noodles',
+  harina: 'flour',
+  'harina de trigo': 'flour',
+  'harina de maiz': 'corn flour',
+  maicena: 'cornstarch',
+
+  // Dairy & Eggs
+  huevo: 'eggs',
   huevos: 'eggs',
+  leche: 'milk',
   queso: 'cheese',
+  'queso fresco': 'cheese',
+  'queso mozzarella': 'mozzarella',
+  'queso crema': 'cream_cheese',
+  crema: 'cream',
+  mantequilla: 'butter',
+  yogur: 'yogurt',
+  yogurt: 'yogurt',
+
+  // Fruits
   limon: 'lemon',
-  'limón': 'lemon',
-  cilantro: 'coriander',
-  perejil: 'parsley',
-  hierbabuena: 'mint',
-  oregano: 'oregano',
-  'orégano': 'oregano',
-  pimienta: 'pepper',
-  sal: 'salt',
-  chile: 'chilli',
-  'chile pimiento': 'bell_pepper',
-  platano: 'plantain',
-  'plátano': 'plantain',
+  limón: 'lemon',
+  platano: 'banana',
+  plátano: 'banana',
+  banano: 'banana',
+  naranja: 'orange',
+  piña: 'pineapple',
+  pina: 'pineapple',
+  manzana: 'apple',
+  fresa: 'strawberries',
+};
+
+/**
+ * English to Spanish ingredient translation dictionary.
+ */
+const ENGLISH_TO_SPANISH_INGREDIENTS: Record<string, string> = {
+  aubergine: 'Berenjena',
+  eggplant: 'Berenjena',
+  cassava: 'Yuca',
+  yuca: 'Yuca',
+  courgettes: 'Calabacitas',
+  courgette: 'Calabacita',
+  zucchini: 'Calabacita',
+  'yellow pepper': 'Chile pimiento amarillo',
+  'red pepper': 'Chile pimiento rojo',
+  'green pepper': 'Chile pimiento verde',
+  'bell pepper': 'Chile pimiento',
+  peppers: 'Chile pimiento',
+  pepper: 'Pimienta',
+  'black pepper': 'Pimienta negra',
+  tomato: 'Tomate',
+  tomatoes: 'Tomates',
+  'cherry tomatoes': 'Tomates cherry',
+  'tomato puree': 'Puré de tomate',
+  'tomato paste': 'Pasta de tomate',
+  'chopped tomatoes': 'Tomates picados',
+  'olive oil': 'Aceite de oliva',
+  'vegetable oil': 'Aceite vegetal',
+  oil: 'Aceite',
+  garlic: 'Ajo',
+  'garlic clove': 'Diente de ajo',
+  'garlic cloves': 'Dientes de ajo',
+  onion: 'Cebolla',
+  onions: 'Cebollas',
+  'red onion': 'Cebolla morada',
+  'spring onions': 'Cebollines',
+  scallions: 'Cebollines',
+  basil: 'Albahaca',
+  parsley: 'Perejil',
+  coriander: 'Cilantro',
+  mint: 'Hierbabuena',
+  oregano: 'Orégano',
+  thyme: 'Tomillo',
+  rosemary: 'Romero',
+  salt: 'Sal',
+  sugar: 'Azúcar',
+  'brown sugar': 'Azúcar morena',
+  lemon: 'Limón',
+  'lemon juice': 'Jugo de limón',
+  lime: 'Limón',
+  'lime juice': 'Jugo de limón',
+  potato: 'Papa',
+  potatoes: 'Papas',
+  'sweet potato': 'Camote',
+  'sweet potatoes': 'Camotes',
+  carrot: 'Zanahoria',
+  carrots: 'Zanahorias',
+  chicken: 'Pollo',
+  'chicken breast': 'Pechuga de pollo',
+  'chicken breasts': 'Pechugas de pollo',
+  'chicken thighs': 'Muslos de pollo',
+  'chicken wings': 'Alitas de pollo',
+  beef: 'Carne de res',
+  'minced beef': 'Carne molida de res',
+  'ground beef': 'Carne molida de res',
+  pork: 'Cerdo',
+  'pork chops': 'Chuletas de cerdo',
+  bacon: 'Tocino',
+  fish: 'Pescado',
+  salmon: 'Salmón',
+  tuna: 'Atún',
+  prawns: 'Camarones',
+  shrimp: 'Camarones',
+  egg: 'Huevo',
+  eggs: 'Huevos',
+  cheese: 'Queso',
+  'parmesan cheese': 'Queso parmesano',
+  parmesan: 'Queso parmesano',
+  'cheddar cheese': 'Queso cheddar',
+  mozzarella: 'Queso mozzarella',
+  milk: 'Leche',
+  'coconut milk': 'Leche de coco',
+  'condensed milk': 'Leche condensada',
+  'evaporated milk': 'Leche evaporada',
+  butter: 'Mantequilla',
+  cream: 'Crema',
+  'sour cream': 'Crema agria',
+  yogurt: 'Yogur',
+  rice: 'Arroz',
+  beans: 'Frijoles',
+  'black beans': 'Frijoles negros',
+  'kidney beans': 'Frijoles colorados',
+  chickpeas: 'Garbanzos',
+  lentils: 'Lentejas',
+  peas: 'Arvejas',
+  'green beans': 'Ejotes',
+  spinach: 'Espinaca',
+  lettuce: 'Lechuga',
+  cucumber: 'Pepino',
+  cabbage: 'Repollo',
+  celery: 'Apio',
+  mushrooms: 'Champiñones',
+  mushroom: 'Champiñón',
+  flour: 'Harina',
+  'plain flour': 'Harina de trigo',
+  cornstarch: 'Maicena',
+  water: 'Agua',
+  'soy sauce': 'Salsa de soya',
+  vinegar: 'Vinagre',
+  'red wine vinegar': 'Vinagre de vino tinto',
+  'white vinegar': 'Vinagre blanco',
+  cinnamon: 'Canela',
+  vanilla: 'Vainilla',
+  'vanilla extract': 'Extracto de vainilla',
+  cumin: 'Comino',
+  cloves: 'Clavos de olor',
+  allspice: 'Pimienta gorda',
+  bread: 'Pan',
+  pasta: 'Pasta',
+  spaghetti: 'Espagueti',
+  noodles: 'Fideos',
+  oats: 'Avena',
+  beetroot: 'Remolacha',
+  radish: 'Rábano',
 };
 
 /**
@@ -54,11 +295,39 @@ const SPANISH_TO_ENGLISH_INGREDIENTS: Record<string, string> = {
  * traditional external recipe titles, categories, and measures.
  */
 const COMMON_TRANSLATIONS: Record<string, string> = {
+  aubergine: 'Berenjena',
+  eggplant: 'Berenjena',
+  cassava: 'Yuca',
   chicken: 'Pollo',
   beef: 'Carne de res',
   fish: 'Pescado',
   pork: 'Cerdo',
+  tuna: 'Atún',
+  salmon: 'Salmón',
+  egg: 'Huevo',
+  eggs: 'Huevos',
+  cheese: 'Queso',
+  chickpea: 'Garbanzo',
+  chickpeas: 'Garbanzos',
+  beetroot: 'Remolacha',
+  cabbage: 'Repollo',
+  mushroom: 'Champiñón',
+  mushrooms: 'Champiñones',
+  spinach: 'Espinaca',
+  potato: 'Papa',
+  potatoes: 'Papas',
+  carrot: 'Zanahoria',
+  carrots: 'Zanahorias',
+  tomato: 'Tomate',
+  tomatoes: 'Tomates',
+  onion: 'Cebolla',
+  onions: 'Cebollas',
+  garlic: 'Ajo',
+  lemon: 'Limón',
   vegetarian: 'Vegetariano',
+  dessert: 'Postre',
+  side: 'Acompañamiento',
+  starter: 'Entrada',
   pasta: 'Pasta',
   soup: 'Sopa',
   stew: 'Guiso',
@@ -66,20 +335,25 @@ const COMMON_TRANSLATIONS: Record<string, string> = {
   rice: 'Arroz',
   curry: 'Curry',
   pie: 'Pastel',
+  cake: 'Pastel',
+  pancakes: 'Panqueques',
   roast: 'Asado',
   boiled: 'Cocido',
   fried: 'Frito',
   grilled: 'A la plancha',
+  grills: 'A la plancha',
   baked: 'Al horno',
-  lemon: 'Limón',
-  garlic: 'Ajo',
-  tomato: 'Tomate',
-  onion: 'Cebolla',
-  potato: 'Papa',
-  carrot: 'Zanahoria',
   spicy: 'Picante',
   crispy: 'Crujiente',
   casserole: 'Cazuela',
+  pudding: 'Pudín',
+  wings: 'Alitas',
+  couscous: 'Cuscús',
+  sauerkraut: 'Chucrut',
+  sauce: 'Salsa',
+  dressing: 'Aderezo',
+  sweet: 'Dulce',
+  bread: 'Pan',
 };
 
 /**
@@ -91,6 +365,28 @@ function normalizeText(text: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Translates an ingredient name from English to Spanish.
+ */
+function translateIngredientToSpanish(raw: string): string {
+  const cleaned = raw.trim();
+  const normalized = normalizeText(cleaned);
+
+  if (ENGLISH_TO_SPANISH_INGREDIENTS[normalized]) {
+    return ENGLISH_TO_SPANISH_INGREDIENTS[normalized];
+  }
+
+  // Partial match against known dictionary entries
+  for (const [en, es] of Object.entries(ENGLISH_TO_SPANISH_INGREDIENTS)) {
+    if (normalized === en || normalized.includes(en)) {
+      return es;
+    }
+  }
+
+  // Fallback to title translator
+  return translateTitleToSpanish(cleaned);
 }
 
 /**
@@ -115,10 +411,29 @@ function formatInstructions(raw: string): string[] {
     .split(/\r?\n+/)
     .map((s) => s.trim())
     .filter((s) => s.length > 10 && !s.toLowerCase().startsWith('step'))
-    .map((s) => {
-      // Basic sentence cleanup
-      return s.endsWith('.') ? s : `${s}.`;
-    });
+    .map((s) => (s.endsWith('.') ? s : `${s}.`));
+}
+
+/**
+ * Maps a single Spanish ingredient name to its English TheMealDB equivalent.
+ */
+function mapSpanishToEnglish(spanishNormalized: string): string | null {
+  if (SPANISH_TO_ENGLISH_INGREDIENTS[spanishNormalized]) {
+    return SPANISH_TO_ENGLISH_INGREDIENTS[spanishNormalized];
+  }
+
+  for (const [key, val] of Object.entries(SPANISH_TO_ENGLISH_INGREDIENTS)) {
+    if (spanishNormalized === key || spanishNormalized.includes(key) || key.includes(spanishNormalized)) {
+      return val;
+    }
+  }
+
+  // If already ASCII English letters, attempt direct query
+  if (/^[a-z_ ]+$/.test(spanishNormalized) && spanishNormalized.length >= 3) {
+    return spanishNormalized.replace(/\s+/g, '_');
+  }
+
+  return null;
 }
 
 /**
@@ -171,39 +486,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Map first recognizable Spanish ingredient to English query
-    let targetEnglishIngredient = 'chicken';
+    // Map each Spanish ingredient to recognized English query terms
+    const englishTerms: string[] = [];
     for (const spanish of sanitizedList) {
-      if (SPANISH_TO_ENGLISH_INGREDIENTS[spanish]) {
-        targetEnglishIngredient = SPANISH_TO_ENGLISH_INGREDIENTS[spanish];
-        break;
+      const mapped = mapSpanishToEnglish(spanish);
+      if (mapped && !englishTerms.includes(mapped)) {
+        englishTerms.push(mapped);
       }
-      for (const [key, val] of Object.entries(SPANISH_TO_ENGLISH_INGREDIENTS)) {
-        if (spanish.includes(key) || key.includes(spanish)) {
-          targetEnglishIngredient = val;
-          break;
+    }
+
+    if (englishTerms.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        recipes: [],
+        message: 'No se encontraron equivalencias para los ingredientes indicados en el recetario externo.',
+      });
+    }
+
+    // Query TheMealDB filter endpoint for each mapped ingredient (up to 3 queries in parallel)
+    const activeTerms = englishTerms.slice(0, 3);
+    const filterPromises = activeTerms.map(async (term) => {
+      try {
+        const apiUrl = `https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(term)}`;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch(apiUrl, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) return [];
+        const data = (await response.json()) as { meals?: Array<{ idMeal: string; strMeal: string }> };
+        return data.meals ?? [];
+      } catch {
+        return [];
+      }
+    });
+
+    const mealLists = await Promise.all(filterPromises);
+
+    // Track occurrence frequency of each meal to prioritize recipes matching multiple terms
+    const mealCountMap = new Map<string, { meal: { idMeal: string; strMeal: string }; count: number }>();
+    for (const list of mealLists) {
+      for (const item of list) {
+        const existing = mealCountMap.get(item.idMeal);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          mealCountMap.set(item.idMeal, { meal: item, count: 1 });
         }
       }
     }
 
-    // Traditional REST API query to TheMealDB
-    const apiUrl = `https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(
-      targetEnglishIngredient
-    )}`;
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
-
-    const filterResponse = await fetch(apiUrl, { signal: controller.signal });
-    clearTimeout(timeout);
-
-    if (!filterResponse.ok) {
-      throw new Error(`Error en API externa de recetas: ${filterResponse.status}`);
-    }
-
-    const filterData = (await filterResponse.json()) as { meals?: Array<{ idMeal: string; strMeal: string }> };
-
-    if (!filterData.meals || filterData.meals.length === 0) {
+    if (mealCountMap.size === 0) {
       return res.status(200).json({
         success: true,
         count: 0,
@@ -212,69 +546,95 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Take top 3 meals to avoid rate-limiting and keep response fast
-    const candidateMeals = filterData.meals.slice(0, 3);
-    const recipes = [];
-
-    for (const mealPreview of candidateMeals) {
-      try {
-        const detailUrl = `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${mealPreview.idMeal}`;
-        const detailController = new AbortController();
-        const detailTimeout = setTimeout(() => detailController.abort(), 4000);
-
-        const detailRes = await fetch(detailUrl, { signal: detailController.signal });
-        clearTimeout(detailTimeout);
-
-        if (detailRes.ok) {
-          const detailData = (await detailRes.json()) as { meals?: Array<Record<string, string | null>> };
-          const meal = detailData.meals?.[0];
-          if (meal) {
-            // Extract ingredients
-            const ingredients = [];
-            for (let i = 1; i <= 20; i++) {
-              const ingName = meal[`strIngredient${i}`];
-              const measure = meal[`strMeasure${i}`];
-              if (ingName && ingName.trim().length > 0) {
-                ingredients.push({
-                  name: translateTitleToSpanish(ingName.trim()),
-                  displayAmount: measure ? measure.trim() : 'Al gusto',
-                });
-              }
-            }
-
-            const rawInstructions = meal.strInstructions ?? '';
-            const instructions = formatInstructions(rawInstructions);
-
-            recipes.push({
-              id: `external_${meal.idMeal}`,
-              title: translateTitleToSpanish(meal.strMeal ?? 'Receta Internacional'),
-              description: `Receta tradicional adaptada (${meal.strArea ?? 'Internacional'})`,
-              category: meal.strCategory ? translateTitleToSpanish(meal.strCategory) : 'Almuerzo',
-              prepTimeMinutes: 15,
-              cookTimeMinutes: 30,
-              servings: 4,
-              difficulty: 'Fácil',
-              source: 'external',
-              ingredients: ingredients.length > 0 ? ingredients : [
-                { name: 'Ingrediente principal', displayAmount: '1 porción' }
-              ],
-              instructions: instructions.length > 0 ? instructions : [
-                'Preparar y limpiar todos los ingredientes.',
-                'Cocinar a fuego medio en una sartén u olla hasta alcanzar el punto deseado.',
-                'Servir caliente.',
-              ],
-            });
-          }
-        }
-      } catch {
-        // Individual lookup timeout/failure gracefully ignored
+    // 1. Prioritize meals that match multiple queried ingredients (count > 1)
+    const multiMatchMeals: Array<{ idMeal: string; strMeal: string }> = [];
+    for (const entry of mealCountMap.values()) {
+      if (entry.count > 1) {
+        multiMatchMeals.push(entry.meal);
       }
     }
 
+    // 2. Interleave candidates across each ingredient list in round-robin order
+    const selectedMeals: Array<{ idMeal: string; strMeal: string }> = [...multiMatchMeals];
+    const seenIds = new Set<string>(multiMatchMeals.map((m) => m.idMeal));
+
+    const maxListLength = Math.max(...mealLists.map((l) => l.length));
+    for (let i = 0; i < maxListLength && selectedMeals.length < 5; i++) {
+      for (const list of mealLists) {
+        if (i < list.length && selectedMeals.length < 5) {
+          const item = list[i];
+          if (!seenIds.has(item.idMeal)) {
+            seenIds.add(item.idMeal);
+            selectedMeals.push(item);
+          }
+        }
+      }
+    }
+
+    // Fetch details for selected candidate meals
+    const detailPromises = selectedMeals.map(async (preview) => {
+      try {
+        const detailUrl = `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${preview.idMeal}`;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const detailRes = await fetch(detailUrl, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!detailRes.ok) return null;
+        const detailData = (await detailRes.json()) as { meals?: Array<Record<string, string | null>> };
+        const meal = detailData.meals?.[0];
+        if (!meal) return null;
+
+        // Extract ingredients and translate to Spanish
+        const ingredients = [];
+        for (let i = 1; i <= 20; i++) {
+          const ingName = meal[`strIngredient${i}`];
+          const measure = meal[`strMeasure${i}`];
+          if (ingName && ingName.trim().length > 0) {
+            ingredients.push({
+              name: translateIngredientToSpanish(ingName.trim()),
+              displayAmount: measure && measure.trim().length > 0 ? measure.trim() : 'Al gusto',
+            });
+          }
+        }
+
+        const rawInstructions = meal.strInstructions ?? '';
+        const instructions = formatInstructions(rawInstructions);
+
+        return {
+          id: `external_${meal.idMeal}`,
+          title: translateTitleToSpanish(meal.strMeal ?? 'Receta Internacional'),
+          description: `Receta tradicional adaptada (${meal.strArea ?? 'Internacional'})`,
+          category: meal.strCategory ? translateTitleToSpanish(meal.strCategory) : 'Almuerzo',
+          prepTimeMinutes: 15,
+          cookTimeMinutes: 30,
+          servings: 4,
+          difficulty: 'Fácil',
+          source: 'external',
+          ingredients:
+            ingredients.length > 0
+              ? ingredients
+              : [{ name: 'Ingrediente principal', displayAmount: '1 porción' }],
+          instructions:
+            instructions.length > 0
+              ? instructions
+              : [
+                  'Preparar y limpiar todos los ingredientes.',
+                  'Cocinar a fuego medio en una sartén u olla hasta alcanzar el punto deseado.',
+                  'Servir caliente.',
+                ],
+        };
+      } catch {
+        return null;
+      }
+    });
+
+    const detailedRecipes = (await Promise.all(detailPromises)).filter(Boolean);
+
     return res.status(200).json({
       success: true,
-      count: recipes.length,
-      recipes,
+      count: detailedRecipes.length,
+      recipes: detailedRecipes,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error al consultar API externa';

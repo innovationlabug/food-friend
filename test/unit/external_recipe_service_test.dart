@@ -157,5 +157,95 @@ void main() {
       final result = await service.fetchExternalRecipes([]);
       expect(result, isEmpty);
     });
+
+    test('discoverRecipes retrieves external recipes for berenjena + yuca and matches ingredients', () async {
+      final mockClient = MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['ingredients'], contains('Berenjena'));
+        expect(body['ingredients'], contains('Yuca'));
+
+        final mockResponse = {
+          'success': true,
+          'count': 2,
+          'recipes': [
+            {
+              'id': 'external_53278',
+              'title': 'Berenjena a la plancha con hummus',
+              'description': 'Receta tradicional adaptada (Turquía)',
+              'category': 'Vegetariano',
+              'prepTimeMinutes': 15,
+              'cookTimeMinutes': 30,
+              'servings': 4,
+              'difficulty': 'Fácil',
+              'source': 'external',
+              'ingredients': [
+                {'name': 'Berenjena', 'displayAmount': '2 unidades'},
+                {'name': 'Aceite vegetal', 'displayAmount': '2 cucharadas'},
+                {'name': 'Hummus', 'displayAmount': '300g'},
+                {'name': 'Perejil', 'displayAmount': '40g'},
+                {'name': 'Limón', 'displayAmount': '1 unidad'},
+              ],
+              'instructions': [
+                'Cortar la berenjena en rodajas y asar en la plancha.',
+                'Untar hummus y decorar con perejil fresco y limón.',
+              ],
+            },
+            {
+              'id': 'external_53508',
+              'title': 'Pastel de Yuca',
+              'description': 'Receta tradicional adaptada (Internacional)',
+              'category': 'Postre',
+              'prepTimeMinutes': 20,
+              'cookTimeMinutes': 45,
+              'servings': 6,
+              'difficulty': 'Fácil',
+              'source': 'external',
+              'ingredients': [
+                {'name': 'Yuca', 'displayAmount': '2 lbs'},
+                {'name': 'Leche de coco', 'displayAmount': '1 lata'},
+                {'name': 'Azúcar', 'displayAmount': '1 taza'},
+                {'name': 'Huevos', 'displayAmount': '2 unidades'},
+              ],
+              'instructions': [
+                'Rallar la yuca finamente.',
+                'Mezclar con leche de coco, azúcar y huevos.',
+                'Hornear a 180°C durante 45 minutos.',
+              ],
+            },
+          ]
+        };
+
+        return http.Response(jsonEncode(mockResponse), 200);
+      });
+
+      final service = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://foodfriend.test/api/recipes',
+      );
+
+      final response = await service.discoverRecipes(
+        selectedIngredients: ['Berenjena', 'Yuca'],
+        localSearchService: localSearchService,
+      );
+
+      expect(response.isExternal, isTrue);
+      expect(response.results.length, equals(2));
+
+      // Berenjena recipe has Berenjena matched
+      final berenjenaResult = response.results.firstWhere(
+        (r) => r.recipe.id == 'external_53278',
+      );
+      expect(berenjenaResult.matchCount, equals(1));
+      expect(berenjenaResult.matchedIngredients.map((i) => i.name), contains('Berenjena'));
+      expect(berenjenaResult.missingIngredients.map((i) => i.name), contains('Hummus'));
+
+      // Yuca recipe has Yuca matched
+      final yucaResult = response.results.firstWhere(
+        (r) => r.recipe.id == 'external_53508',
+      );
+      expect(yucaResult.matchCount, equals(1));
+      expect(yucaResult.matchedIngredients.map((i) => i.name), contains('Yuca'));
+      expect(yucaResult.missingIngredients.map((i) => i.name), contains('Leche de coco'));
+    });
   });
 }

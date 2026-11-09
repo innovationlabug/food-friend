@@ -131,5 +131,16 @@ void main() {
       final nonExistent = service.getRecipeById('non_existent_id');
       expect(nonExistent, isNull);
     });
+
+    test('isIngredientMatch bridges Spanish and English synonyms for catalog items', () {
+      expect(RecipeSearchService.isIngredientMatch('berenjena', 'aubergine'), isTrue);
+      expect(RecipeSearchService.isIngredientMatch('berenjena', 'eggplant'), isTrue);
+      expect(RecipeSearchService.isIngredientMatch('yuca', 'cassava'), isTrue);
+      expect(RecipeSearchService.isIngredientMatch('yuca', 'mandioca'), isTrue);
+      expect(RecipeSearchService.isIngredientMatch('camote', 'sweet potato'), isTrue);
+      expect(RecipeSearchService.isIngredientMatch('remolacha', 'beetroot'), isTrue);
+      expect(RecipeSearchService.isIngredientMatch('garbanzos', 'chickpea'), isTrue);
+      expect(RecipeSearchService.isIngredientMatch('atun', 'tuna'), isTrue);
+    });
   });
 }

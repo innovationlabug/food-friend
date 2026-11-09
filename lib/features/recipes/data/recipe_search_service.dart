@@ -169,6 +169,34 @@ class RecipeSearchService {
         (recipeNorm.contains('huevo') || recipeNorm.contains('huevos'));
     if (isEgg) return true;
 
+    final isEggplant = (userNorm.contains('berenjena') || userNorm.contains('aubergine') || userNorm.contains('eggplant')) &&
+        (recipeNorm.contains('berenjena') || recipeNorm.contains('aubergine') || recipeNorm.contains('eggplant'));
+    if (isEggplant) return true;
+
+    final isCassava = (userNorm.contains('yuca') || userNorm.contains('cassava') || userNorm.contains('mandioca')) &&
+        (recipeNorm.contains('yuca') || recipeNorm.contains('cassava') || recipeNorm.contains('mandioca'));
+    if (isCassava) return true;
+
+    final isSweetPotato = (userNorm.contains('camote') || userNorm.contains('batata') || userNorm.contains('sweet potato')) &&
+        (recipeNorm.contains('camote') || recipeNorm.contains('batata') || recipeNorm.contains('sweet potato'));
+    if (isSweetPotato) return true;
+
+    final isBeetroot = (userNorm.contains('remolacha') || userNorm.contains('betabel') || userNorm.contains('beetroot')) &&
+        (recipeNorm.contains('remolacha') || recipeNorm.contains('betabel') || recipeNorm.contains('beetroot'));
+    if (isBeetroot) return true;
+
+    final isChickpea = (userNorm.contains('garbanzo') || userNorm.contains('garbanzos') || userNorm.contains('chickpea')) &&
+        (recipeNorm.contains('garbanzo') || recipeNorm.contains('garbanzos') || recipeNorm.contains('chickpea'));
+    if (isChickpea) return true;
+
+    final isTuna = (userNorm.contains('atun') || userNorm.contains('tuna')) &&
+        (recipeNorm.contains('atun') || recipeNorm.contains('tuna'));
+    if (isTuna) return true;
+
+    final isPork = (userNorm.contains('cerdo') || userNorm.contains('pork')) &&
+        (recipeNorm.contains('cerdo') || recipeNorm.contains('pork'));
+    if (isPork) return true;
+
     return false;
   }
 }

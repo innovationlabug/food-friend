@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
 import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
 import 'package:food_friend/main.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -142,5 +145,103 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.text('Lista de compras'), findsOneWidget);
+  });
+
+  testWidgets('E2E Flow US-4.3: Combination berenjena + yuca queries external API and displays matching online recipes',
+      (WidgetTester tester) async {
+    final mockClient = MockClient((request) async {
+      return http.Response(
+        '{"success": true, "count": 2, "recipes": ['
+        '{"id": "ext_berenjena_1", "title": "Berenjena a la plancha con hummus", "description": "Receta tradicional adaptada (Turquía)", "category": "Vegetariano", "prepTimeMinutes": 15, "cookTimeMinutes": 30, "servings": 4, "difficulty": "Fácil", "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "2 unidades"}, {"name": "Aceite de oliva", "displayAmount": "2 cdas"}, {"name": "Hummus", "displayAmount": "200g"}], "instructions": ["Cortar la berenjena en rodajas.", "Asar a la plancha con aceite de oliva.", "Servir con hummus."] },'
+        '{"id": "ext_yuca_1", "title": "Pastel de Yuca", "description": "Receta tradicional adaptada (Internacional)", "category": "Postre", "prepTimeMinutes": 20, "cookTimeMinutes": 45, "servings": 6, "difficulty": "Fácil", "source": "external", "ingredients": [{"name": "Yuca", "displayAmount": "2 lbs"}, {"name": "Leche de coco", "displayAmount": "1 lata"}, {"name": "Azúcar", "displayAmount": "1 taza"}], "instructions": ["Rallar la yuca finamente.", "Mezclar con leche de coco y azúcar.", "Hornear a 180°C."] }'
+        ']}',
+        200,
+      );
+    });
+
+    final externalService = ExternalRecipeService(
+      client: mockClient,
+      proxyBaseUrl: 'https://test/api/recipes',
+    );
+
+    // Launch with ShoppingListScreen directly for clean isolation
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ShoppingListScreen(
+          externalRecipeService: externalService,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 1. Add "Berenjena"
+    await tester.tap(find.widgetWithText(FilledButton, 'Agregar ingrediente'));
+    await tester.pumpAndSettle();
+
+    final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+    await tester.enterText(searchInput, 'berenjena');
+    await tester.pumpAndSettle();
+
+    final berenjenaSuggestion = find.text('Berenjena');
+    expect(berenjenaSuggestion, findsOneWidget);
+    await tester.tap(berenjenaSuggestion);
+    await tester.pumpAndSettle();
+
+    // 2. Add "Yuca"
+    await tester.enterText(searchInput, 'yuca');
+    await tester.pumpAndSettle();
+
+    final yucaSuggestion = find.text('Yuca');
+    expect(yucaSuggestion, findsOneWidget);
+    await tester.tap(yucaSuggestion);
+    await tester.pumpAndSettle();
+
+    // 3. Return to shopping list
+    await tester.tap(find.text('Ver lista'));
+    await tester.pumpAndSettle();
+
+    final shoppingListElement = tester.element(find.byType(ShoppingListScreen));
+    ScaffoldMessenger.of(shoppingListElement).clearSnackBars();
+    await tester.pumpAndSettle();
+
+    // Verify both ingredients appear
+    expect(find.text('Ingredientes disponibles (2)'), findsOneWidget);
+    expect(find.text('Berenjena'), findsOneWidget);
+    expect(find.text('Yuca'), findsOneWidget);
+
+    // 4. Tap "Buscar recetas (2)"
+    final searchBtn = find.widgetWithText(FilledButton, 'Buscar recetas (2)');
+    expect(searchBtn, findsOneWidget);
+    await tester.tap(searchBtn);
+    await tester.pumpAndSettle();
+
+    // 5. Verify RecipeSuggestionsScreen displays online recipes
+    expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
+    expect(find.text('2 receta(s) en línea'), findsOneWidget);
+    expect(find.text('Con base en 2 ingrediente(s) seleccionado(s)'), findsOneWidget);
+
+    // Both recipes rendered with matching ingredient indicators
+    expect(find.text('Berenjena a la plancha con hummus'), findsOneWidget);
+    expect(find.textContaining('Tienes: Berenjena'), findsOneWidget);
+    expect(find.text('Pastel de Yuca'), findsOneWidget);
+    expect(find.textContaining('Tienes: Yuca'), findsOneWidget);
+
+    // 6. Navigate to detail screen for "Pastel de Yuca"
+    await tester.tap(find.text('Pastel de Yuca'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RecipeDetailScreen), findsOneWidget);
+    expect(find.text('Pastel de Yuca'), findsAtLeastNWidgets(1));
+    expect(find.text('Postre'), findsOneWidget);
+    expect(find.text('Tienes en casa (1)'), findsOneWidget);
+    expect(find.text('Yuca'), findsOneWidget);
+    expect(find.text('Ingredientes adicionales necesarios (2)'), findsOneWidget);
+    expect(find.text('Leche de coco'), findsOneWidget);
+    expect(find.text('Azúcar'), findsOneWidget);
+
+    // Navigate back
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
   });
 }

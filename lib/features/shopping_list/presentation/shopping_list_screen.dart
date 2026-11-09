@@ -4,6 +4,7 @@ import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
 import '../../ingredients/presentation/add_ingredient_screen.dart';
+import '../../recipes/data/external_recipe_service.dart';
 import '../../recipes/presentation/recipe_suggestions_screen.dart';
 
 /// Screen presenting the user's shopping list and available pantry ingredients.
@@ -12,10 +13,14 @@ class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({
     super.key,
     this.storageService,
+    this.externalRecipeService,
   });
 
   /// Optional storage service dependency for testing or custom persistence.
   final IngredientStorageService? storageService;
+
+  /// Optional external recipe service for testing or custom proxy routing.
+  final ExternalRecipeService? externalRecipeService;
 
   @override
   State<ShoppingListScreen> createState() => _ShoppingListScreenState();
@@ -156,6 +161,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     RecipeSuggestionsScreen.navigate(
       context,
       selectedIngredientNames: _selectedIngredientNames.toList(),
+      externalService: widget.externalRecipeService,
     );
   }
 

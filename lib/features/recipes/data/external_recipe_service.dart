@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../domain/recipe.dart';
 import '../domain/recipe_search_result.dart';
@@ -106,7 +107,10 @@ class ExternalRecipeService {
   Future<List<Recipe>> fetchExternalRecipes(List<String> ingredients) async {
     if (ingredients.isEmpty) return const [];
 
-    final uri = Uri.parse(_proxyBaseUrl);
+    final rawUri = Uri.parse(_proxyBaseUrl);
+    final uri = (!kIsWeb && !rawUri.hasScheme)
+        ? Uri.parse('http://localhost:8080${_proxyBaseUrl.startsWith('/') ? '' : '/'}$_proxyBaseUrl')
+        : rawUri;
 
     final response = await _client
         .post(

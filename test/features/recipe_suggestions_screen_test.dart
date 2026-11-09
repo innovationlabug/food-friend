@@ -193,5 +193,41 @@ void main() {
       expect(find.text('Guiso Internacional de Pollo'), findsOneWidget);
       expect(find.textContaining('receta(s) en línea'), findsOneWidget);
     });
+
+    testWidgets('displays external recipe results for berenjena + yuca with matching highlights',
+        (WidgetTester tester) async {
+      final mockClient = MockClient((_) async {
+        return http.Response(
+          '{"success": true, "count": 2, "recipes": ['
+          '{"id": "ext_berenjena", "title": "Berenjena a la plancha con hummus", "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "2 unidades"}, {"name": "Aceite de oliva", "displayAmount": "2 cdas"}], "instructions": ["Asar berenjenas."] },'
+          '{"id": "ext_yuca", "title": "Pastel de Yuca", "source": "external", "ingredients": [{"name": "Yuca", "displayAmount": "2 lbs"}, {"name": "Leche de coco", "displayAmount": "1 lata"}], "instructions": ["Hornear pastel."] }'
+          ']}',
+          200,
+        );
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Berenjena', 'Yuca'],
+        externalService: externalService,
+      ));
+      await tester.pumpAndSettle();
+
+      // Banner shows 2 online recipes
+      expect(find.text('2 receta(s) en línea'), findsOneWidget);
+      expect(find.text('Con base en 2 ingrediente(s) seleccionado(s)'), findsOneWidget);
+
+      // Recipe cards
+      expect(find.text('Berenjena a la plancha con hummus'), findsOneWidget);
+      expect(find.text('Pastel de Yuca'), findsOneWidget);
+
+      // Ingredient match highlights
+      expect(find.textContaining('Tienes: Berenjena'), findsOneWidget);
+      expect(find.textContaining('Tienes: Yuca'), findsOneWidget);
+    });
   });
 }
