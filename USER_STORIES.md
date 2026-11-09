@@ -159,15 +159,15 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ## Phase 4: Recipe Generation & Discovery
 
-### - [ ] US-4.1: Local Spanish Recipe Dataset & Model
+### - [x] US-4.1: Local Spanish Recipe Dataset & Model
 **As a** user,  
 **I want** the app to come preloaded with a diverse set of local recipes in Spanish,  
 **So that** I can find meal ideas immediately even when offline or without calling external services.
 
 #### Acceptance Criteria
-- [ ] A `Recipe` model is defined containing `id`, `title` (in Spanish), `ingredients` (normalized Spanish ingredient names + display quantities), and `instructions` (ordered preparation steps in Spanish).
-- [ ] A static local JSON/Dart dataset is populated with multiple varied, healthy recipes suited to Guatemalan kitchens and matched against the predefined ingredient catalog names.
-- [ ] A local recipe search service queries the static dataset by comparing user-selected ingredient names against recipe ingredients and ranks recipes by match count/percentage.
+- [x] A `Recipe` model is defined containing `id`, `title` (in Spanish), `ingredients` (normalized Spanish ingredient names + display quantities), and `instructions` (ordered preparation steps in Spanish).
+- [x] A static local JSON/Dart dataset is populated with multiple varied, healthy recipes suited to Guatemalan kitchens and matched against the predefined ingredient catalog names.
+- [x] A local recipe search service queries the static dataset by comparing user-selected ingredient names against recipe ingredients and ranks recipes by match count/percentage.
 
 ---
 
