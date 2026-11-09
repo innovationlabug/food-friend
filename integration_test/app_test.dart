@@ -77,10 +77,6 @@ void main() {
       find.widgetWithText(TextFormField, 'Nombre del ingrediente *'),
       'Frijol colorado',
     );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Cantidad'),
-      '2',
-    );
 
     // Save ingredient
     await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));

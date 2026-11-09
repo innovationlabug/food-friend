@@ -134,32 +134,45 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agregar ingrediente'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(
-              icon: Icon(Icons.search),
-              text: 'Buscar',
-            ),
-            Tab(
-              icon: Icon(Icons.category_outlined),
-              text: 'Categorías',
-            ),
-          ],
-        ),
-      ),
-      body: SafeArea(
-        child: ResponsiveContainer(
-          padding: const EdgeInsets.all(16),
-          child: TabBarView(
+    return PopScope(
+      canPop: _categoryStack.isEmpty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_tabController.index == 1 && _categoryStack.isNotEmpty) {
+          setState(() {
+            _categoryStack.removeLast();
+          });
+        } else {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Agregar ingrediente'),
+          bottom: TabBar(
             controller: _tabController,
-            children: [
-              _buildSearchTab(theme, colorScheme),
-              _buildCategoriesTab(theme, colorScheme),
+            tabs: const [
+              Tab(
+                icon: Icon(Icons.search),
+                text: 'Buscar',
+              ),
+              Tab(
+                icon: Icon(Icons.category_outlined),
+                text: 'Categorías',
+              ),
             ],
+          ),
+        ),
+        body: SafeArea(
+          child: ResponsiveContainer(
+            padding: const EdgeInsets.all(16),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildSearchTab(theme, colorScheme),
+                _buildCategoriesTab(theme, colorScheme),
+              ],
+            ),
           ),
         ),
       ),
@@ -309,6 +322,12 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                   onPressed: () => _selectAndAddIngredient(name),
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: () => _tabController.animateTo(1),
+              icon: const Icon(Icons.category_outlined),
+              label: const Text('Explorar ingredientes por categorías'),
             ),
           ],
         ],

@@ -1,0 +1,127 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:food_friend/main.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('E2E Full Flow: Cleans state, adds ingredients via search, closest-match, and category browsing',
+      (WidgetTester tester) async {
+    // 1. Launch entire app
+    await tester.pumpWidget(const FoodFriendApp());
+    await tester.pumpAndSettle();
+
+    // Verify home screen is rendered in Spanish
+    expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
+    expect(find.text('Ir a lista de compras'), findsAtLeastNWidgets(1));
+
+    // 2. Navigate to Shopping List screen
+    await tester.tap(find.text('Ir a lista de compras').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lista de compras'), findsOneWidget);
+
+    // Clean session state using "Borrar mis datos" routine
+    final menuButton = find.byTooltip('Opciones');
+    if (menuButton.evaluate().isNotEmpty) {
+      await tester.tap(menuButton);
+      await tester.pumpAndSettle();
+
+      final clearOption = find.text('Borrar mis datos');
+      if (clearOption.evaluate().isNotEmpty) {
+        await tester.tap(clearOption);
+        await tester.pumpAndSettle();
+      }
+    }
+
+    // Verify clean empty state
+    expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
+
+    // 3. Flow US-2.2: Add ingredient via text search with auto-suggestions
+    final addBtn = find.widgetWithText(FilledButton, 'Agregar ingrediente');
+    expect(addBtn, findsOneWidget);
+    await tester.tap(addBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Agregar ingrediente'), findsOneWidget);
+    expect(find.text('Nombre del ingrediente *'), findsOneWidget);
+
+    // Type query
+    final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+    await tester.enterText(searchInput, 'pechuga');
+    await tester.pumpAndSettle();
+
+    // Tap suggestion
+    final suggestion = find.text('Pechuga de pollo');
+    expect(suggestion, findsOneWidget);
+    await tester.tap(suggestion);
+    await tester.pumpAndSettle();
+
+    // Verify back on shopping list with Pechuga de pollo
+    expect(find.text('Pechuga de pollo'), findsOneWidget);
+    expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);
+
+    // 4. Flow US-2.2: Add ingredient via closest match fallback
+    final fabAdd = find.byType(FloatingActionButton);
+    expect(fabAdd, findsOneWidget);
+    await tester.tap(fabAdd);
+    await tester.pumpAndSettle();
+
+    // Enter a typo with no direct selection
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Nombre del ingrediente *'),
+      'tomte',
+    );
+    await tester.pumpAndSettle();
+
+    // Tap Guardar
+    await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
+    await tester.pumpAndSettle();
+
+    // Verify closest match "Tomate" was applied
+    expect(find.text('Tomate'), findsOneWidget);
+    expect(find.text('Ingredientes disponibles (2)'), findsOneWidget);
+
+    // 5. Flow US-2.3: Add ingredient via Category Browsing
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    // Switch to Categorías tab
+    await tester.tap(find.text('Categorías'));
+    await tester.pumpAndSettle();
+
+    // Step 1: Tap Level 1 category
+    await tester.tap(find.text('Granos, Cereales y Harinas'));
+    await tester.pumpAndSettle();
+
+    // Step 2: Tap Level 2 subcategory
+    await tester.tap(find.text('Frijoles'));
+    await tester.pumpAndSettle();
+
+    // Step 3: Tap Level 3 leaf ingredient
+    final frijolLeaf = find.text('Frijoles negros');
+    expect(frijolLeaf, findsOneWidget);
+    await tester.tap(frijolLeaf);
+    await tester.pumpAndSettle();
+
+    // 6. Verify shopping list now has all 3 ingredients
+    expect(find.text('Pechuga de pollo'), findsOneWidget);
+    expect(find.text('Tomate'), findsOneWidget);
+    expect(find.text('Frijoles negros'), findsOneWidget);
+    expect(find.text('Ingredientes disponibles (3)'), findsOneWidget);
+
+    // 7. Verify clean session state routine can clear all data
+    await tester.tap(find.byTooltip('Opciones'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Borrar mis datos'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
+    expect(find.text('Pechuga de pollo'), findsNothing);
+  });
+}

@@ -85,16 +85,16 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-2.3: Add Ingredient via Common Ingredient Categories
+### - [x] US-2.3: Add Ingredient via Common Ingredient Categories
 **As a** user,  
 **I want** to browse categorized lists of common ingredients,  
 **So that** I can add an ingredient in a few taps without typing.
 
 #### Acceptance Criteria
-- [ ] The Add Ingredient screen provides an option to browse ingredients by category.
-- [ ] Selecting a top-level category (e.g., `Proteínas`) reveals its subcategories (e.g., `Res`, `Cerdo`, `Pollo`, `Pescado`), and selecting a subcategory reveals specific selectable ingredients (e.g., `Pechuga de pollo`, `Alitas de pollo`, `Pollo`).
-- [ ] Reaching and selecting any final ingredient takes at most 3 to 4 steps.
-- [ ] Users can navigate back up category levels easily, and tapping a leaf ingredient adds its name to the available ingredients list with visual confirmation in Spanish.
+- [x] The Add Ingredient screen provides an option to browse ingredients by category.
+- [x] Selecting a top-level category (e.g., `Proteínas`) reveals its subcategories (e.g., `Res`, `Cerdo`, `Pollo`, `Pescado`), and selecting a subcategory reveals specific selectable ingredients (e.g., `Pechuga de pollo`, `Alitas de pollo`, `Pollo`).
+- [x] Reaching and selecting any final ingredient takes at most 3 to 4 steps.
+- [x] Users can navigate back up category levels easily, and tapping a leaf ingredient adds its name to the available ingredients list with visual confirmation in Spanish.
 
 ---
 
