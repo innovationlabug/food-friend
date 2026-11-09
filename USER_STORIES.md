@@ -59,15 +59,15 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ## Phase 2: Manual Ingredient Input (Text Search & Category Browsing)
 
-### - [ ] US-2.1: Predefined Spanish Ingredient Catalog & Category Taxonomy
+### - [x] US-2.1: Predefined Spanish Ingredient Catalog & Category Taxonomy
 **As a** user,  
 **I want** the app to include a comprehensive catalog of cooking ingredients in Spanish organized both for search and by food categories,  
 **So that** I can quickly find specific cuts or general ingredients relevant to cooking in Guatemala.
 
 #### Acceptance Criteria
-- [ ] A local predefined dataset of common ingredients in Spanish is created.
-- [ ] The catalog includes cooking-specific granularity as well as general options (e.g., `Pechuga de pollo`, `Alitas de pollo`, and generic `Pollo`).
-- [ ] The catalog organizes ingredients into a hierarchical tree of at most 3 to 4 levels deep (e.g., Level 1: `Frutas`, `Verduras`, `Proteínas`, `Lácteos`, `Granos y Cereales` &rarr; Level 2 under `Proteínas`: `Res`, `Cerdo`, `Pollo`, `Pescado` &rarr; Level 3 under `Pollo`: `Pechuga de pollo`, `Alitas de pollo`, `Pollo`).
+- [x] A local predefined dataset of common ingredients in Spanish is created.
+- [x] The catalog includes cooking-specific granularity as well as general options (e.g., `Pechuga de pollo`, `Alitas de pollo`, and generic `Pollo`).
+- [x] The catalog organizes ingredients into a hierarchical tree of at most 3 to 4 levels deep (e.g., Level 1: `Frutas`, `Verduras`, `Proteínas`, `Lácteos`, `Granos y Cereales` &rarr; Level 2 under `Proteínas`: `Res`, `Cerdo`, `Pollo`, `Pescado` &rarr; Level 3 under `Pollo`: `Pechuga de pollo`, `Alitas de pollo`, `Pollo`).
 
 ---
 
