@@ -10,7 +10,41 @@ This report summarizes the implementation, verification, and end-to-end testing 
 
 ---
 
-## 2. User Story Summary & Breakdown
+## 2. Local Inventory Stats
+- **Locally Available Ingredients:** **171** unique selectable cooking ingredients organized across 7 culinary taxonomies in [`IngredientCatalog`](file:///c:/Users/luisr/food-friend/lib/features/ingredients/data/ingredient_catalog.dart) (all with verified hierarchy depth $\le 4$, synonyms, and normalized lookup).
+- **Locally Preloaded Recipes:** **16** authentic, healthy Spanish recipes in [`LocalRecipeDataset`](file:///c:/Users/luisr/food-friend/lib/features/recipes/data/local_recipe_dataset.dart) covering varied meal categories:
+  - *Almuerzo / Guisos Tradicionales:* Pepián de Pollo, Hilachas de Res, Tortitas de Ejote en Salsa de Tomate, Guiso de Pollo con Perulero, Arroz con Pollo y Verduras, Picado de Res con Verduras.
+  - *Sopas y Caldos:* Caldo de Pollo con Verduras Frescas, Sopa Nutritiva de Lentejas y Espinaca.
+  - *Cenas Ligeras:* Pechuga a la Plancha con Verduras al Vapor, Filete de Pescado al Vapor con Limón, Frijoles Negros Parados con Epazote.
+  - *Desayunos Saludables:* Omelet de Espinaca y Queso de Capas, Desayuno Típico Saludable.
+  - *Ensaladas Frescas:* Ensalada Chapina de Aguacate y Tomate, Ceviche Vegetariano de Aguacate y Pepino.
+
+---
+
+## 3. Test Case: Zero Local Matches & External API Trigger
+
+### Test Scenario
+- **Ingredient Combination:** `["Berenjena", "Yuca"]` (or single ingredients like `["Nutella"]` / `["curry"]`).
+- **Condition:** Both `Berenjena` and `Yuca` exist in the Guatemalan ingredient catalog, but **neither is used in any of the 16 local preloaded recipes**.
+
+### Execution & Verification Flow
+1. **Local Search Query:**
+   - `RecipeSearchService.searchRecipes(selectedIngredientNames: ['Berenjena', 'Yuca'], minMatchCount: 1)` searches all 16 local recipes.
+   - Result: **0 matches** (`[]`).
+2. **Automatic External Trigger:**
+   - Because local matches count is 0, [`ExternalRecipeService.discoverRecipes`](file:///c:/Users/luisr/food-friend/lib/features/recipes/data/external_recipe_service.dart) automatically triggers an HTTP request to the backend proxy endpoint `POST /api/recipes` with payload `{"ingredients": ["Berenjena", "Yuca"]}`.
+3. **Backend Proxy Processing (`api/recipes.ts`):**
+   - Sanitizes and normalizes the input diacritics.
+   - Maps ingredient queries to traditional REST endpoints at TheMealDB (`https://www.themealdb.com/api/json/v1/1/`).
+   - Fetches meal details and maps them into Food Friend's Spanish `Recipe` model (`id`, `title`, `ingredients`, `instructions`, `source: 'external'`).
+4. **UI Response:**
+   - If recipes are returned: `RecipeSuggestionsScreen` displays the recipes labeled as online suggestions (`"X receta(s) en línea"`).
+   - If offline, network failure, or 0 external matches: `ExternalRecipeService` catches the failure and immediately triggers the local fallback, displaying the closest partial matches from `LocalRecipeDataset` alongside the informative Spanish banner:
+     > *"No se encontraron recetas exactas en el recetario externo o te encuentras sin conexión. Te mostramos las alternativas locales más cercanas."*
+
+---
+
+## 4. User Story Summary & Breakdown
 
 ### US-4.1: Local Spanish Recipe Dataset & Model
 - **Domain & Data Components:**
@@ -70,7 +104,7 @@ This report summarizes the implementation, verification, and end-to-end testing 
 
 ---
 
-## 3. Automated Test Verification
+## 5. Automated Test Verification
 
 | Test Suite | Scope | Result |
 | :--- | :--- | :--- |
@@ -97,9 +131,10 @@ This report summarizes the implementation, verification, and end-to-end testing 
 
 ---
 
-## 4. Git Commit History on Branch `feature/get-recipes`
+## 6. Git Commit History on Branch `feature/get-recipes`
 ```
 c06dd0a feat(recetas): implement traditional external recipe api proxy and offline fallback integration
 ed8bec9 feat(recetas): implement ingredient selection and recipe discovery UI with detail view
 c41288b feat(recetas): implement local spanish recipe model, dataset, and search service
 ```
+
