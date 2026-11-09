@@ -51,37 +51,46 @@ This report summarizes the implementation, verification, and end-to-end testing 
 
 ---
 
-## 4. Live API Test Cases (Zero Local Matches $\rightarrow$ Successful External Retrieval)
+## 4. Live API Test Cases (Zero Local Matches $\rightarrow$ Successful External Retrieval & Spanish Translation)
 
 ### Test Case 1: `berenjena` + `yuca`
 - **Local Matches:** 0 (neither is present in `LocalRecipeDataset`).
 - **External API Query:** `POST /api/recipes` with `{"ingredients": ["berenjena", "yuca"]}` $\rightarrow$ queries `aubergine` and `cassava`.
-- **API Results Retrieved:** **5 recipes**:
-  1. **Berenjena a la plancha con hummus** (`Berenjena & hummus grills`) - Category: *Vegetariano* | Matched: `Berenjena`
-  2. **Pastel de Yuca** (`Yuca Pastel`) - Category: *Postre* | Matched: `Yuca`
-  3. **Ensalada de Cuscús con Berenjena** (`Berenjena couscous Ensalada`) - Category: *Vegetariano* | Matched: `Berenjena`
-  4. **Alitas de Pollo Extra Crujientes** (`Extra Crujiente Pollo wings`) - Category: *Pollo* | Matched: `Yuca` (harina de yuca)
-  5. **Baingan Bharta** - Category: *Vegetariano* | Matched: `Berenjena`
+- **API Results Retrieved:** **5 recipes fully localized into Spanish**:
+  1. **Parrillas de berenjenas y hummus** (*Aubergine and hummus grills*)
+     - Categoría: *Vegetariano* | Matched: `Berenjena`
+     - Paso 1 traducido: *"Coloca la berenjena en una capa sobre una bandeja grande para hornear. Cepille con moderación con aceite vegetal y, a continuación, sazone generosamente. Ase a la parrilla durante 15 minutos..."*
+  2. **Pastel de yuca** (*Cassava Cake*)
+     - Categoría: *Postre* | Matched: `Yuca`
+     - Ingredientes: `Yuca`, `Leche de coco`, `Azúcar`, `Canela`, `Pimienta gorda`
+     - Paso 1 traducido: *"Lleve la leche de coco a ebullición. Agregue el azúcar, revolviendo hasta que se disuelva por completo y continúe hirviendo durante unos 45 minutos..."*
+  3. **Ensalada de cuscús y berenjena** (*Aubergine couscous salad*)
+     - Categoría: *Vegetariano* | Matched: `Berenjena`
+  4. **Alitas de pollo crujiente** (*Extra crispy chicken wings*)
+     - Categoría: *Pollo* | Matched: `Yuca` (harina de yuca)
+  5. **Baingan bharta** (*Baingan Bharta*)
+     - Categoría: *Vegetariano* | Matched: `Berenjena`
+     - Paso 1 traducido: *"Precaliente el horno a 200 °C. Coloque la berenjena en una bandeja para hornear..."*
 
 ### Test Case 2: `camote` + `remolacha`
 - **Local Matches:** 0.
 - **External API Query:** `POST /api/recipes` with `{"ingredients": ["camote", "remolacha"]}` $\rightarrow$ queries `sweet_potato` and `beetroot`.
 - **API Results Retrieved:** **5 recipes**:
-  1. **Chucrut de Remolacha y Repollo Rojo** (`Beetroot & red cabbage sauerkraut`)
-  2. **Latkes de Remolacha** (`Beetroot latkes`)
-  3. **Panqueques de Remolacha** (`Beetroot pancakes`)
-  4. **Sopa de Remolacha (Borscht)** (`Beetroot Sopa (Borscht)`)
+  1. **Chucrut de remolacha y col roja** (*Beetroot & red cabbage sauerkraut*)
+  2. **Latkes de remolacha** (*Beetroot latkes*)
+  3. **Tortitas de remolacha** (*Beetroot pancakes*)
+  4. **Sopa de remolacha (borscht)** (*Beetroot Soup / Borscht*)
   5. **Borsch**
 
 ### Test Case 3: `atun` + `garbanzos`
 - **Local Matches:** 0.
 - **External API Query:** `POST /api/recipes` with `{"ingredients": ["atun", "garbanzos"]}` $\rightarrow$ queries `tuna` and `chickpeas`.
 - **API Results Retrieved:** **5 recipes**:
-  1. **Ensalada de Pasta Mediterránea** (`Mediterranean Pasta Ensalada`)
-  2. **Cuscús con Pollo** (`Pollo Couscous`)
-  3. **Briks de Atún y Huevo** (`Tuna and Egg Briks`)
-  4. **Fajitas de Garbanzo** (`Chickpea Fajitas`)
-  5. **Nicoise de Atún** (`Tuna Nicoise`)
+  1. **Ensalada de pasta mediterránea** (*Mediterranean Pasta Salad*)
+  2. **Cuscús de pollo** (*Chicken Couscous*)
+  3. **Briks de atún y huevo** (*Tuna and Egg Briks*)
+  4. **Fajitas de garbanzos** (*Chickpea Fajitas*)
+  5. **Tuna nicoise**
 
 ---
 

@@ -402,6 +402,81 @@ function translateTitleToSpanish(title: string): string {
 }
 
 /**
+ * Asynchronously translates an English recipe title into natural Spanish
+ * using MyMemory Translation API with fallback to the dictionary heuristic.
+ */
+async function translateTitleAsync(title: string): Promise<string> {
+  const dictionaryFallback = translateTitleToSpanish(title);
+  if (!title || title.trim().length === 0) return dictionaryFallback;
+
+  try {
+    const clean = title.replace(/[&]/g, 'and').trim();
+    const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=en|es`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+
+    const res = await fetch(apiUrl, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = (await res.json()) as { responseData?: { translatedText?: string } };
+      const rawTranslated = data.responseData?.translatedText?.trim();
+      if (rawTranslated && rawTranslated.length > 0 && !rawTranslated.toLowerCase().includes('mymemory')) {
+        // Fix all-caps or all-lowercase
+        return rawTranslated.charAt(0).toUpperCase() + rawTranslated.slice(1).toLowerCase();
+      }
+    }
+  } catch {
+    // Fall back to dictionary
+  }
+
+  return dictionaryFallback;
+}
+
+/**
+ * Asynchronously translates English preparation instructions into fluent Spanish steps.
+ */
+async function translateInstructionsAsync(raw: string): Promise<string[]> {
+  const steps = formatInstructions(raw);
+  if (steps.length === 0) {
+    return [
+      'Preparar y limpiar todos los ingredientes.',
+      'Cocinar a fuego medio en una sartén u olla hasta alcanzar el punto deseado.',
+      'Servir caliente.',
+    ];
+  }
+
+  // Join top steps for batch translation
+  const candidateSteps = steps.slice(0, 5);
+  const combined = candidateSteps.join(' || ');
+
+  try {
+    const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(combined.slice(0, 500))}&langpair=en|es`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch(apiUrl, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = (await res.json()) as { responseData?: { translatedText?: string } };
+      const translated = data.responseData?.translatedText;
+      if (translated && translated.includes('||')) {
+        return translated
+          .split('||')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 5)
+          .map((s) => (s.endsWith('.') ? s : `${s}.`));
+      }
+    }
+  } catch {
+    // Fall back to candidate steps
+  }
+
+  return candidateSteps;
+}
+
+/**
  * Splits meal preparation instructions into clean, readable steps in Spanish.
  */
 function formatInstructions(raw: string): string[] {
@@ -599,11 +674,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const rawInstructions = meal.strInstructions ?? '';
-        const instructions = formatInstructions(rawInstructions);
+        const rawTitle = meal.strMeal ?? 'Receta Internacional';
+
+        const [translatedTitle, instructions] = await Promise.all([
+          translateTitleAsync(rawTitle),
+          translateInstructionsAsync(rawInstructions),
+        ]);
 
         return {
           id: `external_${meal.idMeal}`,
-          title: translateTitleToSpanish(meal.strMeal ?? 'Receta Internacional'),
+          title: translatedTitle,
           description: `Receta tradicional adaptada (${meal.strArea ?? 'Internacional'})`,
           category: meal.strCategory ? translateTitleToSpanish(meal.strCategory) : 'Almuerzo',
           prepTimeMinutes: 15,
