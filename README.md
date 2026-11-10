@@ -6,7 +6,7 @@
 
 ---
 
-## 📸 Vistas Principales
+## Vistas Principales
 
 | Pantalla Principal | Ingredientes Disponibles | Agregar Ingrediente |
 | :---: | :---: | :---: |
@@ -18,7 +18,7 @@
 
 ---
 
-## ⚡ Funcionalidades Clave
+## Funcionalidades Clave
 
 - **Gestión de Despensa Local (*Offline-First*):** Registro y control de ingredientes disponibles con persistencia local en el dispositivo del usuario, garantizando total privacidad.
 - **Entrada Manual Predictiva:** Búsqueda en tiempo real sobre un catálogo de más de 170 ingredientes guatemaltecos con tolerancia a errores tipográficos (*Levenshtein distance*) y árbol taxonómico navegable en menos de 4 toques.
@@ -28,33 +28,33 @@
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## Arquitectura del Sistema
 
 Diagrama de contenedores generado con la habilidad `diagram` mostrando la interacción entre componentes:
 
 ```mermaid
 flowchart TB
-    User["👤 Usuario / Cocinero\n[Cocinero del hogar guatemalteco]"]
+    User["Usuario / Cocinero - Cocinero del hogar"]
 
-    subgraph SystemBoundary["Food Friend - Límite del Sistema"]
-        App["📱💻 Aplicación Cliente\n[Flutter Web & Android]\nInterfaz Material 3, escaneo y gestión local"]
-        LocalStorage[("💾 Almacenamiento Local\n[SharedPreferences / JSON]\nPersistencia local en el dispositivo")]
-        Proxy["🛡️ Backend Proxy Gateway\n[Vercel Serverless / Node.js & TypeScript]\nSeguridad, sanitización y orquestación"]
+    subgraph SystemBoundary ["Food Friend - Limite del Sistema"]
+        App["Aplicacion Cliente (Flutter Web y Android) - Interfaz Material 3 y escaneo"]
+        LocalStorage[("Almacenamiento Local (SharedPreferences) - Persistencia en dispositivo")]
+        Proxy["Backend Proxy Gateway (Vercel Serverless) - Seguridad y sanitizacion"]
     end
 
-    Gemini["✨ Google Gemini API\n[Gemini 3.8 Flash]\nVisión multimodal y generación culinaria"]
-    TheMealDB["🍲 TheMealDB API\n[REST API Tradicional]\nRespaldo secundario de recetas"]
+    Gemini["Google Gemini API (Gemini 3.8 Flash) - Vision multimodal y recetas"]
+    TheMealDB["TheMealDB API - Respaldo secundario tradicional"]
 
-    User -->|"Interactúa, escanea y gestiona"| App
-    App -->|"Lectura y escritura local (Offline)"| LocalStorage
-    App -->|"Peticiones HTTPS (POST /api/*)"| Proxy
-    Proxy -->|"Inferencia visual y recetas en español"| Gemini
-    Proxy -->|"Consulta respaldo tradicional"| TheMealDB
+    User -->|Interactua, escanea y gestiona| App
+    App -->|Lectura y escritura local offline| LocalStorage
+    App -->|Peticiones HTTPS seguras| Proxy
+    Proxy -->|Inferencia visual y recetas en espanol| Gemini
+    Proxy -->|Consulta de respaldo tradicional| TheMealDB
 ```
 
 ---
 
-## 🚀 Guía de Inicio Rápido
+## Guía de Inicio Rápido
 
 ### 1. Requisitos Previos
 - **Flutter SDK:** $\ge 3.24$
@@ -98,14 +98,14 @@ npm run dev
 
 ---
 
-## 📚 Documentación Detallada
+## Documentación Detallada
 
 Para consultar la documentación técnica completa del proyecto, visite la carpeta [`docs/readme/`](docs/readme/):
 
-- 🏛️ **[Arquitectura Técnica y Diagramas C4](docs/readme/arquitectura.md):** Especificación por capas, límites de seguridad y grafo de dependencias de módulos.
-- 📦 **[Modelos de Datos y Diagrama ER](docs/readme/modelos_datos.md):** Entidades de dominio, taxonomía culinaria y cardinalidades.
-- 🤖 **[Integración de LLM y Estrategia de Fallbacks](docs/readme/llamadas_llm.md):** Prompts, esquemas JSON con Gemini 3.8 Flash y resiliencia multinivel.
-- 🛠️ **[Guía Completa de Instalación y Despliegue](docs/readme/guia_instalacion_despliegue.md):** Manual detallado para entornos locales, Vercel y Android.
-- 🧪 **[Estrategia y Reporte de Pruebas](docs/readme/pruebas.md):** Pruebas unitarias, de widgets y pruebas *end-to-end* con 119 casos exitosos.
-- 🥕 **[Documentación: Entrada de Ingredientes (Fases 2 y 3)](docs/readme/ADD_INGREDIENTS.md):** Catálogo, búsqueda predictiva y escaneo fotográfico.
-- 🍲 **[Documentación: Descubrimiento de Recetas (Fase 4)](docs/readme/GET_RECIPES.md):** Algoritmo de puntuación, recetas locales y generación con Gemini.
+- **[Arquitectura Técnica y Diagramas C4](docs/readme/arquitectura.md):** Especificación por capas, límites de seguridad y grafo de dependencias de módulos.
+- **[Modelos de Datos y Diagrama ER](docs/readme/modelos_datos.md):** Entidades de dominio, taxonomía culinaria y cardinalidades.
+- **[Integración de LLM y Estrategia de Fallbacks](docs/readme/llamadas_llm.md):** Prompts, esquemas JSON con Gemini 3.8 Flash y resiliencia multinivel.
+- **[Guía Completa de Instalación y Despliegue](docs/readme/guia_instalacion_despliegue.md):** Manual detallado para entornos locales, Vercel y Android.
+- **[Estrategia y Reporte de Pruebas](docs/readme/pruebas.md):** Pruebas unitarias, de widgets y pruebas *end-to-end* con 119 casos exitosos.
+- **[Documentación: Entrada de Ingredientes (Fases 2 y 3)](docs/readme/ADD_INGREDIENTS.md):** Catálogo, búsqueda predictiva y escaneo fotográfico.
+- **[Documentación: Descubrimiento de Recetas (Fase 4)](docs/readme/GET_RECIPES.md):** Algoritmo de puntuación, recetas locales y generación con Gemini.
