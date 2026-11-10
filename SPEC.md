@@ -90,3 +90,58 @@ In the first iterations, while we validate user interest in the project we will 
 - **Performance:** The app should be responsive and the user should not have to wait long for the results. This means we should strive for user-side or server-side processing as much as possible and use LLMs as little as possible.
 
 - **Using LLMs only if absolutely needed:** When can include calls to some LLM only if it is absolutely needed. If not, use traditional APIs and tools to solve the problems.
+
+
+## Week 1 Progress
+
+### Implemented
+- Demos.
+  - Fridge detector demo: Upload a photo of your fridge so Gemini can recognize which ingredients are there. Feasible to include in the main app: Gemini can recognize several local products, a high/medium/low confidence score is included.
+  - Receipt parser demo: Upload a photo of your supermarked receipt so Gemini can recognize which ingredients you got. Feasible to include in the main app: Gemini can recognize several local products, a list of common abreviations was created to help in the process, a high/medium/low confidence score is included.
+    - Possible improvement: Use some classic OCR tool instead of calling an LLM.
+- Data model.
+  - Ingredient and recipe data models created. Several fields are not used yet, but will be used in the following iterations of the app.
+- Ingredient list.
+  - Add ingredients via text input. Suggests ingredients as the user writes. Pre-populated list with several ingredient name suggestions.
+  - Add ingredients via list. A pre-populated list classified into categories and subcategories lets the user add ingredients with a single click.
+  - Add ingredients from a refrigerator or a receipt photo. Implementation of the demos. The app presents a user with a list of the high confidence (selected by default) and medium/low confidence (unselected by default) items so they can confirm before adding to the list.
+- Recipe suggestions.
+  - Pre-populated local list of recipes with common ingredients.
+    - Next iterations: Increase the amount of recipes.
+  - If there is no local recipe available, call a LLM to generate one.
+  - If the LLM call fails, query TheMealDB API to get a recipe. This is our last option since the recipes are in english and some ingredients may not be available.
+    - Possible improvement: Find if there is some spanish language recipes API.
+  - At this time, the recipes are ranked only by the amount of ingredients that match.
+    - Next iterations: User can like or dislike a recipe. The app will track how ofter the recipes are used to provide varied suggestions.
+
+### Next week plan
+
+- Validate features with real users.
+- Test the app in real Android phones.
+
+- Recipe suggestions.
+  - Increase the amount of local recipes.
+  - When the user selects a recipe, it will have a button to generate variations.
+    - Variations are similar recipes that use many similar ingredients, often only changing one. In the pre-implementation survey one common problem users faced was that they got bored of a recipe if they cooked for the whole week, these variations may help those users.
+
+- Recipe history.
+  - Add a `Did it` button to each recipe, when pressed it stores when the user cooked the recipe.
+    - Add sanity checks to this feature: If the user presses it several times a day, it only registers one time.
+  - Add four buttons for each recipe.
+    - `Favorite`: Recipes marked with this will be suggested more often.
+    - `Liked`: Recipe will be suggested again.
+    - `Disliked`: Recipe will be suggested only as a last option.
+    - `Never`: Recipe won't be suggested again at all.
+  - Add a view to allow the user to manage the recipes. In this view they can see all the recipes, included the ones marked with `Never` so they can ammend in case they clicked by accident.
+  - Use the marks applied to each recipe and the history when deciding new recipe suggestions.
+
+- Shopping list.
+  - User can add ingredients via text field or list, similar to the ingredient list.
+  - In the list view, each item will have two buttons.
+    - `Bought`: Items will be moved to the ingredient list.
+    - `Dismiss`: Items will be removed from this list.
+
+- Nutrition tips.
+  - Use the recipe history to provide nutrition tips to the user.
+    - Alert about ingredients that might be harmful long term. For example, excesive consumption of processed meats.
+    - Suggest which ingredients might be used to obtain health benefits. For example, track fruits and vegetables and suggest the ones that include a vitamin that the user is not consuming enough.
