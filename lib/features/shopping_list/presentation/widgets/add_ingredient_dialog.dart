@@ -80,7 +80,7 @@ class _AddIngredientDialogState extends State<AddIngredientDialog> {
                 controller: _nameController,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  labelText: 'Nombre del ingrediente *',
+                  labelText: 'Nombre del ingrediente',
                   hintText: 'Ej. Tomate, Leche, Pollo',
                 ),
                 validator: (value) {

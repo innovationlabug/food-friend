@@ -11,8 +11,8 @@ void main() {
     // Verify key titles and Spanish copy are rendered
     expect(find.text('Food Friend'), findsOneWidget);
     expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
-    expect(find.text('Lista de compras'), findsOneWidget);
+    expect(find.text('Ingredientes disponibles'), findsOneWidget);
     expect(find.text('¿Qué cocino hoy?'), findsOneWidget);
-    expect(find.text('Asistente de nutrición'), findsOneWidget);
+    expect(find.text('Asistente de nutrición'), findsNothing);
   });
 }

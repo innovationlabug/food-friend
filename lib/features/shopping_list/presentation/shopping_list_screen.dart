@@ -93,7 +93,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         return AlertDialog(
           title: const Text('¿Borrar todos los ingredientes?'),
           content: const Text(
-            'Esta acción eliminará todos los ingredientes guardados en tu lista de compras y despensa. ¿Deseas continuar?',
+            'Esta acción eliminará todos los ingredientes disponibles guardados. ¿Deseas continuar?',
           ),
           actions: [
             TextButton(
@@ -172,7 +172,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lista de compras'),
+        title: const Text('Ingredientes disponibles'),
         actions: [
           IconButton(
             tooltip: 'Borrar todos los ingredientes',
@@ -241,7 +241,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Agrega los ingredientes que tienes disponibles en casa o los que necesitas comprar.',
+              'Agrega los ingredientes que tienes disponibles en casa.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),

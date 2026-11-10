@@ -26,11 +26,11 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Lista de compras'), findsOneWidget);
+      expect(find.text('Ingredientes disponibles'), findsOneWidget);
       expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
       expect(
         find.text(
-          'Agrega los ingredientes que tienes disponibles en casa o los que necesitas comprar.',
+          'Agrega los ingredientes que tienes disponibles en casa.',
         ),
         findsOneWidget,
       );
@@ -88,11 +88,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify dialog is open
-      expect(find.text('Nombre del ingrediente *'), findsOneWidget);
+      expect(find.text('Nombre del ingrediente'), findsOneWidget);
 
       // Enter name
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Nombre del ingrediente *'),
+        find.widgetWithText(TextFormField, 'Nombre del ingrediente'),
         'Zanahoria',
       );
 
@@ -155,7 +155,7 @@ void main() {
       expect(find.text('¿Borrar todos los ingredientes?'), findsOneWidget);
       expect(
         find.text(
-          'Esta acción eliminará todos los ingredientes guardados en tu lista de compras y despensa. ¿Deseas continuar?',
+          'Esta acción eliminará todos los ingredientes disponibles guardados. ¿Deseas continuar?',
         ),
         findsOneWidget,
       );
@@ -190,13 +190,13 @@ void main() {
       expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
 
       // Tap primary navigation button
-      final shoppingNavBtn = find.text('Ir a lista de compras');
+      final shoppingNavBtn = find.text('Ir a ingredientes disponibles');
       expect(shoppingNavBtn, findsAtLeastNWidgets(1));
       await tester.tap(shoppingNavBtn.first);
       await tester.pumpAndSettle();
 
       // Verify on Shopping List Screen
-      expect(find.text('Lista de compras'), findsOneWidget);
+      expect(find.text('Ingredientes disponibles'), findsOneWidget);
       expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
     });
   });

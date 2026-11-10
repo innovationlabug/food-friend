@@ -91,10 +91,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Agregar ingrediente'), findsOneWidget);
-      expect(find.text('Escanear con foto'), findsOneWidget);
+      expect(find.text('Foto'), findsOneWidget);
 
-      // 2. Tap 'Refrigerador' button in photo scanning card
-      final fridgeBtn = find.widgetWithText(OutlinedButton, 'Refrigerador');
+      // 2. Tap 'Foto' tab and tap 'Escanear refrigerador' button
+      await tester.tap(find.text('Foto'));
+      await tester.pumpAndSettle();
+
+      final fridgeBtn = find.widgetWithText(FilledButton, 'Escanear refrigerador');
       expect(fridgeBtn, findsOneWidget);
       await tester.tap(fridgeBtn);
       await tester.pumpAndSettle();
@@ -212,8 +215,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 2. Tap 'Recibo' button
-      final receiptBtn = find.widgetWithText(OutlinedButton, 'Recibo');
+      // 2. Tap 'Foto' tab and tap 'Escanear recibo' button
+      await tester.tap(find.text('Foto'));
+      await tester.pumpAndSettle();
+
+      final receiptBtn = find.widgetWithText(FilledButton, 'Escanear recibo');
       expect(receiptBtn, findsOneWidget);
       await tester.tap(receiptBtn);
       await tester.pumpAndSettle();

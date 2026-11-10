@@ -64,10 +64,10 @@ class HomeScreen extends StatelessWidget {
         _buildFeatureCard(
           context: context,
           iconName: 'shopping_cart',
-          title: 'Lista de compras',
+          title: 'Ingredientes disponibles',
           description:
-              'Gestiona tus ingredientes disponibles, despensa y lista de compras.',
-          buttonLabel: 'Ir a lista de compras',
+              'Gestiona tus ingredientes disponibles y despensa.',
+          buttonLabel: 'Ir a ingredientes disponibles',
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -103,16 +103,6 @@ class HomeScreen extends StatelessWidget {
           buttonLabel: 'Ver sugerencias',
           onPressed: () => _openRecipeSuggestions(context),
         ),
-        const SizedBox(height: 16),
-        _buildFeatureCard(
-          context: context,
-          iconName: 'nutrition',
-          title: 'Asistente de nutrición',
-          description:
-              'Evalúa el balance nutricional de tus comidas y planifica tu alimentación.',
-          buttonLabel: 'Explorar nutrición',
-          onPressed: () {},
-        ),
       ],
     );
   }
@@ -130,10 +120,10 @@ class HomeScreen extends StatelessWidget {
               child: _buildFeatureCard(
                 context: context,
                 iconName: 'shopping_cart',
-                title: 'Lista de compras',
+                title: 'Ingredientes disponibles',
                 description:
-                    'Gestiona tus ingredientes disponibles, despensa y lista de compras.',
-                buttonLabel: 'Ir a lista de compras',
+                    'Gestiona tus ingredientes disponibles y despensa.',
+                buttonLabel: 'Ir a ingredientes disponibles',
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -172,18 +162,6 @@ class HomeScreen extends StatelessWidget {
                     'Descubre recetas saludables y variadas basadas en lo que tienes a mano.',
                 buttonLabel: 'Ver sugerencias',
                 onPressed: () => _openRecipeSuggestions(context),
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: _buildFeatureCard(
-                context: context,
-                iconName: 'nutrition',
-                title: 'Asistente de nutrición',
-                description:
-                    'Evalúa el balance nutricional de tus comidas y planifica tu alimentación.',
-                buttonLabel: 'Explorar nutrición',
-                onPressed: () {},
               ),
             ),
           ],

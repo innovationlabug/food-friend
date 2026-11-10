@@ -44,9 +44,9 @@ void main() {
       expect(find.text('Añadir ingredientes'), findsOneWidget);
 
       // Verify other feature cards
-      expect(find.text('Lista de compras'), findsOneWidget);
+      expect(find.text('Ingredientes disponibles'), findsOneWidget);
       expect(find.text('¿Qué cocino hoy?'), findsOneWidget);
-      expect(find.text('Asistente de nutrición'), findsOneWidget);
+      expect(find.text('Asistente de nutrición'), findsNothing);
     });
 
     testWidgets('renders exactly one "Agregar ingredientes" card on desktop viewports',
@@ -78,15 +78,15 @@ void main() {
 
       // Verify on AddIngredientScreen
       expect(find.byType(AddIngredientScreen), findsOneWidget);
-      expect(find.text('Nombre del ingrediente *'), findsOneWidget);
+      expect(find.text('Nombre del ingrediente'), findsOneWidget);
     });
 
-    testWidgets('navigates to ShoppingListScreen when tapping Ir a lista de compras',
+    testWidgets('navigates to ShoppingListScreen when tapping Ir a ingredientes disponibles',
         (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      final shoppingBtn = find.text('Ir a lista de compras');
+      final shoppingBtn = find.text('Ir a ingredientes disponibles');
       expect(shoppingBtn, findsOneWidget);
 
       await tester.tap(shoppingBtn);

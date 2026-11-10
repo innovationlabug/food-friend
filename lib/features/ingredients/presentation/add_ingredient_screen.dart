@@ -85,7 +85,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
     super.initState();
     _storageService = widget.storageService ?? IngredientStorageService();
     _tabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
       initialIndex: widget.initialTab,
     );
@@ -216,47 +216,6 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
         appBar: AppBar(
           title: const Text('Agregar ingrediente'),
           actions: [
-            PopupMenuButton<String>(
-              tooltip: 'Escanear con foto',
-              icon: const Icon(Icons.photo_camera_outlined),
-              onSelected: (value) {
-                if (value == 'fridge') {
-                  FridgeScannerScreen.navigate(
-                    context,
-                    storageService: _storageService,
-                    visionService: widget.visionService,
-                  );
-                } else if (value == 'receipt') {
-                  ReceiptScannerScreen.navigate(
-                    context,
-                    storageService: _storageService,
-                    parserService: widget.parserService,
-                  );
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'fridge',
-                  child: Row(
-                    children: [
-                      Icon(Icons.kitchen_outlined, size: 20),
-                      SizedBox(width: 8),
-                      Text('Escanear refrigerador'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'receipt',
-                  child: Row(
-                    children: [
-                      Icon(Icons.receipt_long_outlined, size: 20),
-                      SizedBox(width: 8),
-                      Text('Escanear recibo'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
             TextButton.icon(
               onPressed: _goToIngredientList,
               icon: AppSvgIcon(
@@ -278,6 +237,10 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                 icon: Icon(Icons.category_outlined),
                 text: 'Categorías',
               ),
+              Tab(
+                icon: Icon(Icons.photo_camera_outlined),
+                text: 'Foto',
+              ),
             ],
           ),
         ),
@@ -289,6 +252,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               children: [
                 _buildSearchTab(theme, colorScheme),
                 _buildCategoriesTab(theme, colorScheme),
+                _buildPhotoTab(theme, colorScheme),
               ],
             ),
           ),
@@ -307,81 +271,6 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
-            elevation: 0,
-            margin: const EdgeInsets.only(bottom: 16),
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: colorScheme.outlineVariant),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.photo_camera_outlined,
-                        color: colorScheme.primary,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Escanear con foto',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'Detecta ingredientes desde tu refrigerador o recibo',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          FridgeScannerScreen.navigate(
-                            context,
-                            storageService: _storageService,
-                            visionService: widget.visionService,
-                          );
-                        },
-                        icon: const Icon(Icons.kitchen_outlined, size: 16),
-                        label: const Text('Refrigerador'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          ReceiptScannerScreen.navigate(
-                            context,
-                            storageService: _storageService,
-                            parserService: widget.parserService,
-                          );
-                        },
-                        icon: const Icon(Icons.receipt_long_outlined, size: 16),
-                        label: const Text('Recibo'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -392,7 +281,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _submitTextSearch(),
                   decoration: InputDecoration(
-                    labelText: 'Nombre del ingrediente *',
+                    labelText: 'Nombre del ingrediente',
                     hintText: 'Ej. Pechuga de pollo, Tomate, Frijol',
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: _searchController.text.isNotEmpty
@@ -654,6 +543,147 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPhotoTab(ThemeData theme, ColorScheme colorScheme) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            elevation: 0,
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.kitchen_outlined,
+                          color: colorScheme.onPrimaryContainer,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Escanear refrigerador',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Detecta automáticamente los alimentos y productos en tu refrigerador o despensa a partir de una foto.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () {
+                      FridgeScannerScreen.navigate(
+                        context,
+                        storageService: _storageService,
+                        visionService: widget.visionService,
+                      );
+                    },
+                    icon: const Icon(Icons.kitchen_outlined, size: 18),
+                    label: const Text('Escanear refrigerador'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 0,
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.receipt_long_outlined,
+                          color: colorScheme.onSecondaryContainer,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Escanear recibo',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Extrae alimentos comprados y montos en Quetzales desde una fotografía de tu ticket o factura de supermercado.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () {
+                      ReceiptScannerScreen.navigate(
+                        context,
+                        storageService: _storageService,
+                        parserService: widget.parserService,
+                      );
+                    },
+                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                    label: const Text('Escanear recibo'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

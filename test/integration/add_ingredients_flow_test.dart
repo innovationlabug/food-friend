@@ -18,13 +18,13 @@ void main() {
 
     // Verify home screen is rendered in Spanish
     expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
-    expect(find.text('Ir a lista de compras'), findsAtLeastNWidgets(1));
+    expect(find.text('Ir a ingredientes disponibles'), findsAtLeastNWidgets(1));
 
     // 2. Navigate to Shopping List screen
-    await tester.tap(find.text('Ir a lista de compras').first);
+    await tester.tap(find.text('Ir a ingredientes disponibles').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Lista de compras'), findsOneWidget);
+    expect(find.text('Ingredientes disponibles'), findsOneWidget);
 
     // Clean session state using "Borrar todos los ingredientes" routine
     final clearButton = find.byTooltip('Borrar todos los ingredientes');
@@ -48,10 +48,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Agregar ingrediente'), findsOneWidget);
-    expect(find.text('Nombre del ingrediente *'), findsOneWidget);
+    expect(find.text('Nombre del ingrediente'), findsOneWidget);
 
     // Type query
-    final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+    final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
     await tester.enterText(searchInput, 'pechuga');
     await tester.pumpAndSettle();
 
@@ -68,7 +68,7 @@ void main() {
 
     // 4. Flow US-2.2: Add ingredient via closest match fallback without leaving screen
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Nombre del ingrediente *'),
+      find.widgetWithText(TextFormField, 'Nombre del ingrediente'),
       'tomte',
     );
     await tester.pumpAndSettle();

@@ -30,7 +30,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Agregar ingrediente'), findsOneWidget);
-      expect(find.text('Nombre del ingrediente *'), findsOneWidget);
+      expect(find.text('Nombre del ingrediente'), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Guardar'), findsOneWidget);
     });
 
@@ -39,7 +39,7 @@ void main() {
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
-      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
 
       // Type unaccented lowercase 'pech'
       await tester.enterText(input, 'pech');
@@ -60,7 +60,7 @@ void main() {
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
-      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
       await tester.enterText(input, 'frijol');
       await tester.pumpAndSettle();
 
@@ -95,7 +95,7 @@ void main() {
         findsNothing,
       );
 
-      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
       await tester.enterText(input, 'p');
       await tester.pumpAndSettle();
 
@@ -126,7 +126,7 @@ void main() {
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
-      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
 
       // Type typo 'pechuga de polo'
       await tester.enterText(input, 'pechuga de polo');
@@ -169,7 +169,33 @@ void main() {
       await tester.pumpAndSettle();
 
       // Successfully navigates to ShoppingListScreen
-      expect(find.text('Lista de compras'), findsOneWidget);
+      expect(find.text('Ingredientes disponibles'), findsOneWidget);
+    });
+
+    testWidgets('has Foto tab along Buscar and Categorías, and no camera icon in AppBar actions',
+        (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      // Verify all 3 tabs are present
+      expect(find.text('Buscar'), findsOneWidget);
+      expect(find.text('Categorías'), findsOneWidget);
+      expect(find.text('Foto'), findsOneWidget);
+
+      // Verify camera icon in AppBar actions is removed
+      final appBar = find.byType(AppBar);
+      expect(
+        find.descendant(of: appBar, matching: find.byType(PopupMenuButton<String>)),
+        findsNothing,
+      );
+
+      // Tap on Foto tab
+      await tester.tap(find.text('Foto'));
+      await tester.pumpAndSettle();
+
+      // Verify photo scanning options
+      expect(find.text('Escanear refrigerador'), findsAtLeastNWidgets(1));
+      expect(find.text('Escanear recibo'), findsAtLeastNWidgets(1));
     });
   });
 }

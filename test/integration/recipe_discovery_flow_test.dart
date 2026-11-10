@@ -24,13 +24,13 @@ void main() {
 
     // Verify home screen is rendered in Spanish
     expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
-    expect(find.text('Ir a lista de compras'), findsAtLeastNWidgets(1));
+    expect(find.text('Ir a ingredientes disponibles'), findsAtLeastNWidgets(1));
 
     // 2. Navigate to Shopping List screen
-    await tester.tap(find.text('Ir a lista de compras').first);
+    await tester.tap(find.text('Ir a ingredientes disponibles').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Lista de compras'), findsOneWidget);
+    expect(find.text('Ingredientes disponibles'), findsOneWidget);
 
     // Clean session state using "Borrar todos los ingredientes" routine
     final clearButton = find.byTooltip('Borrar todos los ingredientes');
@@ -54,7 +54,7 @@ void main() {
     await tester.tap(addBtn);
     await tester.pumpAndSettle();
 
-    final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+    final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
     await tester.enterText(searchInput, 'pechuga');
     await tester.pumpAndSettle();
 
@@ -144,7 +144,7 @@ void main() {
 
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
-    expect(find.text('Lista de compras'), findsOneWidget);
+    expect(find.text('Ingredientes disponibles'), findsOneWidget);
   });
 
   testWidgets('E2E Flow US-4.3: Combination berenjena + yuca queries external API and displays matching online recipes',
@@ -178,7 +178,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Agregar ingrediente'));
     await tester.pumpAndSettle();
 
-    final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente *');
+    final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
     await tester.enterText(searchInput, 'berenjena');
     await tester.pumpAndSettle();
 
