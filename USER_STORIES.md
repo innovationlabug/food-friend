@@ -143,17 +143,17 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-3.4: Supermarket Receipt Upload & Confirmation UI
+### - [x] US-3.4: Supermarket Receipt Upload & Confirmation UI
 **As a** user,  
 **I want** to upload or capture a photo of a supermarket receipt and confirm the extracted food items,  
 **So that** I can quickly populate my available ingredients after grocery shopping.
 
 #### Acceptance Criteria
-- [ ] In the Add Ingredient flow, the user can upload or capture a photo of a supermarket receipt.
-- [ ] A loading state in Spanish is displayed while `/api/parse-receipt` processes the image.
-- [ ] Extracted food items are presented in a checklist where `high` confidence items are pre-selected and `medium`/`low` confidence items are unselected.
-- [ ] The user can select/unselect items and confirm to save the chosen ingredient names into their local ingredient list.
-- [ ] If parsing fails or no food items are detected, a fallback message in Spanish allows the user to retry or switch to manual ingredient entry.
+- [x] In the Add Ingredient flow, the user can upload or capture a photo of a supermarket receipt.
+- [x] A loading state in Spanish is displayed while `/api/parse-receipt` processes the image.
+- [x] Extracted food items are presented in a checklist where `high` confidence items are pre-selected and `medium`/`low` confidence items are unselected.
+- [x] The user can select/unselect items and confirm to save the chosen ingredient names into their local ingredient list.
+- [x] If parsing fails or no food items are detected, a fallback message in Spanish allows the user to retry or switch to manual ingredient entry.
 
 ---
 

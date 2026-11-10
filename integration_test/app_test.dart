@@ -146,4 +146,45 @@ void main() {
     // Cleanup
     await storage.clearIngredients();
   });
+
+  testWidgets('E2E integration test: verifies photo and receipt scanner navigation from Add Ingredient',
+      (WidgetTester tester) async {
+    final storage = IngredientStorageService();
+    await storage.clearIngredients();
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // Navigate to Add Ingredients screen
+    await tester.tap(find.text('Añadir ingredientes').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Agregar ingrediente'), findsOneWidget);
+    expect(find.text('Escanear con foto'), findsOneWidget);
+    expect(find.text('Refrigerador'), findsOneWidget);
+    expect(find.text('Recibo'), findsOneWidget);
+
+    // Tap Refrigerador
+    await tester.tap(find.text('Refrigerador'));
+    await tester.pumpAndSettle();
+    expect(find.text('Escanear refrigerador'), findsOneWidget);
+    expect(find.text('Detectar ingredientes por foto'), findsOneWidget);
+
+    // Go back
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // Tap Recibo
+    await tester.tap(find.text('Recibo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Escanear recibo'), findsOneWidget);
+    expect(find.text('Extraer alimentos de factura / ticket'), findsOneWidget);
+
+    // Go back
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // Cleanup
+    await storage.clearIngredients();
+  });
 }

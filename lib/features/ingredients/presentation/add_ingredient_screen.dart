@@ -5,9 +5,12 @@ import '../../../core/widgets/app_svg_icon.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 import '../data/ingredient_catalog.dart';
 import '../data/ingredient_storage_service.dart';
+import '../data/fridge_vision_service.dart';
+import '../data/receipt_parser_service.dart';
 import '../domain/category_node.dart';
 import '../domain/ingredient.dart';
 import 'fridge_scanner_screen.dart';
+import 'receipt_scanner_screen.dart';
 
 /// Screen allowing the user to add ingredients via:
 /// 1. Real-time text search with auto-suggestions and closest-match fallback (US-2.2).
@@ -16,12 +19,20 @@ class AddIngredientScreen extends StatefulWidget {
   const AddIngredientScreen({
     super.key,
     this.storageService,
+    this.visionService,
+    this.parserService,
     this.initialTab = 0,
     this.openedFromShoppingList = false,
   });
 
   /// Storage service used to persist ingredients.
   final IngredientStorageService? storageService;
+
+  /// Optional vision service for fridge scanning.
+  final FridgeVisionService? visionService;
+
+  /// Optional parser service for receipt scanning.
+  final ReceiptParserService? parserService;
 
   /// Initial tab index (0 = Buscar, 1 = Categorías).
   final int initialTab;
@@ -33,6 +44,8 @@ class AddIngredientScreen extends StatefulWidget {
   static Future<Ingredient?> navigate(
     BuildContext context, {
     IngredientStorageService? storageService,
+    FridgeVisionService? visionService,
+    ReceiptParserService? parserService,
     int initialTab = 0,
     bool openedFromShoppingList = true,
   }) {
@@ -40,6 +53,8 @@ class AddIngredientScreen extends StatefulWidget {
       MaterialPageRoute(
         builder: (_) => AddIngredientScreen(
           storageService: storageService,
+          visionService: visionService,
+          parserService: parserService,
           initialTab: initialTab,
           openedFromShoppingList: openedFromShoppingList,
         ),
@@ -201,15 +216,46 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
         appBar: AppBar(
           title: const Text('Agregar ingrediente'),
           actions: [
-            IconButton(
-              tooltip: 'Escanear refrigerador con foto',
-              icon: const Icon(Icons.kitchen_outlined),
-              onPressed: () {
-                FridgeScannerScreen.navigate(
-                  context,
-                  storageService: _storageService,
-                );
+            PopupMenuButton<String>(
+              tooltip: 'Escanear con foto',
+              icon: const Icon(Icons.photo_camera_outlined),
+              onSelected: (value) {
+                if (value == 'fridge') {
+                  FridgeScannerScreen.navigate(
+                    context,
+                    storageService: _storageService,
+                    visionService: widget.visionService,
+                  );
+                } else if (value == 'receipt') {
+                  ReceiptScannerScreen.navigate(
+                    context,
+                    storageService: _storageService,
+                    parserService: widget.parserService,
+                  );
+                }
               },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'fridge',
+                  child: Row(
+                    children: [
+                      Icon(Icons.kitchen_outlined, size: 20),
+                      SizedBox(width: 8),
+                      Text('Escanear refrigerador'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'receipt',
+                  child: Row(
+                    children: [
+                      Icon(Icons.receipt_long_outlined, size: 20),
+                      SizedBox(width: 8),
+                      Text('Escanear recibo'),
+                    ],
+                  ),
+                ),
+              ],
             ),
             TextButton.icon(
               onPressed: _goToIngredientList,
@@ -270,43 +316,67 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               side: BorderSide(color: colorScheme.outlineVariant),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.kitchen_outlined,
-                    color: colorScheme.primary,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Escanear con foto',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.photo_camera_outlined,
+                        color: colorScheme.primary,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Escanear con foto',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Detecta ingredientes desde tu refrigerador o recibo',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          'Detecta productos de tu refrigerador o despensa',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  TextButton.icon(
-                    onPressed: () {
-                      FridgeScannerScreen.navigate(
-                        context,
-                        storageService: _storageService,
-                      );
-                    },
-                    icon: const Icon(Icons.camera_alt, size: 16),
-                    label: const Text('Escanear'),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          FridgeScannerScreen.navigate(
+                            context,
+                            storageService: _storageService,
+                            visionService: widget.visionService,
+                          );
+                        },
+                        icon: const Icon(Icons.kitchen_outlined, size: 16),
+                        label: const Text('Refrigerador'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          ReceiptScannerScreen.navigate(
+                            context,
+                            storageService: _storageService,
+                            parserService: widget.parserService,
+                          );
+                        },
+                        icon: const Icon(Icons.receipt_long_outlined, size: 16),
+                        label: const Text('Recibo'),
+                      ),
+                    ],
                   ),
                 ],
               ),
