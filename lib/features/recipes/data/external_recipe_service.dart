@@ -25,7 +25,7 @@ class RecipeDiscoveryResponse {
   final String? fallbackMessage;
 
   bool get isFallback => source == 'fallback';
-  bool get isExternal => source == 'external';
+  bool get isExternal => source == 'external' || source == 'gemini';
   bool get isLocal => source == 'local';
 }
 
@@ -80,9 +80,13 @@ class ExternalRecipeService {
           minMatchCount: 0,
         );
 
+        final resolvedSource = (externalRecipes.first.source == 'gemini')
+            ? 'gemini'
+            : 'external';
+
         return RecipeDiscoveryResponse(
           results: externalResults,
-          source: 'external',
+          source: resolvedSource,
         );
       }
     } catch (_) {
@@ -119,7 +123,7 @@ class ExternalRecipeService {
               headers: {'Content-Type': 'application/json'},
               body: jsonEncode({'ingredients': ingredients}),
             )
-            .timeout(const Duration(seconds: 8));
+            .timeout(const Duration(seconds: 25));
 
         if (response.statusCode == 200) {
           final Map<String, dynamic> body =

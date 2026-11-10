@@ -1,4 +1,145 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import fs from 'node:fs';
+import path from 'node:path';
+
+/**
+ * Interface representing structured recipe item from Gemini.
+ */
+interface GeminiRecipeItem {
+  id?: string;
+  title: string;
+  description?: string;
+  category?: string;
+  prepTimeMinutes?: number;
+  cookTimeMinutes?: number;
+  servings?: number;
+  difficulty?: string;
+  ingredients: Array<{ name: string; displayAmount?: string }>;
+  instructions: string[];
+}
+
+/**
+ * Reads the Gemini API key from environment variables or .env.local.
+ */
+function getGeminiApiKey(): string | undefined {
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0) {
+    return process.env.GEMINI_API_KEY.trim();
+  }
+  try {
+    const envPath = path.resolve(process.cwd(), '.env.local');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      const match = content.match(/GEMINI_API_KEY=([^\r\n]+)/);
+      if (match) return match[1].trim();
+    }
+  } catch {}
+  return undefined;
+}
+
+/**
+ * Generates authentic, healthy Spanish recipes using Gemini 3.8 Flash
+ * based on the user's available cooking ingredients.
+ */
+async function generateRecipesWithGemini(
+  ingredients: string[]
+): Promise<Array<Record<string, unknown>> | null> {
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) return null;
+
+  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const SYSTEM_INSTRUCTION = `Eres un chef profesional y asesor nutricional experto para la aplicación Food Friend en Guatemala.
+Tu objetivo es sugerir recetas caseras, saludables, apetitosas y prácticas en español, basadas primordialmente en los ingredientes seleccionados por el usuario.
+Las recetas deben tener instrucciones claras paso a paso en español guatemalteco / latino neutro, y utilizar los ingredientes proporcionados como protagonistas principales.
+Los ingredientes deben especificar cantidades realistas (ej. "2 unidades", "1/2 libra", "2 cucharadas").
+Devuelve siempre salida JSON estricta según el esquema solicitado.`;
+
+  const PROMPT_TEXT = `El usuario tiene los siguientes ingredientes disponibles en casa: ${ingredients.join(', ')}.
+
+Genera 2 o 3 recetas saludables, apetitosas y concisas en español donde estos ingredientes sean los protagonistas principales.
+
+Devuelve un JSON con:
+"recipes": Lista de recetas estructuradas con:
+- "id": Identificador único (ej. "gemini_receta_1")
+- "title": Título atractivo en español (ej. "Guiso Casero de Yuca y Berenjena al Tomate")
+- "description": Breve descripción culinaria atractiva (1 oración)
+- "category": Una de ["Almuerzo", "Cena", "Desayuno", "Guarnición", "Sopas y Caldos"]
+- "prepTimeMinutes": Tiempo de preparación en minutos (número entero)
+- "cookTimeMinutes": Tiempo de cocción en minutos (número entero)
+- "servings": Número de porciones (ej. 4)
+- "difficulty": "Fácil", "Media" o "Difícil"
+- "ingredients": Lista de objetos con "name" (nombre limpio del ingrediente en español que coincida con los ingredientes del usuario o comunes) y "displayAmount" (cantidad sugerida, ej. "1 unidad", "1 taza", "Al gusto")
+- "instructions": Lista de pasos claros, ordenados y directos en español (4 a 6 pasos por receta).`;
+
+  const payload = {
+    system_instruction: {
+      parts: [{ text: SYSTEM_INSTRUCTION }],
+    },
+    contents: [
+      {
+        parts: [{ text: PROMPT_TEXT }],
+      },
+    ],
+    generationConfig: {
+      response_mime_type: 'application/json',
+      temperature: 0.6,
+    },
+  };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      console.warn(`[Gemini API] Request returned status ${res.status}`);
+      return null;
+    }
+
+    const data = (await res.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) return null;
+
+    const parsed = JSON.parse(rawText) as { recipes?: GeminiRecipeItem[] };
+    if (!parsed.recipes || !Array.isArray(parsed.recipes) || parsed.recipes.length === 0) {
+      return null;
+    }
+
+    return parsed.recipes.map((r, index) => ({
+      id: r.id || `gemini_${Date.now()}_${index}`,
+      title: r.title,
+      description: r.description || 'Receta saludable sugerida por Food Friend',
+      category: r.category || 'Almuerzo',
+      prepTimeMinutes: typeof r.prepTimeMinutes === 'number' ? r.prepTimeMinutes : 15,
+      cookTimeMinutes: typeof r.cookTimeMinutes === 'number' ? r.cookTimeMinutes : 25,
+      servings: typeof r.servings === 'number' ? r.servings : 4,
+      difficulty: r.difficulty || 'Fácil',
+      source: 'gemini',
+      ingredients: (r.ingredients || []).map((ing) => ({
+        name: ing.name.trim(),
+        displayAmount: ing.displayAmount?.trim() || 'Al gusto',
+      })),
+      instructions:
+        Array.isArray(r.instructions) && r.instructions.length > 0
+          ? r.instructions.map((step) => step.trim())
+          : ['Preparar y cocinar todos los ingredientes hasta alcanzar el punto deseado.'],
+    }));
+  } catch (error) {
+    clearTimeout(timeout);
+    console.warn('[Gemini API] Generation failed or timed out, falling back to traditional database:', error);
+    return null;
+  }
+}
 
 /**
  * Comprehensive Spanish to English ingredient mapping
@@ -85,6 +226,15 @@ const SPANISH_TO_ENGLISH_INGREDIENTS: Record<string, string> = {
   sal: 'salt',
   comino: 'cumin',
   curry: 'curry',
+  nueces: 'walnuts',
+  nuez: 'walnuts',
+  mani: 'peanuts',
+  'maní': 'peanuts',
+  cacahuate: 'peanuts',
+  gouda: 'cheese',
+  'queso gouda': 'cheese',
+  parmesano: 'parmesan',
+  'queso parmesano': 'parmesan',
 
   // Proteins / Meats / Poultry / Seafood
   pollo: 'chicken',
@@ -561,7 +711,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Map each Spanish ingredient to recognized English query terms
+    // 1. Primary: Generate authentic Spanish recipes with Gemini 3.8 Flash
+    try {
+      const geminiRecipes = await generateRecipesWithGemini(sanitizedList);
+      if (geminiRecipes && geminiRecipes.length > 0) {
+        return res.status(200).json({
+          success: true,
+          count: geminiRecipes.length,
+          recipes: geminiRecipes,
+        });
+      }
+    } catch (geminiError) {
+      console.warn('[Backend Proxy] Gemini generation failed, falling back to traditional database:', geminiError);
+    }
+
+    // 2. Secondary fallback: Query traditional recipe databases (TheMealDB) with translation
     const englishTerms: string[] = [];
     for (const spanish of sanitizedList) {
       const mapped = mapSpanishToEnglish(spanish);
