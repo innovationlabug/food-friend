@@ -113,19 +113,19 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-3.2: Fridge/Pantry Photo Upload & Confirmation UI
+### - [x] US-3.2: Fridge/Pantry Photo Upload & Confirmation UI
 **As a** user,  
 **I want** to upload or capture a photo of my refrigerator or pantry and review the detected ingredients before saving,  
 **So that** I can add multiple available ingredients at once while filtering out inaccurate detections.
 
 #### Acceptance Criteria
-- [ ] In the Add Ingredient flow, the user can select or capture a photo of their refrigerator or pantry (supporting both Web file picker and Android camera/gallery).
-- [ ] A clean loading state in Spanish is shown while the image is processed by `/api/detect-fridge`.
-- [ ] The app displays a confirmation list of detected ingredients:
+- [x] In the Add Ingredient flow, the user can select or capture a photo of their refrigerator or pantry (supporting both Web file picker and Android camera/gallery).
+- [x] A clean loading state in Spanish is shown while the image is processed by `/api/detect-fridge`.
+- [x] The app displays a confirmation list of detected ingredients:
   - Items with `high` confidence are pre-selected (checked) by default.
   - Items with `medium` or `low` confidence are unselected (unchecked) by default.
-- [ ] The user can manually check or uncheck any item and confirm to batch-add the selected ingredient names to their available ingredients list.
-- [ ] If the API request fails, a client-side fallback notifies the user in Spanish and directs them smoothly to manual text/category entry.
+- [x] The user can manually check or uncheck any item and confirm to batch-add the selected ingredient names to their available ingredients list.
+- [x] If the API request fails, a client-side fallback notifies the user in Spanish and directs them smoothly to manual text/category entry.
 
 ---
 

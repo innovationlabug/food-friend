@@ -75,6 +75,15 @@ class IngredientStorageService {
     return updatedList;
   }
 
+  /// Adds multiple ingredients to local storage in a single batch.
+  Future<List<Ingredient>> addIngredients(List<Ingredient> newIngredients) async {
+    final currentList = await getIngredients();
+    final combined = <Ingredient>[...currentList, ...newIngredients];
+    final consolidated = consolidateList(combined);
+    await saveIngredients(consolidated);
+    return consolidated;
+  }
+
   /// Removes an ingredient by name (case- and accent-insensitive).
   Future<List<Ingredient>> removeIngredient(String name) async {
     final currentList = await getIngredients();

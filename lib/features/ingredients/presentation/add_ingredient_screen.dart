@@ -7,6 +7,7 @@ import '../data/ingredient_catalog.dart';
 import '../data/ingredient_storage_service.dart';
 import '../domain/category_node.dart';
 import '../domain/ingredient.dart';
+import 'fridge_scanner_screen.dart';
 
 /// Screen allowing the user to add ingredients via:
 /// 1. Real-time text search with auto-suggestions and closest-match fallback (US-2.2).
@@ -200,6 +201,16 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
         appBar: AppBar(
           title: const Text('Agregar ingrediente'),
           actions: [
+            IconButton(
+              tooltip: 'Escanear refrigerador con foto',
+              icon: const Icon(Icons.kitchen_outlined),
+              onPressed: () {
+                FridgeScannerScreen.navigate(
+                  context,
+                  storageService: _storageService,
+                );
+              },
+            ),
             TextButton.icon(
               onPressed: _goToIngredientList,
               icon: AppSvgIcon(
@@ -250,6 +261,57 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Card(
+            elevation: 0,
+            margin: const EdgeInsets.only(bottom: 16),
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.kitchen_outlined,
+                    color: colorScheme.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Escanear con foto',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Detecta productos de tu refrigerador o despensa',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      FridgeScannerScreen.navigate(
+                        context,
+                        storageService: _storageService,
+                      );
+                    },
+                    icon: const Icon(Icons.camera_alt, size: 16),
+                    label: const Text('Escanear'),
+                  ),
+                ],
+              ),
+            ),
+          ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
