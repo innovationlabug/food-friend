@@ -158,3 +158,65 @@ When querying with ingredient combinations having zero local matches, such as `b
 - **Static Analysis (`flutter analyze`):** `No issues found!` (0 warnings, 0 errors).
 - **TypeScript Typecheck (`npm run typecheck`):** `0 errors` (backend `/api/recipes.ts` and `/api/health.ts` clean).
 - **Layout & Accessibility Verification:** Zero `RenderFlex` overflows, zero uncaught exceptions across all viewport sizes.
+
+---
+
+## 7. Multi-Ingredient Photo Input (Phase 3) - US-3.1 through US-3.4 Report
+
+### Overview
+Phase 3 enables users to add multiple ingredients simultaneously via photo recognition (refrigerator/pantry photos and supermarket receipts) powered by Gemini 3.8 Flash (`gemini-3.8-flash`), routed securely through Vercel serverless function proxies without exposing API keys on the client.
+
+---
+
+### User Stories Breakdown
+
+#### US-3.1: Backend Proxy & Fridge Photo Detection Endpoint (`/api/detect-fridge`)
+- **Backend Function:** [`api/detect-fridge.ts`](file:///c:/Users/luisr/food-friend/api/detect-fridge.ts) implemented in TypeScript using `@google/genai` and `process.env.GEMINI_API_KEY`.
+- **Payload Validation & Sanitization:** Enforces 10 MB payload limits, validates MIME types (`image/jpeg`, `image/png`, `image/webp`), and strips Data URI headers cleanly.
+- **Visual Intelligence:** System instruction tuned for Guatemalan kitchens and Central American brands (Trebolac, Ducal, Malher, Pollo Campero, Foremost, B&B, Sula, Toledo, Perry, etc.).
+- **Confidence Output:** Normalizes confidence to strictly `'high'`, `'medium'`, or `'low'`.
+- **Error Handling:** Returns structured Spanish errors with 35s timeouts and HTTP 504/500 codes.
+
+#### US-3.2: Fridge/Pantry Photo Upload & Confirmation UI (`FridgeScannerScreen`)
+- **Presentation Component:** [`FridgeScannerScreen`](file:///c:/Users/luisr/food-friend/lib/features/ingredients/presentation/fridge_scanner_screen.dart) supporting camera capture, gallery selection, and bundled sample photo previews.
+- **Loading State:** Clean Spanish loading indicator: *"Analizando alimentos en tu refrigerador... Identificando marcas locales e ingredientes para tu cocina."*
+- **Confirmation Checklist:**
+  - High confidence items are pre-selected (`isSelected = true`) by default.
+  - Medium/low confidence items are unselected (`isSelected = false`) by default.
+  - Quick action controls (`Todos` / `Ninguno`).
+  - Batch confirmation adds all selected items directly to `IngredientStorageService`.
+- **Offline & Error Fallback:** Informative error banner with *"Reintentar"* and *"Ingresar manualmente"* actions.
+
+#### US-3.3: Backend Supermarket Receipt Parser Endpoint (`/api/parse-receipt`)
+- **Backend Function:** [`api/parse-receipt.ts`](file:///c:/Users/luisr/food-friend/api/parse-receipt.ts) implemented in TypeScript with `gemini-3.8-flash`.
+- **POS Abbreviations Dictionary:** Injects maintainable Guatemalan supermarket abbreviations (`AR/BLA` $\rightarrow$ Arroz blanco, `FJOL/NG` $\rightarrow$ Frijol negro, `ACTE/VEG` $\rightarrow$ Aceite vegetal, `CH/MEIN` $\rightarrow$ Fideos chow mein, `JAM/FAM` $\rightarrow$ Jamón familiar, `QUES/CAP` $\rightarrow$ Queso de capas, etc.).
+- **Item Filtering & Consolidation:** Automatically filters out non-food items (cleaning detergents, paper products, matches, toiletries) and consolidates duplicate receipt lines into combined unit counts and total prices in Quetzales (`Q`).
+- **Structured Response:** Returns `supermarket`, `totalFacturaGtq`, `totalAlimentosGtq`, `summary`, and structured `items`.
+
+#### US-3.4: Supermarket Receipt Upload & Confirmation UI (`ReceiptScannerScreen`)
+- **Presentation Component:** [`ReceiptScannerScreen`](file:///c:/Users/luisr/food-friend/lib/features/ingredients/presentation/receipt_scanner_screen.dart) allowing photo capture and receipt analysis.
+- **Receipt Header:** Displays extracted supermarket name and totals in GTQ (`Q`).
+- **Checklist Review:** High confidence items are pre-selected; user can review line descriptions, quantities, and prices before confirming.
+- **Entry Points:** Directly accessible from `AddIngredientScreen` via quick-action cards and AppBar menus.
+
+---
+
+### Test Suite Verification Summary (Phase 3)
+
+| Test Suite | Scope | Result |
+| :--- | :--- | :--- |
+| `test/backend/detect_fridge_test.mjs` | Backend `/api/detect-fridge` CORS, HTTP methods, 400 validation, 413 limits | **PASSED** (5 tests) |
+| `test/backend/parse_receipt_test.mjs` | Backend `/api/parse-receipt` POS abbreviations, CORS, 400 validation, 413 limits | **PASSED** (6 tests) |
+| `test/unit/fridge_vision_model_test.dart` | `FridgeDetectedItem` serialization, high/medium/low default selection, copyWith | **PASSED** (4 tests) |
+| `test/unit/fridge_vision_service_test.dart` | `FridgeVisionService` 200 parsing, empty image validation, 500 error fallback | **PASSED** (3 tests) |
+| `test/features/fridge_scanner_screen_test.dart` | `FridgeScannerScreen` camera/gallery prompt, loading state, checklist pre-selection, error fallback | **PASSED** (4 tests) |
+| `test/unit/receipt_parser_model_test.dart` | `ReceiptFoodItem` serialization, GTQ price formatting, default confidence selection | **PASSED** (4 tests) |
+| `test/unit/receipt_parser_service_test.dart` | `ReceiptParserService` 200 parsing, supermarket/totals extraction, error fallback | **PASSED** (3 tests) |
+| `test/features/receipt_scanner_screen_test.dart` | `ReceiptScannerScreen` prompt, loading state, checklist pre-selection, GTQ display, confirm addition | **PASSED** (4 tests) |
+| `test/integration/photo_ingredients_flow_test.dart` | E2E Full Flow: Clean state $\rightarrow$ Fridge Photo Scan (sample03) $\rightarrow$ Confirm $\rightarrow$ Receipt Scan (sample02) $\rightarrow$ Confirm $\rightarrow$ Verify Shopping List | **PASSED** (2 tests) |
+
+- **Total Combined Flutter Tests:** **114 tests passing** (0 failures).
+- **Backend Node Tests:** **11 tests passing** (0 failures).
+- **Static Analysis (`flutter analyze`):** `No issues found!` (0 warnings, 0 errors).
+- **TypeScript Typecheck (`npm run typecheck`):** `0 errors` (0 warnings).
+
