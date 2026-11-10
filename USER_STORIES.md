@@ -100,16 +100,16 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ## Phase 3: Multi-Ingredient Photo Input (Fridge & Receipt Scanning)
 
-### - [ ] US-3.1: Backend Proxy & Fridge Photo Detection Endpoint
+### - [x] US-3.1: Backend Proxy & Fridge Photo Detection Endpoint
 **As a** developer,  
 **I want** a Vercel Serverless Function that analyzes refrigerator or pantry photos using Gemini and returns structured ingredient data in Spanish,  
 **So that** users can detect multiple ingredients from a photo without exposing API keys on the client.
 
 #### Acceptance Criteria
-- [ ] A serverless endpoint (`/api/detect-fridge`) is implemented in TypeScript using `@google/genai` and `process.env.GEMINI_API_KEY`.
-- [ ] The endpoint validates and sanitizes the incoming image payload (enforcing size/mime-type limits).
-- [ ] The model prompt instructs Gemini to identify food items and Guatemalan brands, returning structured JSON with standardized Spanish ingredient names, optional brand/quantity metadata, and confidence levels (`high`, `medium`, `low`).
-- [ ] If the LLM call fails or times out, the endpoint returns a structured Spanish error response so the client fallback can trigger cleanly.
+- [x] A serverless endpoint (`/api/detect-fridge`) is implemented in TypeScript using `@google/genai` and `process.env.GEMINI_API_KEY`.
+- [x] The endpoint validates and sanitizes the incoming image payload (enforcing size/mime-type limits).
+- [x] The model prompt instructs Gemini to identify food items and Guatemalan brands, returning structured JSON with standardized Spanish ingredient names, optional brand/quantity metadata, and confidence levels (`high`, `medium`, `low`).
+- [x] If the LLM call fails or times out, the endpoint returns a structured Spanish error response so the client fallback can trigger cleanly.
 
 ---
 
