@@ -229,5 +229,126 @@ void main() {
       expect(find.textContaining('Tienes: Berenjena'), findsOneWidget);
       expect(find.textContaining('Tienes: Yuca'), findsOneWidget);
     });
+
+    testWidgets('displays meal category filter chips and filters recipes by meal type',
+        (WidgetTester tester) async {
+      final mockClient = MockClient((_) async {
+        return http.Response(
+          '{"success": true, "count": 2, "recipes": ['
+          '{"id": "ext_desayuno", "title": "Pancake de Berenjena", "category": "Desayuno", "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "1 taza"}], "instructions": ["Mezclar y cocinar."] },'
+          '{"id": "ext_almuerzo", "title": "Guiso de Yuca", "category": "Almuerzo", "source": "external", "ingredients": [{"name": "Yuca", "displayAmount": "1 lb"}], "instructions": ["Cocinar yuca."] }'
+          ']}',
+          200,
+        );
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Berenjena', 'Yuca'],
+        externalService: externalService,
+      ));
+      await tester.pumpAndSettle();
+
+      // Verify filter chips exist
+      expect(find.byType(ChoiceChip), findsWidgets);
+      expect(
+        find.descendant(of: find.byType(ChoiceChip), matching: find.textContaining('Todos')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(ChoiceChip), matching: find.textContaining('Desayuno')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(ChoiceChip), matching: find.textContaining('Almuerzo')),
+        findsOneWidget,
+      );
+
+      // Initially both Pancake de Berenjena and Guiso de Yuca are visible
+      expect(find.text('Pancake de Berenjena'), findsOneWidget);
+      expect(find.text('Guiso de Yuca'), findsOneWidget);
+
+      // Tap on 'Desayuno' filter chip
+      final desayunoChip = find.descendant(
+        of: find.byType(ChoiceChip),
+        matching: find.textContaining('Desayuno'),
+      );
+      await tester.tap(desayunoChip);
+      await tester.pumpAndSettle();
+
+      // Now only Pancake de Berenjena is visible, Guiso de Yuca is filtered out
+      expect(find.text('Pancake de Berenjena'), findsOneWidget);
+      expect(find.text('Guiso de Yuca'), findsNothing);
+
+      // Tap on 'Almuerzo' filter chip
+      final almuerzoChip = find.descendant(
+        of: find.byType(ChoiceChip),
+        matching: find.textContaining('Almuerzo'),
+      );
+      await tester.tap(almuerzoChip);
+      await tester.pumpAndSettle();
+
+      // Now Guiso de Yuca is visible, Pancake de Berenjena is filtered out
+      expect(find.text('Guiso de Yuca'), findsOneWidget);
+      expect(find.text('Pancake de Berenjena'), findsNothing);
+
+      // Tap on 'Todos' to clear filter
+      final todosChip = find.descendant(
+        of: find.byType(ChoiceChip),
+        matching: find.textContaining('Todos'),
+      );
+      await tester.tap(todosChip);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pancake de Berenjena'), findsOneWidget);
+      expect(find.text('Guiso de Yuca'), findsOneWidget);
+    });
+
+    testWidgets('shows empty filtered state when category has zero matches and resets to all',
+        (WidgetTester tester) async {
+      final mockClient = MockClient((_) async {
+        return http.Response(
+          '{"success": true, "count": 1, "recipes": ['
+          '{"id": "ext_almuerzo", "title": "Guiso de Yuca", "category": "Almuerzo", "source": "external", "ingredients": [{"name": "Yuca", "displayAmount": "1 lb"}], "instructions": ["Cocinar yuca."] }'
+          ']}',
+          200,
+        );
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Yuca'],
+        externalService: externalService,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Guiso de Yuca'), findsOneWidget);
+
+      // Tap on 'Cena' filter (0 dinner recipes returned)
+      final cenaChip = find.descendant(
+        of: find.byType(ChoiceChip),
+        matching: find.textContaining('Cena'),
+      );
+      await tester.tap(cenaChip);
+      await tester.pumpAndSettle();
+
+      // Verify empty state is displayed
+      expect(find.text('Sin recetas de tipo "Cena"'), findsOneWidget);
+      expect(find.text('Mostrar todas las recetas'), findsOneWidget);
+
+      // Tap button to restore all recipes
+      await tester.tap(find.text('Mostrar todas las recetas'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Guiso de Yuca'), findsOneWidget);
+    });
   });
 }

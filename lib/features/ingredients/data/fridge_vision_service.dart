@@ -72,11 +72,20 @@ class FridgeVisionService {
                   FridgeDetectedItem.fromJson(it as Map<String, dynamic>))
               .toList();
 
+          final indexed = items.asMap().entries.toList();
+          indexed.sort((a, b) {
+            final diff = _confidenceRank(a.value.confidence)
+                .compareTo(_confidenceRank(b.value.confidence));
+            if (diff != 0) return diff;
+            return a.key.compareTo(b.key);
+          });
+          final sortedItems = indexed.map((e) => e.value).toList();
+
           return FridgeDetectionResult(
             success: true,
             summary: body['summary']?.toString() ??
                 'Productos identificados en el refrigerador',
-            items: items,
+            items: sortedItems,
           );
         }
 
@@ -144,5 +153,18 @@ class FridgeVisionService {
       Uri.parse(
           'http://localhost:8080${proxyBaseUrl.startsWith('/') ? '' : '/'}$proxyBaseUrl'),
     ];
+  }
+
+  static int _confidenceRank(String c) {
+    switch (c.trim().toLowerCase()) {
+      case 'high':
+        return 0;
+      case 'medium':
+        return 1;
+      case 'low':
+        return 2;
+      default:
+        return 1;
+    }
   }
 }

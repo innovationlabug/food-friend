@@ -85,6 +85,15 @@ class ReceiptParserService {
               .map((it) => ReceiptFoodItem.fromJson(it as Map<String, dynamic>))
               .toList();
 
+          final indexed = items.asMap().entries.toList();
+          indexed.sort((a, b) {
+            final diff = _confidenceRank(a.value.confidence)
+                .compareTo(_confidenceRank(b.value.confidence));
+            if (diff != 0) return diff;
+            return a.key.compareTo(b.key);
+          });
+          final sortedItems = indexed.map((e) => e.value).toList();
+
           double? parseDouble(dynamic v) {
             if (v == null) return null;
             if (v is num) return v.toDouble();
@@ -100,7 +109,7 @@ class ReceiptParserService {
             totalAlimentosGtq: parseDouble(body['totalAlimentosGtq']),
             summary: body['summary']?.toString() ??
                 'Recibo procesado con éxito',
-            items: items,
+            items: sortedItems,
           );
         }
 
@@ -169,4 +178,18 @@ class ReceiptParserService {
           'http://localhost:8080${proxyBaseUrl.startsWith('/') ? '' : '/'}$proxyBaseUrl'),
     ];
   }
+
+  static int _confidenceRank(String c) {
+    switch (c.trim().toLowerCase()) {
+      case 'high':
+        return 0;
+      case 'medium':
+        return 1;
+      case 'low':
+        return 2;
+      default:
+        return 1;
+    }
+  }
 }
+

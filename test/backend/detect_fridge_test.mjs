@@ -98,3 +98,4 @@ test('US-3.1 detect-fridge: rejects oversized image > 10MB with 413', async () =
   assert.equal(data.success, false);
   assert.match(data.error, /excede el límite de tamaño permitido de 10 MB/);
 });
+

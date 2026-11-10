@@ -55,7 +55,6 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
   Uint8List? _imageBytes;
   bool _isLoading = false;
   String? _errorMessage;
-  String? _summary;
   List<FridgeDetectedItem> _items = [];
 
   @override
@@ -103,13 +102,36 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
     }
   }
 
+  int _confidenceRank(String confidence) {
+    switch (confidence.trim().toLowerCase()) {
+      case 'high':
+        return 0;
+      case 'medium':
+        return 1;
+      case 'low':
+        return 2;
+      default:
+        return 1;
+    }
+  }
+
+  List<FridgeDetectedItem> _sortItemsByConfidence(List<FridgeDetectedItem> items) {
+    final indexed = items.asMap().entries.toList();
+    indexed.sort((a, b) {
+      final diff = _confidenceRank(a.value.confidence)
+          .compareTo(_confidenceRank(b.value.confidence));
+      if (diff != 0) return diff;
+      return a.key.compareTo(b.key);
+    });
+    return indexed.map((e) => e.value).toList();
+  }
+
   Future<void> _processImage(Uint8List bytes) async {
     setState(() {
       _imageBytes = bytes;
       _isLoading = true;
       _errorMessage = null;
       _items = [];
-      _summary = null;
     });
 
     final result = await _visionService.detectFridgeIngredients(bytes);
@@ -119,8 +141,7 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
     if (result.success) {
       setState(() {
         _isLoading = false;
-        _items = result.items;
-        _summary = result.summary;
+        _items = _sortItemsByConfidence(result.items);
         _errorMessage = null;
       });
     } else {
@@ -409,21 +430,6 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_summary != null)
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              _summary!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

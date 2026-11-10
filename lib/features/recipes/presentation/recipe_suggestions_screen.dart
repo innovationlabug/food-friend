@@ -56,6 +56,48 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   RecipeDiscoveryResponse? _discoveryResponse;
   List<RecipeSearchResult> _results = [];
   bool _showingAllRecipes = false;
+  String _selectedCategory = 'Todos';
+
+  static const List<String> _baseMealCategories = [
+    'Todos',
+    'Desayuno',
+    'Almuerzo',
+    'Cena',
+    'Sopas y Caldos',
+    'Ensaladas',
+  ];
+
+  List<String> get _availableCategories {
+    final list = <String>[..._baseMealCategories];
+    for (final r in _results) {
+      final cat = r.recipe.category?.trim();
+      if (cat != null && cat.isNotEmpty) {
+        final norm = cat[0].toUpperCase() + cat.substring(1);
+        if (!list.any((existing) => existing.toLowerCase() == norm.toLowerCase())) {
+          list.add(norm);
+        }
+      }
+    }
+    return list;
+  }
+
+  bool _matchesCategory(RecipeSearchResult r, String category) {
+    if (category == 'Todos') return true;
+    final rCat = r.recipe.category?.trim().toLowerCase();
+    if (rCat == null) return false;
+    final fCat = category.trim().toLowerCase();
+    return rCat == fCat || rCat.contains(fCat) || fCat.contains(rCat);
+  }
+
+  int _countForCategory(String category) {
+    if (category == 'Todos') return _results.length;
+    return _results.where((r) => _matchesCategory(r, category)).length;
+  }
+
+  List<RecipeSearchResult> get _filteredResults {
+    if (_selectedCategory == 'Todos') return _results;
+    return _results.where((r) => _matchesCategory(r, _selectedCategory)).toList();
+  }
 
   @override
   void initState() {
@@ -81,6 +123,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         _results = response.results;
         _isLoading = false;
         _showingAllRecipes = false;
+        _selectedCategory = 'Todos';
       });
     }
   }
@@ -115,6 +158,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     setState(() {
       _results = all;
       _showingAllRecipes = true;
+      _selectedCategory = 'Todos';
     });
   }
 
@@ -159,6 +203,8 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   }
 
   Widget _buildResultsView(BuildContext context) {
+    final filtered = _filteredResults;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -166,19 +212,98 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
           _buildFallbackNotice(context),
           const SizedBox(height: 12),
         ],
-        _buildHeaderBanner(context),
-        const SizedBox(height: 16),
+        _buildHeaderBanner(context, displayedCount: filtered.length),
+        const SizedBox(height: 12),
+        _buildCategoryFilters(context),
+        const SizedBox(height: 12),
         Expanded(
-          child: ListView.separated(
-            itemCount: _results.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final result = _results[index];
-              return _buildRecipeCard(context, result);
-            },
-          ),
+          child: filtered.isEmpty
+              ? _buildEmptyFilteredState(context)
+              : ListView.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final result = filtered[index];
+                    return _buildRecipeCard(context, result);
+                  },
+                ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCategoryFilters(BuildContext context) {
+    final categories = _availableCategories;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: categories.map((cat) {
+          final isSelected = _selectedCategory == cat;
+          final count = _countForCategory(cat);
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text('$cat ($count)'),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    _selectedCategory = cat;
+                  });
+                }
+              },
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildEmptyFilteredState(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.filter_alt_off_outlined,
+              size: 48,
+              color: colorScheme.outline,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Sin recetas de tipo "$_selectedCategory"',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No hay recetas disponibles bajo este filtro para tus ingredientes seleccionados.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _selectedCategory = 'Todos';
+                });
+              },
+              icon: const Icon(Icons.clear, size: 18),
+              label: const Text('Mostrar todas las recetas'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -219,11 +344,12 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     );
   }
 
-  Widget _buildHeaderBanner(BuildContext context) {
+  Widget _buildHeaderBanner(BuildContext context, {int? displayedCount}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final count = _results.length;
+    final count = displayedCount ?? _results.length;
+    final totalCount = _results.length;
     final ingredientCount = widget.selectedIngredientNames.length;
 
     String bannerTitle = '$count receta(s) disponible(s)';
@@ -233,6 +359,10 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
       bannerTitle = '$count receta(s) en línea';
     } else if (_discoveryResponse?.isFallback == true) {
       bannerTitle = '$count receta(s) sugerida(s)';
+    }
+
+    if (_selectedCategory != 'Todos' && count != totalCount) {
+      bannerTitle = '$bannerTitle ($_selectedCategory)';
     }
 
     return Container(

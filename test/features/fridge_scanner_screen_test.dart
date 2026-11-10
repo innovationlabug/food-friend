@@ -136,6 +136,8 @@ void main() {
       expect(find.text('Ketchup'), findsOneWidget);
       expect(find.text('Frijoles volteados'), findsOneWidget);
       expect(find.text('Salsa picante'), findsOneWidget);
+      // Verify unstructured summary paragraph is NOT displayed
+      expect(find.text('Alimentos encontrados en refrigerador'), findsNothing);
 
       // Checkboxes: 2 high confidence items should be pre-selected
       final checkboxes = tester.widgetList<Checkbox>(find.byType(Checkbox)).toList();
@@ -197,6 +199,68 @@ void main() {
       // Tap 'Ingresar manualmente'
       await tester.tap(find.text('Ingresar manualmente'));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('sorts items by confidence putting high-confidence items at the top and hides summary paragraph',
+        (tester) async {
+      final mockClient = MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'success': true,
+            'summary': 'Párrafo no estructurado que no debe mostrarse',
+            'items': [
+              {
+                'name': 'Crema pura',
+                'standardIngredient': 'Crema',
+                'confidence': 'medium',
+                'category': 'Lácteos',
+              },
+              {
+                'name': 'Queso fresco',
+                'standardIngredient': 'Queso',
+                'confidence': 'high',
+                'category': 'Lácteos',
+              },
+              {
+                'name': 'Hierbabuena',
+                'standardIngredient': 'Hierbabuena',
+                'confidence': 'low',
+                'category': 'Hierbas',
+              },
+            ],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      final visionService = FridgeVisionService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/detect-fridge',
+      );
+
+      await tester.pumpWidget(
+        createWidget(
+          visionService: visionService,
+          initialImageBytes: Uint8List.fromList([1, 2, 3]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify unstructured summary paragraph is NOT rendered
+      expect(find.text('Párrafo no estructurado que no debe mostrarse'), findsNothing);
+
+      // Verify list order: Queso (high) should be first, Crema (medium) second, Hierbabuena (low) third
+      final titles = tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).toList();
+      final quesoIndex = titles.indexOf('Queso');
+      final cremaIndex = titles.indexOf('Crema');
+      final hierbaIndex = titles.indexOf('Hierbabuena');
+
+      expect(quesoIndex, isNonNegative);
+      expect(cremaIndex, isNonNegative);
+      expect(hierbaIndex, isNonNegative);
+      expect(quesoIndex, lessThan(cremaIndex));
+      expect(cremaIndex, lessThan(hierbaIndex));
     });
   });
 }

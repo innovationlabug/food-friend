@@ -106,3 +106,4 @@ test('US-3.3 parse-receipt: rejects oversized image > 10MB with 413', async () =
   assert.equal(data.success, false);
   assert.match(data.error, /excede el límite permitido de 10 MB/);
 });
+

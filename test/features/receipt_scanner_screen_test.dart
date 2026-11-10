@@ -145,6 +145,8 @@ void main() {
       expect(find.text('Despensa Familiar Villa Nueva'), findsOneWidget);
       expect(find.textContaining('Alimentos: Q 120.40'), findsOneWidget);
       expect(find.textContaining('Total factura: Q 155.60'), findsOneWidget);
+      // Verify unstructured summary paragraph is NOT rendered
+      expect(find.text('Ticket con 3 alimentos'), findsNothing);
 
       // Items list
       expect(find.text('Arroz blanco'), findsOneWidget);
@@ -214,5 +216,66 @@ void main() {
       await tester.tap(find.text('Ingresar manualmente'));
       await tester.pumpAndSettle();
     });
+
+    testWidgets('sorts receipt items by confidence putting high-confidence items first',
+        (tester) async {
+      final mockClient = MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'success': true,
+            'supermarket': 'La Torre Pradera',
+            'summary': 'Resumen no estructurado',
+            'items': [
+              {
+                'rawName': 'ITEM MEDIA CONF',
+                'standardIngredient': 'Leche entera',
+                'confidence': 'medium',
+              },
+              {
+                'rawName': 'ITEM ALTA CONF',
+                'standardIngredient': 'Huevos de gallina',
+                'confidence': 'high',
+              },
+              {
+                'rawName': 'ITEM BAJA CONF',
+                'standardIngredient': 'Galleta dulce',
+                'confidence': 'low',
+              },
+            ],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      final parserService = ReceiptParserService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/parse-receipt',
+      );
+
+      await tester.pumpWidget(
+        createWidget(
+          parserService: parserService,
+          initialImageBytes: Uint8List.fromList([1, 2, 3]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Summary is not rendered
+      expect(find.text('Resumen no estructurado'), findsNothing);
+
+      // Order check: Huevos (high) first, Leche (medium) second, Galleta (low) third
+      final titles = tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).toList();
+      final huevosIndex = titles.indexOf('Huevos de gallina');
+      final lecheIndex = titles.indexOf('Leche entera');
+      final galletaIndex = titles.indexOf('Galleta dulce');
+
+      expect(huevosIndex, isNonNegative);
+      expect(lecheIndex, isNonNegative);
+      expect(galletaIndex, isNonNegative);
+      expect(huevosIndex, lessThan(lecheIndex));
+      expect(lecheIndex, lessThan(galletaIndex));
+    });
   });
 }
+

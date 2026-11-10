@@ -397,6 +397,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const result = await parseReceiptWithGemini(rawImage, mimeType);
 
+    const confidenceScore = (c?: string) => {
+      const conf = (c || '').toLowerCase();
+      if (conf === 'high') return 0;
+      if (conf === 'medium') return 1;
+      return 2;
+    };
+    result.items.sort((a, b) => confidenceScore(a.confidence) - confidenceScore(b.confidence));
+
     return res.status(200).json({
       success: true,
       supermarket: result.supermarket,
@@ -427,3 +435,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 }
+

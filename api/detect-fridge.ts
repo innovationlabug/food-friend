@@ -285,6 +285,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Call Gemini 3.8 Flash
     const result = await analyzeFridgeWithGemini(rawImage, mimeType);
 
+    const confidenceScore = (c?: string) => {
+      const conf = (c || '').toLowerCase();
+      if (conf === 'high') return 0;
+      if (conf === 'medium') return 1;
+      return 2;
+    };
+    result.items.sort((a, b) => confidenceScore(a.confidence) - confidenceScore(b.confidence));
+
     return res.status(200).json({
       success: true,
       summary: result.summary,

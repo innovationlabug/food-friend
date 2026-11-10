@@ -58,7 +58,6 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
   String? _supermarket;
   double? _totalFacturaGtq;
   double? _totalAlimentosGtq;
-  String? _summary;
   List<ReceiptFoodItem> _items = [];
 
   @override
@@ -106,6 +105,30 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
     }
   }
 
+  int _confidenceRank(String confidence) {
+    switch (confidence.trim().toLowerCase()) {
+      case 'high':
+        return 0;
+      case 'medium':
+        return 1;
+      case 'low':
+        return 2;
+      default:
+        return 1;
+    }
+  }
+
+  List<ReceiptFoodItem> _sortItemsByConfidence(List<ReceiptFoodItem> items) {
+    final indexed = items.asMap().entries.toList();
+    indexed.sort((a, b) {
+      final diff = _confidenceRank(a.value.confidence)
+          .compareTo(_confidenceRank(b.value.confidence));
+      if (diff != 0) return diff;
+      return a.key.compareTo(b.key);
+    });
+    return indexed.map((e) => e.value).toList();
+  }
+
   Future<void> _processImage(Uint8List bytes) async {
     setState(() {
       _imageBytes = bytes;
@@ -115,7 +138,6 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
       _supermarket = null;
       _totalFacturaGtq = null;
       _totalAlimentosGtq = null;
-      _summary = null;
     });
 
     final result = await _parserService.parseReceipt(bytes);
@@ -125,11 +147,10 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
     if (result.success) {
       setState(() {
         _isLoading = false;
-        _items = result.items;
+        _items = _sortItemsByConfidence(result.items);
         _supermarket = result.supermarket;
         _totalFacturaGtq = result.totalFacturaGtq;
         _totalAlimentosGtq = result.totalAlimentosGtq;
-        _summary = result.summary;
         _errorMessage = null;
       });
     } else {
@@ -418,21 +439,6 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_summary != null && _summary!.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              _summary!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
         if (_supermarket != null || _totalAlimentosGtq != null)
           Card(
             elevation: 0,
