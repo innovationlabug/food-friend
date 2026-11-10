@@ -129,17 +129,17 @@ This document breaks down the **Iteration 1** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-3.3: Backend Supermarket Receipt Parser Endpoint
+### - [x] US-3.3: Backend Supermarket Receipt Parser Endpoint
 **As a** developer,  
 **I want** a Vercel Serverless Function that extracts food ingredients from Guatemalan supermarket receipts using Gemini and a POS abbreviation dictionary,  
 **So that** abbreviated receipt lines are accurately converted into standard Spanish ingredient names while ignoring non-food items.
 
 #### Acceptance Criteria
-- [ ] A serverless endpoint (`/api/parse-receipt`) is implemented in TypeScript using `@google/genai` and `process.env.GEMINI_API_KEY`.
-- [ ] The endpoint includes a maintainable list of common Guatemalan POS abbreviations (e.g., `AR/BLA` &rarr; `Arroz blanco`, `FJOL/NG` &rarr; `Frijol negro`) injected into the prompt context.
-- [ ] Non-food household items (cleaning products, toiletries, etc.) are filtered out, and duplicate receipt lines are consolidated.
-- [ ] The response returns structured JSON with Spanish ingredient names, optional extracted prices in GTQ (`Q`), and confidence levels (`high`, `medium`, `low`).
-- [ ] Proper input sanitization and server-side error handling are enforced.
+- [x] A serverless endpoint (`/api/parse-receipt`) is implemented in TypeScript using `@google/genai` and `process.env.GEMINI_API_KEY`.
+- [x] The endpoint includes a maintainable list of common Guatemalan POS abbreviations (e.g., `AR/BLA` &rarr; `Arroz blanco`, `FJOL/NG` &rarr; `Frijol negro`) injected into the prompt context.
+- [x] Non-food household items (cleaning products, toiletries, etc.) are filtered out, and duplicate receipt lines are consolidated.
+- [x] The response returns structured JSON with Spanish ingredient names, optional extracted prices in GTQ (`Q`), and confidence levels (`high`, `medium`, `low`).
+- [x] Proper input sanitization and server-side error handling are enforced.
 
 ---
 
