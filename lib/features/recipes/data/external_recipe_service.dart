@@ -123,7 +123,7 @@ class ExternalRecipeService {
               headers: {'Content-Type': 'application/json'},
               body: jsonEncode({'ingredients': ingredients}),
             )
-            .timeout(const Duration(seconds: 25));
+            .timeout(const Duration(seconds: 35));
 
         if (response.statusCode == 200) {
           final Map<String, dynamic> body =
