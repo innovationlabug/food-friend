@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/data/recipe_search_service.dart';
+import 'package:food_friend/features/recipes/domain/recipe.dart';
+import 'package:food_friend/features/recipes/domain/recipe_history_record.dart';
+import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
+import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
 
 void main() {
   group('US-4.1: RecipeSearchService Matching and Ranking', () {
@@ -141,6 +145,190 @@ void main() {
       expect(RecipeSearchService.isIngredientMatch('remolacha', 'beetroot'), isTrue);
       expect(RecipeSearchService.isIngredientMatch('garbanzos', 'chickpea'), isTrue);
       expect(RecipeSearchService.isIngredientMatch('atun', 'tuna'), isTrue);
+    });
+  });
+
+  group('US-7.3: Preference- & History-Aware Recipe Suggestion Ranking', () {
+    late RecipeSearchService service;
+
+    const recipeFav = Recipe(
+      id: 'rec_fav',
+      title: 'A - Receta Favorita',
+      ingredients: [
+        RecipeIngredient(name: 'Pollo', displayAmount: '1 lb'),
+        RecipeIngredient(name: 'Arroz', displayAmount: '1 taza'),
+      ],
+      instructions: ['Cocinar.'],
+    );
+
+    const recipeLiked = Recipe(
+      id: 'rec_liked',
+      title: 'B - Receta Me Gustó',
+      ingredients: [
+        RecipeIngredient(name: 'Pollo', displayAmount: '1 lb'),
+        RecipeIngredient(name: 'Arroz', displayAmount: '1 taza'),
+      ],
+      instructions: ['Cocinar.'],
+    );
+
+    const recipeUnmarked = Recipe(
+      id: 'rec_unmarked',
+      title: 'C - Receta Sin Marcar',
+      ingredients: [
+        RecipeIngredient(name: 'Pollo', displayAmount: '1 lb'),
+        RecipeIngredient(name: 'Arroz', displayAmount: '1 taza'),
+      ],
+      instructions: ['Cocinar.'],
+    );
+
+    const recipeDisliked = Recipe(
+      id: 'rec_disliked',
+      title: 'D - Receta No Me Gustó',
+      ingredients: [
+        RecipeIngredient(name: 'Pollo', displayAmount: '1 lb'),
+        RecipeIngredient(name: 'Arroz', displayAmount: '1 taza'),
+        RecipeIngredient(name: 'Tomate', displayAmount: '1 unidad'),
+      ],
+      instructions: ['Cocinar.'],
+    );
+
+    const recipeNever = Recipe(
+      id: 'rec_never',
+      title: 'E - Receta Nunca',
+      ingredients: [
+        RecipeIngredient(name: 'Pollo', displayAmount: '1 lb'),
+        RecipeIngredient(name: 'Arroz', displayAmount: '1 taza'),
+      ],
+      instructions: ['Cocinar.'],
+    );
+
+    setUp(() {
+      service = RecipeSearchService();
+    });
+
+    test('strictly filters out recipes marked as Nunca (never)', () {
+      final pool = [recipeFav, recipeNever];
+      final history = {
+        recipeNever.id: const RecipeHistoryRecord(
+          recipeId: 'rec_never',
+          preference: RecipePreference.never,
+        ),
+      };
+
+      final results = service.searchRecipes(
+        selectedIngredientNames: ['Pollo', 'Arroz'],
+        recipePool: pool,
+        history: history,
+      );
+
+      expect(results.length, 1);
+      expect(results.first.recipe.id, 'rec_fav');
+      expect(results.any((r) => r.recipe.id == 'rec_never'), isFalse);
+    });
+
+    test('ranks active recipes ahead of disliked recipes even when disliked has more matches', () {
+      // recipeDisliked has 3 matches; recipeUnmarked has 2 matches
+      final pool = [recipeDisliked, recipeUnmarked];
+      final history = {
+        recipeDisliked.id: const RecipeHistoryRecord(
+          recipeId: 'rec_disliked',
+          preference: RecipePreference.disliked,
+        ),
+      };
+
+      final results = service.searchRecipes(
+        selectedIngredientNames: ['Pollo', 'Arroz', 'Tomate'],
+        recipePool: pool,
+        history: history,
+      );
+
+      expect(results.length, 2);
+      expect(results.first.recipe.id, 'rec_unmarked');
+      expect(results.last.recipe.id, 'rec_disliked');
+    });
+
+    test('exact ordering: Favorita > Me gustó > Sin marcar > No me gustó with equal matches', () {
+      final pool = [recipeDisliked, recipeUnmarked, recipeLiked, recipeFav, recipeNever];
+      final history = {
+        recipeFav.id: const RecipeHistoryRecord(
+          recipeId: 'rec_fav',
+          preference: RecipePreference.favorite,
+        ),
+        recipeLiked.id: const RecipeHistoryRecord(
+          recipeId: 'rec_liked',
+          preference: RecipePreference.liked,
+        ),
+        recipeDisliked.id: const RecipeHistoryRecord(
+          recipeId: 'rec_disliked',
+          preference: RecipePreference.disliked,
+        ),
+        recipeNever.id: const RecipeHistoryRecord(
+          recipeId: 'rec_never',
+          preference: RecipePreference.never,
+        ),
+      };
+
+      final results = service.searchRecipes(
+        selectedIngredientNames: ['Pollo', 'Arroz'],
+        recipePool: pool,
+        history: history,
+      );
+
+      // Verify never is excluded
+      expect(results.length, 4);
+
+      // Verify exact order
+      expect(results[0].recipe.id, 'rec_fav');
+      expect(results[1].recipe.id, 'rec_liked');
+      expect(results[2].recipe.id, 'rec_unmarked');
+      expect(results[3].recipe.id, 'rec_disliked');
+    });
+
+    test('variety balance balances recently cooked recipes to encourage variety', () {
+      final today = DateTime(2026, 11, 11, 12, 0);
+
+      const recipeFavCookedToday = Recipe(
+        id: 'rec_fav_cooked_today',
+        title: 'Favorita Cocinada Hoy',
+        ingredients: [
+          RecipeIngredient(name: 'Pollo', displayAmount: '1 lb'),
+        ],
+        instructions: ['Cocinar.'],
+      );
+
+      const recipeFavFresh = Recipe(
+        id: 'rec_fav_fresh',
+        title: 'Favorita No Cocinada Recientemente',
+        ingredients: [
+          RecipeIngredient(name: 'Pollo', displayAmount: '1 lb'),
+        ],
+        instructions: ['Cocinar.'],
+      );
+
+      final pool = [recipeFavCookedToday, recipeFavFresh];
+      final history = {
+        recipeFavCookedToday.id: RecipeHistoryRecord(
+          recipeId: 'rec_fav_cooked_today',
+          preference: RecipePreference.favorite,
+          timesCooked: 1,
+          cookedDates: [today],
+        ),
+        recipeFavFresh.id: const RecipeHistoryRecord(
+          recipeId: 'rec_fav_fresh',
+          preference: RecipePreference.favorite,
+          timesCooked: 0,
+        ),
+      };
+
+      final results = service.searchRecipes(
+        selectedIngredientNames: ['Pollo'],
+        recipePool: pool,
+        history: history,
+      );
+
+      expect(results.length, 2);
+      expect(results[0].recipe.id, 'rec_fav_fresh');
+      expect(results[1].recipe.id, 'rec_fav_cooked_today');
     });
   });
 }

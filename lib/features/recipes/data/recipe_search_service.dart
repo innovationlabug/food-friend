@@ -97,21 +97,78 @@ class RecipeSearchService {
       }
     }
 
-    // Rank results:
-    // 1. Higher matchCount first (most ingredients the user already has)
-    // 2. Higher matchPercentage first (fewer missing items relative to recipe size)
-    // 3. Alphabetical title for stability
+    // Rank results based on preference marks, cooking recency/variety, and match count/percentage
     results.sort((a, b) {
-      final countCompare = b.matchCount.compareTo(a.matchCount);
-      if (countCompare != 0) return countCompare;
+      final recA = history?[a.recipe.id];
+      final recB = history?[b.recipe.id];
 
-      final pctCompare = b.matchPercentage.compareTo(a.matchPercentage);
-      if (pctCompare != 0) return pctCompare;
+      final prefA = recA?.preference ?? RecipePreference.none;
+      final prefB = recB?.preference ?? RecipePreference.none;
 
+      // 1. Disliked recipes (No me gustó) appear at the very end as a last option
+      final isDislikedA = prefA == RecipePreference.disliked;
+      final isDislikedB = prefB == RecipePreference.disliked;
+      if (isDislikedA != isDislikedB) {
+        return isDislikedA ? 1 : -1;
+      }
+
+      // 2. Active recipes are ranked by composite score (matches + preference boost + variety balance)
+      final scoreA = calculateScore(a, recA);
+      final scoreB = calculateScore(b, recB);
+      final scoreCompare = scoreB.compareTo(scoreA);
+      if (scoreCompare != 0) return scoreCompare;
+
+      // 3. Alphabetical title for stability
       return a.recipe.title.compareTo(b.recipe.title);
     });
 
     return results;
+  }
+
+  /// Computes a composite ranking score for a recipe based on:
+  /// - Ingredient match count and percentage
+  /// - User preference boost (Favorita: +12, Me gustó: +6)
+  /// - Recency balance to encourage meal variety (recently cooked penalties: -4 for today, -2 for this week)
+  static double calculateScore(
+    RecipeSearchResult result,
+    RecipeHistoryRecord? record, {
+    DateTime? now,
+  }) {
+    double score = (result.matchCount * 10.0) + (result.matchPercentage * 5.0);
+
+    final pref = record?.preference ?? RecipePreference.none;
+    switch (pref) {
+      case RecipePreference.favorite:
+        score += 12.0;
+        break;
+      case RecipePreference.liked:
+        score += 6.0;
+        break;
+      case RecipePreference.disliked:
+        score -= 1000.0;
+        break;
+      case RecipePreference.never:
+        score -= 10000.0;
+        break;
+      case RecipePreference.none:
+        break;
+    }
+
+    if (record != null && record.cookedDates.isNotEmpty) {
+      final currentDate = now ?? DateTime.now();
+      if (record.isCookedToday(now: currentDate)) {
+        score -= 4.0; // Cooked today: encourage variety
+      } else {
+        final last = record.lastCookedDate;
+        if (last != null && currentDate.difference(last).inDays < 7) {
+          score -= 2.0; // Cooked recently this week
+        }
+      }
+      // Slight dampener for high-frequency repetition
+      score -= (record.timesCooked * 0.2);
+    }
+
+    return score;
   }
 
   /// Finds the closest partial matches from the local dataset for fallback scenarios.

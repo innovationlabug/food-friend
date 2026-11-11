@@ -128,6 +128,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     final response = await _externalService.discoverRecipes(
       selectedIngredients: widget.selectedIngredientNames,
       localSearchService: _searchService,
+      history: history,
     );
 
     if (mounted) {

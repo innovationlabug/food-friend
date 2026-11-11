@@ -117,18 +117,18 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-7.3: Preference- & History-Aware Recipe Suggestion Ranking
+### - [x] US-7.3: Preference- & History-Aware Recipe Suggestion Ranking
 **As a** user,  
 **I want** recipe suggestions to prioritize my favorite and liked recipes, demote disliked recipes to the bottom, and hide recipes marked as `Nunca`,  
 **So that** suggested meals match my tastes and cooking history.
 
 #### Acceptance Criteria
-- [ ] `RecipeSearchService` incorporates user preference marks and cooking history from `RecipeHistoryService` when filtering and ranking recipes:
+- [x] `RecipeSearchService` incorporates user preference marks and cooking history from `RecipeHistoryService` when filtering and ranking recipes:
   1. Recipes marked `Nunca` (`never`) are strictly filtered out of suggestion results.
   2. Active recipes (`favorite`, `liked`, or unmarked) are ranked ahead of any `disliked` (`No me gustó`) recipes.
   3. Among recipes with comparable ingredient match scores, `favorite` (`Favorita`) recipes receive a ranking boost, followed by `liked` (`Me gustó`), while recently cooked recipes are balanced to encourage variety.
   4. Recipes marked `disliked` (`No me gustó`) appear at the very end of the suggestion list as a last option.
-- [ ] Unit tests verify the exact ordering behavior across `favorite`, `liked`, unmarked, `disliked`, and `never` recipes.
+- [x] Unit tests verify the exact ordering behavior across `favorite`, `liked`, unmarked, `disliked`, and `never` recipes.
 
 ---
 
