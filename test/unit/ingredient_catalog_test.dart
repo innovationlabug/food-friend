@@ -24,18 +24,21 @@ void main() {
       expect(ingredients, contains('Chorizo negro'));
       expect(ingredients, contains('Frijoles negros'));
       expect(ingredients, contains('Harina de maíz'));
-      expect(ingredients, contains('Fécula de maíz'));
+      expect(ingredients, contains('Maicena'));
       expect(ingredients, contains('Nutella'));
       expect(ingredients, contains('Plátano maduro'));
       expect(ingredients, contains('Queso seco'));
     });
 
-    test('resolves brand query like maseca or maicena to clean descriptor via synonyms', () {
+    test('resolves brand query like maseca or maicena to canonical descriptor via synonyms', () {
       final masecaSuggestions = catalog.searchSuggestions('maseca');
       expect(masecaSuggestions, contains('Harina de maíz'));
 
       final maicenaMatch = catalog.getClosestMatch('maicena');
-      expect(maicenaMatch, equals('Fécula de maíz'));
+      expect(maicenaMatch, equals('Maicena'));
+
+      final feculaMatch = catalog.getClosestMatch('fécula de maíz');
+      expect(feculaMatch, equals('Maicena'));
     });
 
     test('catalog includes cooking-specific granularity alongside general options', () {
@@ -287,6 +290,145 @@ void main() {
       final hierbas = catalog.categories.firstWhere((c) => c.id == 'hierbas_especias');
       final especias = hierbas.children.firstWhere((c) => c.id == 'especias');
       expect(especias.allLeafNames, contains('Curry'));
+    });
+  });
+
+  group('Catalog Adjustments: Refined Items, Structure & Sorting', () {
+    test('added staples arveja china, sardinas, and granola are present in catalog', () {
+      expect(catalog.allIngredients, contains('Arveja china'));
+      expect(catalog.allIngredients, contains('Sardinas'));
+      expect(catalog.allIngredients, contains('Granola'));
+
+      // Check category placement
+      final legumbres = catalog.categories
+          .firstWhere((c) => c.id == 'verduras')
+          .children
+          .firstWhere((c) => c.id == 'legumbres_frescas');
+      expect(legumbres.allLeafNames, contains('Arveja china'));
+
+      final pescados = catalog.categories
+          .firstWhere((c) => c.id == 'proteinas')
+          .children
+          .firstWhere((c) => c.id == 'pescados_mariscos');
+      expect(pescados.allLeafNames, contains('Sardinas'));
+
+      final cereales = catalog.categories
+          .firstWhere((c) => c.id == 'granos_cereales')
+          .children
+          .firstWhere((c) => c.id == 'cereales');
+      expect(cereales.allLeafNames, contains('Granola'));
+    });
+
+    test('huevo is consolidated and promoted as a direct leaf under Lácteos y Huevos', () {
+      final lacteos = catalog.categories.firstWhere((c) => c.id == 'lacteos_huevos');
+      
+      // Huevo is a direct child of lacteos_huevos
+      final huevoNode = lacteos.children.firstWhere((c) => c.id == 'huevo');
+      expect(huevoNode.isLeaf, isTrue);
+      expect(huevoNode.name, equals('Huevo'));
+
+      // The old intermediate "huevos" subcategory is gone
+      expect(lacteos.children.any((c) => c.id == 'huevos'), isFalse);
+
+      // Redundant egg entries are not leaf names
+      expect(catalog.allIngredients, contains('Huevo'));
+      expect(catalog.allIngredients, isNot(contains('Huevos de gallina')));
+
+      // Synonyms still resolve
+      expect(catalog.getClosestMatch('huevos'), equals('Huevo'));
+      expect(catalog.getClosestMatch('huevos de gallina'), equals('Huevo'));
+    });
+
+    test('overly specific and prepared food items are removed from catalog', () {
+      final all = catalog.allIngredients;
+      expect(all, isNot(contains('Yogur de fresa')));
+      expect(all, isNot(contains('Frijol de vara')));
+      expect(all, isNot(contains('Pepitona')));
+      expect(all, isNot(contains('Sal yodada')));
+      expect(all, isNot(contains('Sal marina')));
+      expect(all, isNot(contains('Pipían')));
+    });
+
+    test('replacements are applied correctly for güicoy, ketchup, and maicena', () {
+      final all = catalog.allIngredients;
+      expect(all, contains('Güicoy'));
+      expect(all, isNot(contains('Calabacita')));
+      expect(catalog.getClosestMatch('calabacita'), equals('Güicoy'));
+      expect(catalog.getClosestMatch('zucchini'), equals('Güicoy'));
+
+      expect(all, contains('Ketchup'));
+      expect(all, isNot(contains('Salsa dulce')));
+      expect(catalog.getClosestMatch('salsa dulce'), equals('Ketchup'));
+
+      expect(all, contains('Maicena'));
+      expect(all, isNot(contains('Fécula de maíz')));
+      expect(catalog.getClosestMatch('fécula de maíz'), equals('Maicena'));
+    });
+
+    test('nutella is organized under Untables in Despensa, Aceites y Salsas', () {
+      final despensa = catalog.categories.firstWhere((c) => c.id == 'despensa_aceites');
+      final untables = despensa.children.firstWhere((c) => c.id == 'untables');
+      expect(untables.name, equals('Untables'));
+      expect(untables.allLeafNames, contains('Nutella'));
+
+      final basicos = despensa.children.firstWhere((c) => c.id == 'basicos');
+      expect(basicos.allLeafNames, isNot(contains('Nutella')));
+    });
+
+    test('ingredients in subcategories are ordered alphabetically with generic first if present', () {
+      // Pollo: generic Pollo first, then Alitas, Cuadriles, etc.
+      final pollo = catalog.categories
+          .firstWhere((c) => c.id == 'proteinas')
+          .children
+          .firstWhere((c) => c.id == 'pollo');
+      final polloNames = pollo.children.map((c) => c.name).toList();
+      expect(polloNames.first, equals('Pollo'));
+      final remainingPollo = polloNames.sublist(1);
+      final sortedPollo = List<String>.from(remainingPollo)..sort();
+      expect(remainingPollo, equals(sortedPollo));
+
+      // Res: generic Carne de res first, then alphabetical
+      final res = catalog.categories
+          .firstWhere((c) => c.id == 'proteinas')
+          .children
+          .firstWhere((c) => c.id == 'res');
+      final resNames = res.children.map((c) => c.name).toList();
+      expect(resNames.first, equals('Carne de res'));
+      final remainingRes = resNames.sublist(1);
+      final sortedRes = List<String>.from(remainingRes)..sort();
+      expect(remainingRes, equals(sortedRes));
+
+      // Verduras para cocido y guisos: no generic, all alphabetical
+      final cocido = catalog.categories
+          .firstWhere((c) => c.id == 'verduras')
+          .children
+          .firstWhere((c) => c.id == 'verduras_cocido_guisos');
+      final cocidoNames = cocido.children.map((c) => c.name).toList();
+      final sortedCocido = List<String>.from(cocidoNames)..sort();
+      expect(cocidoNames, equals(sortedCocido));
+    });
+
+    test('ingredients can appear in multiple categories and resolve to identical canonical name', () {
+      // Cilantro appears in both Hierbas y montes and Hierbas frescas
+      final hierbasMontes = catalog.categories
+          .firstWhere((c) => c.id == 'verduras')
+          .children
+          .firstWhere((c) => c.id == 'hierbas_montes');
+      final hierbasFrescas = catalog.categories
+          .firstWhere((c) => c.id == 'hierbas_especias')
+          .children
+          .firstWhere((c) => c.id == 'hierbas_frescas');
+
+      expect(hierbasMontes.allLeafNames, contains('Cilantro'));
+      expect(hierbasFrescas.allLeafNames, contains('Cilantro'));
+
+      // Lookup and suggestions resolve to the identical single canonical name
+      expect(catalog.getClosestMatch('cilantro'), equals('Cilantro'));
+      expect(catalog.getClosestMatch('culantro'), equals('Cilantro'));
+
+      // allIngredients list deduplicates leaves
+      final cilantroCount = catalog.allIngredients.where((i) => i == 'Cilantro').length;
+      expect(cilantroCount, equals(1));
     });
   });
 }

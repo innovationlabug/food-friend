@@ -94,7 +94,7 @@ void main() {
       // Enter Level 2
       await tester.tap(find.text('Verduras para ensalada'));
       await tester.pumpAndSettle();
-      expect(find.text('Tomate'), findsOneWidget);
+      expect(find.text('Aguacate'), findsOneWidget);
 
       // Tap back button
       final backButton = find.byTooltip('Volver al nivel anterior');
@@ -104,7 +104,7 @@ void main() {
 
       // Should be back at Level 2 view
       expect(find.text('Verduras para ensalada'), findsOneWidget);
-      expect(find.text('Tomate'), findsNothing);
+      expect(find.text('Aguacate'), findsNothing);
 
       // Tap back button again to return to Level 1 root list
       await tester.tap(backButton);
@@ -158,6 +158,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify newly added staples appear
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+
       final quesoGouda = find.text('Queso gouda');
       expect(quesoGouda, findsOneWidget);
       expect(find.text('Queso parmesano'), findsOneWidget);
