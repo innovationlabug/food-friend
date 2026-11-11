@@ -52,16 +52,16 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-6.2: Recipe Variations Viewer in Recipe Detail Screen
+### - [x] US-6.2: Recipe Variations Viewer in Recipe Detail Screen
 **As a** user viewing a recipe,  
 **I want** to see a button to explore variations when that recipe has variations available,  
 **So that** I can easily switch to a similar dish using almost the same ingredients.
 
 #### Acceptance Criteria
-- [ ] On `RecipeDetailScreen`, if the selected recipe has one or more pre-defined variations, a clear button in Spanish (e.g., `"Ver variaciones"`) with an SVG icon is displayed.
-- [ ] If a recipe has no variations defined, the variations button is not shown.
-- [ ] Tapping `"Ver variaciones"` presents the linked variation recipes (showing how the variation differs in ingredients/preparation) and allows the user to open any variation's full Recipe Detail view.
-- [ ] Widget tests verify that the button appears only when variations exist and navigates cleanly to the selected variation.
+- [x] On `RecipeDetailScreen`, if the selected recipe has one or more pre-defined variations, a clear button in Spanish (e.g., `"Ver variaciones"`) with an SVG icon is displayed.
+- [x] If a recipe has no variations defined, the variations button is not shown.
+- [x] Tapping `"Ver variaciones"` presents the linked variation recipes (showing how the variation differs in ingredients/preparation) and allows the user to open any variation's full Recipe Detail view.
+- [x] Widget tests verify that the button appears only when variations exist and navigates cleanly to the selected variation.
 
 ---
 
