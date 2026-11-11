@@ -220,3 +220,68 @@ Phase 3 enables users to add multiple ingredients simultaneously via photo recog
 - **Static Analysis (`flutter analyze`):** `No issues found!` (0 warnings, 0 errors).
 - **TypeScript Typecheck (`npm run typecheck`):** `0 errors` (0 warnings).
 
+---
+
+## 8. Expanded Dataset, Recipe Variations & On-Demand AI Generation (Phase 6) - US-6.1 through US-6.3 Report
+
+### Overview
+Phase 6 expands the local culinary knowledge base of Food Friend, introduces pre-defined recipe variations to give users culinary flexibility with minimal ingredient adjustments, adds an interactive variations viewer to the recipe detail view, and implements an on-demand AI recipe generation trigger in the suggestions list.
+
+- **Branch:** `feature/recipe-variations-and-ai`
+- **Scope:** Recipe variation domain model, dataset expansion with user-tested staples (`nueces`, `maní`, `queso gouda`, `queso parmesano`, `curry`), recipe variation bottom sheet UI, and on-demand AI recipe generation button with non-destructive list appending and error resilience.
+
+---
+
+### User Stories Breakdown
+
+#### US-6.1: Expanded Local Recipe Dataset & Pre-Defined Recipe Variations Model
+- **`RecipeVariation` Domain Model:** Created in [`lib/features/recipes/domain/recipe_variation.dart`](file:///c:/Users/luisr/food-friend/lib/features/recipes/domain/recipe_variation.dart) with `recipeId`, `title`, `description`, `swappedIngredients`, `toJson`, and `fromJson`.
+- **`Recipe` Model Integration:** Updated [`lib/features/recipes/domain/recipe.dart`](file:///c:/Users/luisr/food-friend/lib/features/recipes/domain/recipe.dart) to include `variations`, `variationIds`, and the computed getter `hasVariations`.
+- **`LocalRecipeDataset` Expansion:** Expanded the preloaded recipe collection from 16 to 23 recipes in [`lib/features/recipes/data/local_recipe_dataset.dart`](file:///c:/Users/luisr/food-friend/lib/features/recipes/data/local_recipe_dataset.dart):
+  1. *Pollo al Curry con Crema Ligera* (uses `curry`)
+  2. *Pechuga Gratinada con Tomate y Queso Parmesano* (uses `queso parmesano`)
+  3. *Pasta Integral con Queso Gouda y Espinaca* (uses `queso gouda`)
+  4. *Pasta con Pollo y Queso Parmesano* (uses `queso parmesano`)
+  5. *Ensalada Fresca de Manzana y Nueces* (uses `nueces`)
+  6. *Omelet Relleno de Gouda y Champiñones* (uses `queso gouda`)
+  7. *Salteado Ligero de Verduras al Curry* (uses `curry`)
+- **Staples Incorporated:** Added support for user-tested pantry staples: `nueces`, `maní`, `queso gouda`, `queso parmesano`, `curry`.
+- **Pre-Defined Variations Links:** Multiple recipe pairs are now linked bidirectionally:
+  - `ensalada_aguacate_tomate` $\leftrightarrow$ `ensalada_manzana_nueces`
+  - `pasta_gouda_espinaca` $\leftrightarrow$ `pasta_parmesano_pollo`
+  - `pollo_plancha_vegetales` $\rightarrow$ `pollo_curry_crema` and `pechuga_parmesano_tomate`
+  - `omelet_espinaca_queso` $\leftrightarrow$ `omelet_gouda_champinones`
+  - `salteado_verduras_curry` $\rightarrow$ `pollo_curry_crema`
+- **Catalog Consistency:** Added `filete_pescado` and `huevo_individual` to [`IngredientCatalog`](file:///c:/Users/luisr/food-friend/lib/features/ingredients/data/ingredient_catalog.dart) so 100% of recipe ingredients map cleanly.
+
+#### US-6.2: Recipe Variations Viewer in Recipe Detail Screen
+- **Presentation Component:** Updated [`RecipeDetailScreen`](file:///c:/Users/luisr/food-friend/lib/features/recipes/presentation/recipe_detail_screen.dart).
+- **Conditional Visibility:** Displays a `"Ver variaciones (N)"` button with `AppSvgIcon('restaurant')` exclusively when `recipe.hasVariations` is true. Recipes without variations do not show this button.
+- **Variations Modal Bottom Sheet (`_showVariationsSheet`):**
+  - Shows variation title and culinary description of what changes.
+  - Renders visual badges for swapped or substituted ingredients.
+  - Tapping any variation navigates seamlessly to that variation's full `RecipeDetailScreen`.
+- **Widget Test Verification:** Validates conditional button presence, bottom sheet invocation, and navigation to the variation recipe detail view.
+
+#### US-6.3: On-Demand AI Recipe Generation Button in Suggestions List
+- **Presentation Component:** Updated [`RecipeSuggestionsScreen`](file:///c:/Users/luisr/food-friend/lib/features/recipes/presentation/recipe_suggestions_screen.dart).
+- **On-Demand AI Trigger:** Added `"Generar más recetas con IA"` button placed at the bottom of the suggestions view, discoverable even when local recipe matches exist.
+- **Interactive Loading State:**
+  - Displays `"Generando recetas con IA..."` with a spinner while querying the backend.
+  - Disables the button to prevent duplicate concurrent network requests.
+- **Non-Destructive Appending:** Invokes `ExternalRecipeService.fetchExternalRecipes(...)` and appends newly generated recipes to existing results with deduplication by title and ID.
+- **Offline & Error Resilience:** If the network request fails, displays a friendly Spanish SnackBar message without clearing or corrupting existing suggestions.
+
+---
+
+### Phase 6 Test Suite Verification Summary
+
+| Test Suite | Scope | Result |
+| :--- | :--- | :--- |
+| `test/unit/recipe_model_test.dart` | `RecipeVariation` serialization, `Recipe` variation getters, 23 dataset recipes, staple ingredient verification (`nueces`, `maní`, `queso gouda`, `queso parmesano`, `curry`), variation link integrity, 100% catalog mapping | **PASSED** (10 tests) |
+| `test/features/recipe_detail_screen_test.dart` | Recipe detail rendering, conditional `"Ver variaciones"` button, bottom sheet modal, variation navigation | **PASSED** (4 tests) |
+| `test/features/recipe_suggestions_screen_test.dart` | Suggestions display, meal category filters, `"Generar más recetas con IA"` button presence, loading state, non-destructive appending, and offline/error resilience | **PASSED** (13 tests) |
+| Full Project Test Suite (`flutter test`) | Complete unit, widget, and end-to-end integration test suites across all phases | **PASSED** (141 tests) |
+| Static Analysis (`flutter analyze`) | Static analysis across the entire project | **PASSED** (0 issues) |
+
+

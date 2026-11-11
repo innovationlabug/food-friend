@@ -49,3 +49,28 @@ Cuando el usuario selecciona ingredientes poco habituales o combinaciones sin re
   - *Ingredientes adicionales necesarios (M):* Elementos faltantes claramente identificados para facilitar la planificación.
 - **Instrucciones Claras:** Pasos de preparación numerados, tiempos de cocción y porciones estimadas en formato legible sin elementos distractores.
 
+---
+
+## 4. Expansión del Recetario Local, Variaciones de Recetas y Generación con IA (Fase 6)
+
+### 4.1. Expansión del Recetario y Modelo de Variaciones (US-6.1)
+- **Incremento del Repertorio:** El catálogo local de recetas en `LocalRecipeDataset` se expandió de 16 a **23 recetas saludables y variadas**, incorporando ingredientes esenciales evaluados por los usuarios (`nueces`, `maní`, `queso gouda`, `queso parmesano` y `curry`).
+- **Modelo de Dominio `RecipeVariation`:** Se implementó una entidad ligera y estructurada en `lib/features/recipes/domain/recipe_variation.dart` para describir variaciones culinarias (`recipeId`, `title`, `description`, `swappedIngredients`).
+- **Vinculación en `Recipe`:** La clase `Recipe` incorpora `variations`, `variationIds` y el indicador `hasVariations` para asociar recetas alternativas sin duplicar la lógica de negocio.
+- **Variaciones Precargadas:** Recetas complementarias vinculadas entre sí (ej. ensaladas con sustitución de nueces y manzana, pastas integrales con cambio de queso gouda a pollo con parmesano, y pollo al curry como alternativa a pechuga a la plancha).
+- **Consistencia de Ingredientes:** Se verificó que el 100% de los ingredientes de las recetas coincidan con el catálogo taxonómico `IngredientCatalog`.
+
+### 4.2. Visor de Variaciones en la Pantalla de Detalle (US-6.2)
+- **Botón Condicional:** En `RecipeDetailScreen`, se presenta el botón *"Ver variaciones (N)"* con icono SVG exclusivamente cuando la receta dispone de variaciones configuradas.
+- **Hoja Modal de Variaciones:** Al pulsar el botón, se despliega una hoja inferior (*modal bottom sheet*) que muestra:
+  - Título y descripción explicativa del cambio culinario.
+  - Etiquetas con los ingredientes sustituidos.
+  - Navegación táctil inmediata hacia la vista completa de la receta variante seleccionada.
+
+### 4.3. Botón de Generación de Recetas con IA Bajo Demanda (US-6.3)
+- **Acceso Directo:** En la pantalla `RecipeSuggestionsScreen`, se incluyó el botón *"Generar más recetas con IA"* al pie de la lista de resultados, visible incluso cuando ya existen coincidencias locales.
+- **Consulta al Proxy Serverless:** Al presionar el botón, se realiza una petición asíncrona a `POST /api/recipes` enviando los ingredientes seleccionados.
+- **Estado de Carga y Prevención de Duplicados:** Muestra el texto *"Generando recetas con IA..."* acompañado de un indicador circular y deshabilita el botón durante la operación para prevenir peticiones simultáneas.
+- **Incorporación No Destructiva:** Las recetas devueltas por la IA se anexan a la lista actual eliminando posibles duplicados por título o identificador, preservando intactas las sugerencias locales existentes.
+- **Resiliencia ante Fallos:** En caso de corte de red o error en el *backend*, se notifica al usuario con un mensaje amigable en español mediante un *SnackBar*, manteniendo visibles los resultados previos sin interrupciones.
+
