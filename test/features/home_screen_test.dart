@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_friend/features/home/presentation/home_screen.dart';
 import 'package:food_friend/features/ingredients/presentation/add_ingredient_screen.dart';
+import 'package:food_friend/features/recipes/presentation/recipe_management_screen.dart';
 import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -94,6 +95,25 @@ void main() {
 
       // Verify on ShoppingListScreen
       expect(find.byType(ShoppingListScreen), findsOneWidget);
+    });
+
+    testWidgets('navigates to RecipeManagementScreen when tapping Gestionar recetas',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final manageBtn = find.text('Gestionar recetas');
+      expect(manageBtn, findsOneWidget);
+
+      await tester.ensureVisible(manageBtn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(manageBtn);
+      await tester.pumpAndSettle();
+
+      // Verify on RecipeManagementScreen
+      expect(find.byType(RecipeManagementScreen), findsOneWidget);
+      expect(find.text('Gestión de Recetas'), findsOneWidget);
     });
   });
 }

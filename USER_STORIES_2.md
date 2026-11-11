@@ -132,17 +132,17 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-7.4: Recipe Management & History View (`Gestión de Recetas`)
+### - [x] US-7.4: Recipe Management & History View (`Gestión de Recetas`)
 **As a** user,  
 **I want** a dedicated view to see and manage all recipes—including those marked as `Nunca`—and review my cooking history,  
 **So that** I can amend any preference mark if I clicked `Nunca` by accident.
 
 #### Acceptance Criteria
-- [ ] A **Gestión de Recetas** screen is accessible from the main navigation / Home Screen.
-- [ ] The view lists all known recipes (all local dataset recipes plus any saved AI/external recipes in history), including recipes marked with `Nunca` (`never`), with filter tabs or sections (e.g., `Todas`, `Favoritas`, `Cocinadas`, `Ocultas (Nunca)`).
-- [ ] For each recipe, the user can see how many times they cooked it (`timesCooked`), its current preference state, and can directly change or clear the preference mark (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`) or open its detail view.
-- [ ] Changing a recipe from `Nunca` to another state immediately restores it to normal recipe suggestion eligibility.
-- [ ] Widget tests verify viewing hidden (`Nunca`) recipes and restoring them via preference changes.
+- [x] A **Gestión de Recetas** screen is accessible from the main navigation / Home Screen.
+- [x] The view lists all known recipes (all local dataset recipes plus any saved AI/external recipes in history), including recipes marked with `Nunca` (`never`), with filter tabs or sections (e.g., `Todas`, `Favoritas`, `Cocinadas`, `Ocultas (Nunca)`).
+- [x] For each recipe, the user can see how many times they cooked it (`timesCooked`), its current preference state, and can directly change or clear the preference mark (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`) or open its detail view.
+- [x] Changing a recipe from `Nunca` to another state immediately restores it to normal recipe suggestion eligibility.
+- [x] Widget tests verify viewing hidden (`Nunca`) recipes and restoring them via preference changes.
 
 ---
 
