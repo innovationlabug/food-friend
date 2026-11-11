@@ -67,3 +67,30 @@ En la última iteración de diseño se realizaron mejoras fundamentales:
 2. **Claridad en Etiquetas:** Se eliminaron asteriscos innecesarios en el campo de búsqueda (`Nombre del ingrediente`).
 3. **Terminología Consistente:** Se adoptó el término oficial **Ingredientes disponibles** en lugar de *Lista de compras* en todas las vistas principales.
 
+---
+
+## 4. Expansión del Catálogo y Taxonomía Guatemalteca (Fase 5: US-5.1 y US-5.2)
+
+### 4.1. Refinamiento de la Taxonomía hacia Términos de Supermercado (US-5.1)
+- **Eliminación de Tecnicismos Botánicos:** Se eliminaron todas las etiquetas académicas como *Cucurbitáceas*, *Hortalizas de fruto*, *Hortalizas de hoja*, *Bulbos y Vainas*, y *Raíces y Tubérculos*.
+- **Adopción de Clasificaciones Populares:** Se implementaron los nombres cotidianos utilizados en *Walmart Guatemala* y *Supermercados La Torre*:
+  - *Verduras para cocido y guisos*
+  - *Verduras para ensalada*
+  - *Cebollas, ajos y chiles*
+  - *Hierbas y montes*
+  - *Ejotes y arvejas*
+  - *Embutidos y carnes frías*
+  - *Quesos y crema*
+  - *Frutos secos y semillas*
+- **Profundidad Invariable:** Se mantiene una profundidad menor o igual a 4 niveles ($\le 4$) desde la raíz hasta los ingredientes seleccionables.
+
+### 4.2. Incorporación de Ingredientes Clave Faltantes (US-5.2)
+- **Ingredientes Añadidos por Pruebas de Usuario:**
+  - *Nueces* (con sinónimos *nuez*, *nueces de nogal*, *nuez de castilla*)
+  - *Maní* (con sinónimos *cacahuate*, *cacahuates*, *mani tostado*, *manies*)
+  - *Queso gouda* (con sinónimo *gouda*)
+  - *Queso parmesano* (con sinónimos *parmesano*, *queso parmesano rallado*)
+  - *Curry* (con sinónimo *curry en polvo*)
+- **Ampliación Adicional de Despensa:** Se agregaron productos cotidianos como *Champiñones*, *Brócoli*, *Coliflor*, *Lentejas*, *Garbanzos*, *Almendras*, *Semillas de marañón*, *Pasas*, *Semillas de girasol*, *Queso cheddar*, *Páprika*, *Jengibre*, *Cúrcuma*, *Jamón de pavo*, *Salami*, *Mortadela* y *Yogur de fresa*.
+- **Disponibilidad Inmediata:** Todos los nuevos elementos se encuentran disponibles tanto en la búsqueda predictiva con resolución de sinónimos como en la exploración jerárquica por categorías.
+

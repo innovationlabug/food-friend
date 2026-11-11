@@ -76,3 +76,75 @@ This report summarizes the implementation, verification, and end-to-end testing 
 039c54c feat(catalog): implement predefined spanish ingredient catalog and category taxonomy
 ```
 
+---
+
+# Phase 5: Guatemalan Ingredient Catalog & Taxonomy Expansion - US-5.1 & US-5.2 Report
+
+This section summarizes the implementation, verification, and end-to-end testing for Phase 5 user stories (**US-5.1** and **US-5.2**) on Git branch `feature/taxonomy-and-catalog-expansion`.
+
+---
+
+## 1. Branch Information
+- **Branch:** `feature/taxonomy-and-catalog-expansion`
+- **Scope:** Guatemalan supermarket taxonomy refinement, elimination of botanical jargon, and catalog expansion with user-tested missing staples (`nueces`, `maní`, `queso gouda`, `queso parmesano`, `curry`).
+
+---
+
+## 2. User Story Summary & Breakdown
+
+### US-5.1: Guatemalan Supermarket Taxonomy & Category Naming Refinement
+- **Audited and Refined Taxonomy:**
+  - Audited all category and subcategory names in `IngredientCatalog` (`lib/features/ingredients/data/ingredient_catalog.dart`) to mirror everyday Guatemalan supermarket classifications (inspired by Walmart Guatemala and Supermercados La Torre).
+  - Completely eliminated all academic/botanical terms: `Cucurbitáceas`, `Hortalizas de fruto`, `Hortalizas de hoja`, `Bulbos y Vainas`, `Raíces y Tubérculos`.
+  - Replaced them with natural, everyday groupings:
+    - `Verduras para cocido y guisos`
+    - `Verduras para ensalada`
+    - `Cebollas, ajos y chiles`
+    - `Hierbas y montes`
+    - `Ejotes y arvejas`
+    - `Embutidos y carnes frías`
+    - `Quesos y crema`
+    - `Frutos secos y semillas`
+- **Strict Tree Depth Invariant:**
+  - Verified that all paths from root category to selectable leaf ingredient strictly maintain a depth $\le 4$ levels.
+- **Commit:** `ed0ccc4` - `feat(catalog): refine category taxonomy to natural guatemalan supermarket terminology`
+
+### US-5.2: Expanded Ingredient Catalog & User-Tested Missing Staples
+- **Catalog Expansion:**
+  - Expanded `IngredientCatalog` across all major food groups with everyday grocery staples found in Walmart Guatemala and La Torre.
+  - Explicitly integrated the 5 user-tested missing staples as selectable leaf nodes:
+    - `Nueces` (with synonyms `nuez`, `nueces de nogal`, `nuez de castilla`)
+    - `Maní` (with synonyms `cacahuate`, `cacahuates`, `mani tostado`, `manies`)
+    - `Queso gouda` (with synonym `gouda`)
+    - `Queso parmesano` (with synonyms `parmesano`, `queso parmesano rallado`)
+    - `Curry` (with synonym `curry en polvo`)
+  - Added additional staples: `Champiñones` (synonyms `hongos`, `setas`), `Brócoli`, `Coliflor`, `Lentejas`, `Garbanzos`, `Almendras`, `Semillas de marañón`, `Pasas`, `Semillas de girasol`, `Queso cheddar`, `Páprika`, `Jengibre`, `Cúrcuma`, `Jamón de pavo`, `Salami`, `Mortadela`, `Yogur de fresa`.
+- **Search, Synonyms & UI Integration:**
+  - Normalized diacritic- and case-insensitive resolution in `getClosestMatch` and `searchSuggestions`.
+  - Category browser hierarchy renders all newly added staples in their respective category leaves without exceeding 4 navigation steps.
+- **Commit:** `4329bad` - `feat(catalog): expand ingredient catalog with user-tested missing staples`
+
+---
+
+## 3. Automated Test Verification
+
+| Test Suite | Scope | Result |
+| :--- | :--- | :--- |
+| `test/unit/ingredient_catalog_test.dart` | US-5.1 botanical term absence, supermarket naming presence, depth $\le 4$, US-5.2 staples in catalog, exact & fuzzy lookup, synonyms, category leaves | **PASSED** (14 tests) |
+| `test/features/add_ingredient_search_test.dart` | Real-time text suggestions surfacing newly added staples (`gouda`, `nuez`, `cacahuate`, `parmesano`, `curry`) | **PASSED** (9 tests) |
+| `test/features/add_ingredient_categories_test.dart` | Category browser navigation down to newly added staples and persistent addition to storage | **PASSED** (5 tests) |
+| `test/integration/add_ingredients_flow_test.dart` | Full E2E flow: clean state, add staples (`Queso gouda`, `Nueces`, `Curry`) via search synonyms and category browsing, verify display in available ingredients | **PASSED** (2 tests) |
+| Entire Project Test Suite | All unit, feature, and integration tests across the codebase | **PASSED** (130/130 tests) |
+
+- **Static Analysis:** `flutter analyze` $\rightarrow$ `No issues found!` (0 warnings, 0 errors).
+- **Layout & Accessibility Verification:** Zero `RenderFlex` overflows, zero unhandled exceptions.
+
+---
+
+## 4. Git Commit History on Branch `feature/taxonomy-and-catalog-expansion`
+```
+4329bad feat(catalog): expand ingredient catalog with user-tested missing staples
+ed0ccc4 feat(catalog): refine category taxonomy to natural guatemalan supermarket terminology
+```
+
+
