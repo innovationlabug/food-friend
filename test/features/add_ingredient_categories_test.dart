@@ -58,7 +58,7 @@ void main() {
       expect(find.text('Res'), findsOneWidget);
       expect(find.text('Cerdo'), findsOneWidget);
       expect(find.text('Pescados y Mariscos'), findsOneWidget);
-      expect(find.text('Embutidos'), findsOneWidget);
+      expect(find.text('Embutidos y carnes frías'), findsOneWidget);
 
       // Step 2: Tap Level 2 subcategory 'Pollo'
       final polloSubcategory = find.text('Pollo');
@@ -89,10 +89,10 @@ void main() {
       // Enter Level 1
       await tester.tap(find.text('Verduras y Vegetales'));
       await tester.pumpAndSettle();
-      expect(find.text('Hortalizas de fruto'), findsOneWidget);
+      expect(find.text('Verduras para ensalada'), findsOneWidget);
 
       // Enter Level 2
-      await tester.tap(find.text('Hortalizas de fruto'));
+      await tester.tap(find.text('Verduras para ensalada'));
       await tester.pumpAndSettle();
       expect(find.text('Tomate'), findsOneWidget);
 
@@ -103,7 +103,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should be back at Level 2 view
-      expect(find.text('Hortalizas de fruto'), findsOneWidget);
+      expect(find.text('Verduras para ensalada'), findsOneWidget);
       expect(find.text('Tomate'), findsNothing);
 
       // Tap back button again to return to Level 1 root list

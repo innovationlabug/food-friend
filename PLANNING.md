@@ -123,3 +123,47 @@ In response to the demos' results and the feedback "start with a single feature"
     - At this point in the project development, a LLM call should not be used for this.
 
 As of Tuesday 2026-11-10, week 1 planning was successfully implemented.
+
+---
+
+# Iteration 2
+
+## Week 2 updated planning
+This is the updated plan for the second iteration.
+
+- Ingredient suggestions.
+    - Take a took at Walmart and La Torre websites for ideas on ingredients and classification.
+    - Increase the amount of ingredients both in the classified list and on the suggestions shown when the user is inputing text.
+    - Some missing ingredients found in user testing: `nueces`, `maní`, `queso gouda`, `queso parmesano`, `curry`.
+    - Improve the categories naming, use names logical for Guatemala. For example, no one in Guatemala says `Cucurbitáceas`.
+
+- Recipe suggestions.
+    - A variation is a similar recipe that use almost all the same ingredients, usually only one or two will change. In the pre-implementation survey one common problem users faced was that they got bored of a recipe if they cooked for the whole week, these variations may help those users.
+    - Add variations for the recipes that it makes sense.
+    - When the user selects a recipe, if the recipe has variations a button to see them will be shown.
+    - Increase the amount of local recipes. Make sure to add recipes that include the newly added ingredients.
+    - At the bottom of the recipe suggestion list add a button to generate additional recipes using AI. This will perform a call to an LLM similar to the one already implemented.
+
+- Recipe history.
+    - Add a `Cooked it` button to each recipe.
+        - When the user pressed it stores the date the current date in our register of what the user has cooked, and increases the amount of times cooked by one.
+        - Add sanity checks to this feature: If the user presses it several times a day, it only registers one time.
+    - Add buttons to each recipe so the user can mark if they liked it. The buttons can include text or be an icon.
+        - `Favorite`: Recipes marked with this will be suggested more often.
+        - `Liked`: Recipe will be suggested again.
+        - `Disliked`: Recipe will be suggested as a last option, along with other disliked recipes.
+        - `Never`: Recipe won't be suggested again at all. Recipes never get deleted, just hidden permanently.
+    - Add a view to allow the user to manage the recipes. In this view they can see all the recipes, included the ones marked with `Never` so they can ammend in case they clicked by accident.
+    - Use the marks applied to each recipe and the history when deciding new recipe suggestions.
+
+- Shopping list.
+    - User can add ingredients via text field or list, similar to the ingredient list.
+    - In the list view, each item will have two buttons.
+        - `Bought`: Items will be moved to the ingredient list.
+        - `Dismiss`: Items will be removed from this list.
+
+- Nutrition tips.
+    - Use the recipe history to provide nutrition tips to the user. At this time we will implement the simplest tips possible.
+        - Alert about ingredients that might be harmful long term. For example, if the user has been consuming excesive amount of processed meats lately.
+        - Suggest which ingredients might be used to obtain health benefits. For example, track fruits and vegetables and the vitamins they include, if the user seems to be missing some vitamin from their diet suggest them some item that includes it.
+        - If the user has been consuming "incomplete proteins" give them pairing suggestions. For example, rice and beans on their own only contain certain aminoacids, but together they can be considered a complete source of protein.

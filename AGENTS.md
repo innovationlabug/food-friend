@@ -43,6 +43,9 @@ Cooking + shopping + nutrition assistant.
 - **No Pseudo-Metadata Badges:** Never invent or display tags, badges, or chips for internal mechanisms, input methods, or technical states.
 - **Clutter-Free Visuals:** Keep headers and summaries focused. Avoid adding redundant status pills or informational chips unless explicitly requested in the user story.
 
+## Markdown files
+- Never modify the `PROMPTS.md` file. This file is a personal history of my most relevant prompts, so other team members can check them later. It should never be auto updated after I prompt the model.
+
 ## Demos
 - Before starting the implementation of the main project, two demos were implemented. They are located in the `demos` folder.
 - When some document say "refer to the demos" it means their functionality, not their exact implementation. The implementation must follow the rules detailed here.
