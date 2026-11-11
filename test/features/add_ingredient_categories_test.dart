@@ -139,5 +139,38 @@ void main() {
       final stored = await storageService.getIngredients();
       expect(stored.any((i) => i.name == 'Frijoles negros'), isTrue);
     });
+
+    testWidgets('US-5.2: browsing categories shows newly added staples like Queso gouda and selecting adds it',
+        (tester) async {
+      await tester.pumpWidget(createWidget(initialTab: 1));
+      await tester.pumpAndSettle();
+
+      // Tap 'Lácteos y Huevos'
+      final lacteos = find.text('Lácteos y Huevos');
+      expect(lacteos, findsOneWidget);
+      await tester.tap(lacteos);
+      await tester.pumpAndSettle();
+
+      // Tap 'Quesos y crema'
+      final quesos = find.text('Quesos y crema');
+      expect(quesos, findsOneWidget);
+      await tester.tap(quesos);
+      await tester.pumpAndSettle();
+
+      // Verify newly added staples appear
+      final quesoGouda = find.text('Queso gouda');
+      expect(quesoGouda, findsOneWidget);
+      expect(find.text('Queso parmesano'), findsOneWidget);
+
+      // Tap Queso gouda
+      await tester.tap(quesoGouda);
+      await tester.pump(); // Show snackbar
+
+      expect(find.text('Ingrediente "Queso gouda" agregado'), findsOneWidget);
+      await tester.pumpAndSettle();
+
+      final stored = await storageService.getIngredients();
+      expect(stored.any((i) => i.name == 'Queso gouda'), isTrue);
+    });
   });
 }

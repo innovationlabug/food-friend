@@ -197,6 +197,39 @@ void main() {
       expect(find.text('Escanear refrigerador'), findsAtLeastNWidgets(1));
       expect(find.text('Escanear recibo'), findsAtLeastNWidgets(1));
     });
+
+    testWidgets('US-5.2: surfaces newly added staples in auto-suggestions when typing',
+        (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
+
+      // Test 'gouda'
+      await tester.enterText(input, 'gouda');
+      await tester.pumpAndSettle();
+      expect(find.text('Queso gouda'), findsOneWidget);
+
+      // Test 'nuez' synonym -> 'Nueces'
+      await tester.enterText(input, 'nuez');
+      await tester.pumpAndSettle();
+      expect(find.text('Nueces'), findsOneWidget);
+
+      // Test 'cacahuate' synonym -> 'Maní'
+      await tester.enterText(input, 'cacahuate');
+      await tester.pumpAndSettle();
+      expect(find.text('Maní'), findsOneWidget);
+
+      // Test 'parmesano'
+      await tester.enterText(input, 'parmesano');
+      await tester.pumpAndSettle();
+      expect(find.text('Queso parmesano'), findsOneWidget);
+
+      // Test 'curry'
+      await tester.enterText(input, 'curry');
+      await tester.pumpAndSettle();
+      expect(find.text('Curry'), findsOneWidget);
+    });
   });
 }
 

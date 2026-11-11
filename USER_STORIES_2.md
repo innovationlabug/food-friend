@@ -19,21 +19,21 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-5.2: Expanded Ingredient Catalog & User-Tested Missing Staples
+### - [x] US-5.2: Expanded Ingredient Catalog & User-Tested Missing Staples
 **As a** user,  
 **I want** an expanded set of ingredients available in both autocomplete text suggestions and category browsing—including items identified during user testing,  
 **So that** I can always find the exact ingredients I use in my kitchen.
 
 #### Acceptance Criteria
-- [ ] The predefined catalog (`IngredientCatalog`) is expanded with additional everyday grocery items found in Walmart Guatemala and La Torre across all food groups.
-- [ ] All missing ingredients identified in Week 1 user testing are explicitly present as selectable leaf ingredients and searchable with synonyms/diacritic insensitivity:
+- [x] The predefined catalog (`IngredientCatalog`) is expanded with additional everyday grocery items found in Walmart Guatemala and La Torre across all food groups.
+- [x] All missing ingredients identified in Week 1 user testing are explicitly present as selectable leaf ingredients and searchable with synonyms/diacritic insensitivity:
   - `Nueces` (and singular/synonym `Nuez`)
   - `Maní` (with synonym `Cacahuate`)
   - `Queso gouda`
   - `Queso parmesano`
   - `Curry` (with synonym `Curry en polvo`)
-- [ ] Both the text-input auto-suggestion engine and the category browser immediately surface all newly added ingredients.
-- [ ] Unit tests verify exact and fuzzy lookup for `nueces`, `maní`, `queso gouda`, `queso parmesano`, and `curry`.
+- [x] Both the text-input auto-suggestion engine and the category browser immediately surface all newly added ingredients.
+- [x] Unit tests verify exact and fuzzy lookup for `nueces`, `maní`, `queso gouda`, `queso parmesano`, and `curry`.
 
 ---
 

@@ -196,5 +196,98 @@ void main() {
       }
     });
   });
+
+  group('US-5.2: Expanded Ingredient Catalog & User-Tested Missing Staples', () {
+    late IngredientCatalog catalog;
+
+    setUp(() {
+      catalog = IngredientCatalog.instance;
+    });
+
+    test('catalog contains all 5 user-tested staples in allIngredients', () {
+      expect(catalog.allIngredients, contains('Nueces'));
+      expect(catalog.allIngredients, contains('Maní'));
+      expect(catalog.allIngredients, contains('Queso gouda'));
+      expect(catalog.allIngredients, contains('Queso parmesano'));
+      expect(catalog.allIngredients, contains('Curry'));
+    });
+
+    test('catalog contains additional everyday grocery items from Walmart and La Torre', () {
+      expect(catalog.allIngredients, contains('Champiñones'));
+      expect(catalog.allIngredients, contains('Brócoli'));
+      expect(catalog.allIngredients, contains('Coliflor'));
+      expect(catalog.allIngredients, contains('Lentejas'));
+      expect(catalog.allIngredients, contains('Garbanzos'));
+      expect(catalog.allIngredients, contains('Almendras'));
+      expect(catalog.allIngredients, contains('Semillas de marañón'));
+      expect(catalog.allIngredients, contains('Queso cheddar'));
+      expect(catalog.allIngredients, contains('Páprika'));
+      expect(catalog.allIngredients, contains('Jengibre'));
+      expect(catalog.allIngredients, contains('Cúrcuma'));
+    });
+
+    test('exact match retrieval works for all 5 staples', () {
+      expect(catalog.getClosestMatch('Nueces'), equals('Nueces'));
+      expect(catalog.getClosestMatch('Maní'), equals('Maní'));
+      expect(catalog.getClosestMatch('Queso gouda'), equals('Queso gouda'));
+      expect(catalog.getClosestMatch('Queso parmesano'), equals('Queso parmesano'));
+      expect(catalog.getClosestMatch('Curry'), equals('Curry'));
+    });
+
+    test('case- and accent-insensitive queries return the correct staples', () {
+      expect(catalog.getClosestMatch('nueces'), equals('Nueces'));
+      expect(catalog.getClosestMatch('NUECES'), equals('Nueces'));
+
+      expect(catalog.getClosestMatch('mani'), equals('Maní'));
+      expect(catalog.getClosestMatch('maní'), equals('Maní'));
+      expect(catalog.getClosestMatch('MANÍ'), equals('Maní'));
+
+      expect(catalog.getClosestMatch('queso gouda'), equals('Queso gouda'));
+      expect(catalog.getClosestMatch('QUESO GOUDA'), equals('Queso gouda'));
+
+      expect(catalog.getClosestMatch('queso parmesano'), equals('Queso parmesano'));
+      expect(catalog.getClosestMatch('QUESO PARMESANO'), equals('Queso parmesano'));
+
+      expect(catalog.getClosestMatch('curry'), equals('Curry'));
+      expect(catalog.getClosestMatch('CURRY'), equals('Curry'));
+    });
+
+    test('synonyms resolve to canonical staples in getClosestMatch and searchSuggestions', () {
+      // Nuez -> Nueces
+      expect(catalog.getClosestMatch('nuez'), equals('Nueces'));
+      expect(catalog.searchSuggestions('nuez'), contains('Nueces'));
+
+      // Cacahuate -> Maní
+      expect(catalog.getClosestMatch('cacahuate'), equals('Maní'));
+      expect(catalog.searchSuggestions('cacahuate'), contains('Maní'));
+
+      // Gouda -> Queso gouda
+      expect(catalog.getClosestMatch('gouda'), equals('Queso gouda'));
+      expect(catalog.searchSuggestions('gouda'), contains('Queso gouda'));
+
+      // Parmesano -> Queso parmesano
+      expect(catalog.getClosestMatch('parmesano'), equals('Queso parmesano'));
+      expect(catalog.searchSuggestions('parmesano'), contains('Queso parmesano'));
+
+      // Curry en polvo -> Curry
+      expect(catalog.getClosestMatch('curry en polvo'), equals('Curry'));
+      expect(catalog.searchSuggestions('curry en polvo'), contains('Curry'));
+    });
+
+    test('staples appear in their corresponding category leaves in category browser', () {
+      final frutosSecos = catalog.categories.firstWhere((c) => c.id == 'frutos_secos_semillas');
+      expect(frutosSecos.allLeafNames, contains('Nueces'));
+      expect(frutosSecos.allLeafNames, contains('Maní'));
+
+      final lacteos = catalog.categories.firstWhere((c) => c.id == 'lacteos_huevos');
+      final quesos = lacteos.children.firstWhere((c) => c.id == 'quesos_crema');
+      expect(quesos.allLeafNames, contains('Queso gouda'));
+      expect(quesos.allLeafNames, contains('Queso parmesano'));
+
+      final hierbas = catalog.categories.firstWhere((c) => c.id == 'hierbas_especias');
+      final especias = hierbas.children.firstWhere((c) => c.id == 'especias');
+      expect(especias.allLeafNames, contains('Curry'));
+    });
+  });
 }
 

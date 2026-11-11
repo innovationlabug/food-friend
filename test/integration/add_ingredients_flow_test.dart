@@ -118,5 +118,73 @@ void main() {
     expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
     expect(find.text('Pechuga de pollo'), findsNothing);
   });
+
+  testWidgets('E2E Flow US-5.2: Adds user-tested staples (Queso gouda, Nueces, Curry) via search and categories',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const FoodFriendApp());
+    await tester.pumpAndSettle();
+
+    // Navigate to Ingredientes disponibles
+    await tester.tap(find.text('Ir a ingredientes disponibles').first);
+    await tester.pumpAndSettle();
+
+    // Clean session state
+    final clearButton = find.byTooltip('Borrar todos los ingredientes');
+    if (clearButton.evaluate().isNotEmpty) {
+      await tester.tap(clearButton);
+      await tester.pumpAndSettle();
+      final confirmBtn = find.text('Borrar todo');
+      if (confirmBtn.evaluate().isNotEmpty) {
+        await tester.tap(confirmBtn);
+        await tester.pumpAndSettle();
+      }
+    }
+
+    // Tap Agregar ingrediente
+    await tester.tap(find.widgetWithText(FilledButton, 'Agregar ingrediente'));
+    await tester.pumpAndSettle();
+
+    final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
+
+    // 1. Search for 'nuez' (synonym) and add 'Nueces'
+    await tester.enterText(searchInput, 'nuez');
+    await tester.pumpAndSettle();
+    final nuecesSuggestion = find.text('Nueces');
+    expect(nuecesSuggestion, findsOneWidget);
+    await tester.tap(nuecesSuggestion);
+    await tester.pumpAndSettle();
+
+    // 2. Search for 'gouda' and add 'Queso gouda'
+    await tester.enterText(searchInput, 'gouda');
+    await tester.pumpAndSettle();
+    final goudaSuggestion = find.text('Queso gouda');
+    expect(goudaSuggestion, findsOneWidget);
+    await tester.tap(goudaSuggestion);
+    await tester.pumpAndSettle();
+
+    // 3. Search for 'curry en polvo' (synonym) and add 'Curry'
+    await tester.enterText(searchInput, 'curry en polvo');
+    await tester.pumpAndSettle();
+    final currySuggestion = find.text('Curry');
+    expect(currySuggestion, findsOneWidget);
+    await tester.tap(currySuggestion);
+    await tester.pumpAndSettle();
+
+    // Tap "Ver lista"
+    await tester.tap(find.text('Ver lista'));
+    await tester.pumpAndSettle();
+
+    // Verify all 3 newly added staples are displayed in the list
+    expect(find.text('Nueces'), findsOneWidget);
+    expect(find.text('Queso gouda'), findsOneWidget);
+    expect(find.text('Curry'), findsOneWidget);
+    expect(find.text('Ingredientes disponibles (3)'), findsAtLeastNWidgets(1));
+
+    // Clean up
+    await tester.tap(find.byTooltip('Borrar todos los ingredientes'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Borrar todo'));
+    await tester.pumpAndSettle();
+  });
 }
 

@@ -30,6 +30,8 @@ class IngredientCatalog {
             CategoryNode(id: 'yuca', name: 'Yuca', synonyms: ['mandioca']),
             CategoryNode(id: 'camote', name: 'Camote', synonyms: ['batata']),
             CategoryNode(id: 'elote', name: 'Elote', synonyms: ['maíz tierno', 'choclo']),
+            CategoryNode(id: 'brocoli', name: 'Brócoli'),
+            CategoryNode(id: 'coliflor', name: 'Coliflor'),
           ],
         ),
         CategoryNode(
@@ -46,6 +48,7 @@ class IngredientCatalog {
             CategoryNode(id: 'repollo_blanco', name: 'Repollo blanco', synonyms: ['col']),
             CategoryNode(id: 'repollo_morado', name: 'Repollo morado'),
             CategoryNode(id: 'berenjena', name: 'Berenjena'),
+            CategoryNode(id: 'champinones', name: 'Champiñones', synonyms: ['hongos', 'setas']),
           ],
         ),
         CategoryNode(
@@ -154,6 +157,9 @@ class IngredientCatalog {
             CategoryNode(id: 'chorizo_colorado', name: 'Chorizo colorado'),
             CategoryNode(id: 'salchicha', name: 'Salchicha'),
             CategoryNode(id: 'jamon', name: 'Jamón'),
+            CategoryNode(id: 'jamon_pavo', name: 'Jamón de pavo'),
+            CategoryNode(id: 'salami', name: 'Salami'),
+            CategoryNode(id: 'mortadela', name: 'Mortadela'),
           ],
         ),
       ],
@@ -212,6 +218,14 @@ class IngredientCatalog {
             CategoryNode(id: 'avena_generica', name: 'Avena'),
           ],
         ),
+        CategoryNode(
+          id: 'legumbres_secas',
+          name: 'Lentejas y garbanzos',
+          children: [
+            CategoryNode(id: 'lentejas', name: 'Lentejas'),
+            CategoryNode(id: 'garbanzos', name: 'Garbanzos'),
+          ],
+        ),
       ],
     ),
     CategoryNode(
@@ -247,6 +261,9 @@ class IngredientCatalog {
             CategoryNode(id: 'queso_capas', name: 'Queso de capas'),
             CategoryNode(id: 'queso_crema', name: 'Queso crema'),
             CategoryNode(id: 'queso_mozzarella', name: 'Queso mozzarella'),
+            CategoryNode(id: 'queso_gouda', name: 'Queso gouda', synonyms: ['gouda']),
+            CategoryNode(id: 'queso_parmesano', name: 'Queso parmesano', synonyms: ['parmesano', 'queso parmesano rallado']),
+            CategoryNode(id: 'queso_cheddar', name: 'Queso cheddar', synonyms: ['cheddar']),
             CategoryNode(id: 'crema_pura', name: 'Crema pura'),
             CategoryNode(id: 'crema_fresca', name: 'Crema fresca'),
             CategoryNode(id: 'queso_generico', name: 'Queso'),
@@ -266,6 +283,7 @@ class IngredientCatalog {
           children: [
             CategoryNode(id: 'yogur_natural', name: 'Yogur natural'),
             CategoryNode(id: 'yogur_griego', name: 'Yogur griego'),
+            CategoryNode(id: 'yogur_fresa', name: 'Yogur de fresa'),
             CategoryNode(id: 'yogur_generico', name: 'Yogur'),
           ],
         ),
@@ -353,6 +371,10 @@ class IngredientCatalog {
             CategoryNode(id: 'comino_molido', name: 'Comino molido'),
             CategoryNode(id: 'achiote', name: 'Achiote en pasta'),
             CategoryNode(id: 'clavos_olor', name: 'Clavos de olor'),
+            CategoryNode(id: 'curry', name: 'Curry', synonyms: ['curry en polvo']),
+            CategoryNode(id: 'paprika', name: 'Páprika', synonyms: ['paprika en polvo', 'pimentón dulce']),
+            CategoryNode(id: 'jengibre', name: 'Jengibre', synonyms: ['jengibre en polvo']),
+            CategoryNode(id: 'curcuma', name: 'Cúrcuma', synonyms: ['curcuma en polvo', 'curcuma']),
           ],
         ),
         CategoryNode(
@@ -379,8 +401,14 @@ class IngredientCatalog {
       id: 'frutos_secos_semillas',
       name: 'Frutos secos y semillas',
       children: [
+        CategoryNode(id: 'nueces', name: 'Nueces', synonyms: ['nuez', 'nueces de nogal', 'nuez de castilla']),
+        CategoryNode(id: 'mani', name: 'Maní', synonyms: ['cacahuate', 'cacahuates', 'mani tostado', 'manies']),
+        CategoryNode(id: 'almendras', name: 'Almendras', synonyms: ['almendra']),
+        CategoryNode(id: 'semillas_maranon', name: 'Semillas de marañón', synonyms: ['marañón', 'anacardos']),
         CategoryNode(id: 'pepitona', name: 'Pepitona', synonyms: ['semilla de ayote', 'pepitas']),
         CategoryNode(id: 'ajonjoli', name: 'Ajonjolí', synonyms: ['sésamo']),
+        CategoryNode(id: 'pasas', name: 'Pasas', synonyms: ['uvas pasas', 'pasitas']),
+        CategoryNode(id: 'semillas_girasol', name: 'Semillas de girasol', synonyms: ['pipas']),
       ],
     ),
     CategoryNode(

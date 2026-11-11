@@ -74,7 +74,7 @@ void main() {
 
     // Fill in ingredient name
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Nombre del ingrediente *'),
+      find.widgetWithText(TextFormField, 'Nombre del ingrediente'),
       'Frijol colorado',
     );
 
@@ -160,24 +160,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Agregar ingrediente'), findsOneWidget);
-    expect(find.text('Escanear con foto'), findsOneWidget);
-    expect(find.text('Refrigerador'), findsOneWidget);
-    expect(find.text('Recibo'), findsOneWidget);
+    expect(find.text('Foto'), findsOneWidget);
 
-    // Tap Refrigerador
-    await tester.tap(find.text('Refrigerador'));
+    // Switch to Foto tab
+    await tester.tap(find.text('Foto'));
     await tester.pumpAndSettle();
-    expect(find.text('Escanear refrigerador'), findsOneWidget);
+
+    expect(find.text('Escanear refrigerador'), findsAtLeastNWidgets(1));
+    expect(find.text('Escanear recibo'), findsAtLeastNWidgets(1));
+
+    // Tap Refrigerador card
+    await tester.tap(find.text('Escanear refrigerador').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Escanear refrigerador'), findsAtLeastNWidgets(1));
     expect(find.text('Detectar ingredientes por foto'), findsOneWidget);
 
     // Go back
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    // Tap Recibo
-    await tester.tap(find.text('Recibo'));
+    // Tap Recibo card
+    await tester.tap(find.text('Escanear recibo').first);
     await tester.pumpAndSettle();
-    expect(find.text('Escanear recibo'), findsOneWidget);
+    expect(find.text('Escanear recibo'), findsAtLeastNWidgets(1));
     expect(find.text('Extraer alimentos de factura / ticket'), findsOneWidget);
 
     // Go back
