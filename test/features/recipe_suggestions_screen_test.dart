@@ -185,7 +185,7 @@ void main() {
       );
 
       await tester.pumpWidget(createTestWidget(
-        selectedIngredients: ['curry'],
+        selectedIngredients: ['berenjena'],
         externalService: externalService,
       ));
       await tester.pumpAndSettle();

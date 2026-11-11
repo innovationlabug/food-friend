@@ -39,16 +39,16 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ## Phase 6: Recipe Variations, Dataset Expansion & On-Demand AI Generation
 
-### - [ ] US-6.1: Expanded Local Recipe Dataset & Pre-Defined Recipe Variations Model
+### - [x] US-6.1: Expanded Local Recipe Dataset & Pre-Defined Recipe Variations Model
 **As a** user who cooks for multiple days of the week,  
 **I want** the app to include a larger collection of local Spanish recipes—including recipes using the newly added ingredients and pre-defined recipe variations that swap only one or two ingredients,  
 **So that** I can enjoy varied meals throughout the week without getting bored of eating the exact same dish.
 
 #### Acceptance Criteria
-- [ ] The `Recipe` domain model supports linking pre-defined variations (e.g., via `variationIds` or embedded `RecipeVariation` references pointing to related recipes that share most base ingredients while changing 1–2 ingredients or preparation style).
-- [ ] `LocalRecipeDataset` is expanded with new healthy Spanish recipes that incorporate the newly added catalog ingredients (including `nueces`, `maní`, `queso gouda`, `queso parmesano`, and `curry`).
-- [ ] Multiple recipes in `LocalRecipeDataset` include sensible pre-defined variations (for example, a base chicken/vegetable dish and variations changing the sauce/spice such as `curry` or swapping a side/topping).
-- [ ] Serialization (`toJson` / `fromJson`) and unit tests validate variation links and confirm that every recipe ingredient maps cleanly to `IngredientCatalog`.
+- [x] The `Recipe` domain model supports linking pre-defined variations (e.g., via `variationIds` or embedded `RecipeVariation` references pointing to related recipes that share most base ingredients while changing 1–2 ingredients or preparation style).
+- [x] `LocalRecipeDataset` is expanded with new healthy Spanish recipes that incorporate the newly added catalog ingredients (including `nueces`, `maní`, `queso gouda`, `queso parmesano`, and `curry`).
+- [x] Multiple recipes in `LocalRecipeDataset` include sensible pre-defined variations (for example, a base chicken/vegetable dish and variations changing the sauce/spice such as `curry` or swapping a side/topping).
+- [x] Serialization (`toJson` / `fromJson`) and unit tests validate variation links and confirm that every recipe ingredient maps cleanly to `IngredientCatalog`.
 
 ---
 

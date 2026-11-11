@@ -142,6 +142,7 @@ class IngredientCatalog {
           children: [
             CategoryNode(id: 'filete_tilapia', name: 'Filete de tilapia'),
             CategoryNode(id: 'filete_robalo', name: 'Filete de robalo'),
+            CategoryNode(id: 'filete_pescado', name: 'Filete de pescado', synonyms: ['pescado', 'filete']),
             CategoryNode(id: 'camarones', name: 'Camarones'),
             CategoryNode(id: 'atun_lata', name: 'Atún en lata'),
             CategoryNode(id: 'salmon', name: 'Salmón'),
@@ -238,6 +239,7 @@ class IngredientCatalog {
           children: [
             CategoryNode(id: 'huevos_gallina', name: 'Huevos de gallina'),
             CategoryNode(id: 'huevos_generico', name: 'Huevos'),
+            CategoryNode(id: 'huevo_individual', name: 'Huevo'),
           ],
         ),
         CategoryNode(

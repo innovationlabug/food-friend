@@ -1,5 +1,6 @@
 import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
+import '../domain/recipe_variation.dart';
 
 /// Preloaded collection of varied, healthy Spanish recipes suited for Guatemalan kitchens.
 /// All ingredient names match standard leaf entries from [IngredientCatalog].
@@ -11,6 +12,28 @@ class LocalRecipeDataset {
 
   /// Full preloaded recipe list.
   List<Recipe> get recipes => _recipes;
+
+  /// Retrieves a recipe by its unique [id], or null if not found.
+  Recipe? getRecipeById(String id) {
+    try {
+      return _recipes.firstWhere((r) => r.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Retrieves all linked variation recipes for the given [recipe].
+  List<Recipe> getVariationsFor(Recipe recipe) {
+    if (!recipe.hasVariations) return const [];
+    final list = <Recipe>[];
+    for (final variation in recipe.variations) {
+      final linked = getRecipeById(variation.recipeId);
+      if (linked != null) {
+        list.add(linked);
+      }
+    }
+    return list;
+  }
 
   static const List<Recipe> _recipes = [
     Recipe(
@@ -123,6 +146,14 @@ class LocalRecipeDataset {
         'En un tazón grande, combina el tomate, el pepino, la cebolla morada y el cilantro picado.',
         'Incorpora suavemente los cubos de aguacate, rocía el jugo de limón recién exprimido, el aceite de oliva y una pizca de sal marina al gusto.',
       ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'ensalada_manzana_nueces',
+          title: 'Ensalada de Manzana, Nueces y Queso Gouda',
+          description: 'Sustituye el aguacate y pepino por manzana fresca, nueces y queso gouda.',
+          swappedIngredients: ['Manzana', 'Nueces', 'Queso gouda'],
+        ),
+      ],
     ),
     Recipe(
       id: 'frijoles_parados_queso',
@@ -197,6 +228,20 @@ class LocalRecipeDataset {
         'Calienta una sartén o plancha con el aceite de oliva a fuego medio-alto.',
         'Cocina los filetes de pollo durante 4 a 5 minutos por lado hasta que estén dorados y cocidos por dentro.',
         'Sirve la pechuga caliente acompañada de las verduras al vapor aderezadas con unas gotas de aceite de oliva.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'pollo_curry_crema',
+          title: 'Pechuga al Curry Cremoso con Maní',
+          description: 'Baña el pollo con una suave salsa de curry en polvo, crema y maní tostado.',
+          swappedIngredients: ['Curry', 'Crema pura', 'Maní'],
+        ),
+        RecipeVariation(
+          recipeId: 'pechuga_parmesano_tomate',
+          title: 'Pechuga Gratinada al Parmesano',
+          description: 'Cubre el pollo con salsa de tomate natural y queso parmesano rallado.',
+          swappedIngredients: ['Queso parmesano', 'Orégano seco'],
+        ),
       ],
     ),
     Recipe(
@@ -294,6 +339,14 @@ class LocalRecipeDataset {
         'Bate los huevos con una pizca de sal y viértelos sobre los vegetales salteados.',
         'Cocina a fuego medio-bajo hasta que los bordes cuajen y el centro esté casi cocido.',
         'Coloca los trocitos de queso de capas en un lado del omelet, dobla por la mitad y cocina 1 minuto más hasta que el queso se caliente.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'omelet_gouda_champinones',
+          title: 'Omelet con Queso Gouda y Champiñones',
+          description: 'Sustituye el queso de capas por queso gouda fundido y champiñones salteados.',
+          swappedIngredients: ['Queso gouda', 'Champiñones'],
+        ),
       ],
     ),
     Recipe(
@@ -421,6 +474,251 @@ class LocalRecipeDataset {
         'Añade las papas, zanahorias y ejotes picados.',
         'Vierte los tomates licuados y sazona con sal y un toque de laurel o tomillo.',
         'Tapa y cocina a fuego medio-bajo durante 15 minutos hasta que las verduras estén tiernas y el jugo haya espesado.',
+      ],
+    ),
+    Recipe(
+      id: 'pollo_curry_crema',
+      title: 'Pechuga al Curry Cremoso con Maní',
+      description: 'Tiras de pechuga de pollo en una salsa cremosa de curry aromático con vegetales y maní tostado.',
+      category: 'Almuerzo',
+      difficulty: 'Fácil',
+      prepTimeMinutes: 15,
+      cookTimeMinutes: 20,
+      servings: 3,
+      ingredients: [
+        RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb en tiras'),
+        RecipeIngredient(name: 'Curry', displayAmount: '1 cucharada de curry en polvo'),
+        RecipeIngredient(name: 'Crema pura', displayAmount: '1/2 taza'),
+        RecipeIngredient(name: 'Maní', displayAmount: '1/4 taza tostado y picado'),
+        RecipeIngredient(name: 'Cebolla blanca', displayAmount: '1/2 unidad en julianas'),
+        RecipeIngredient(name: 'Ajo', displayAmount: '2 dientes picados'),
+        RecipeIngredient(name: 'Zanahoria', displayAmount: '1 unidad en bastones'),
+        RecipeIngredient(name: 'Arroz blanco', displayAmount: '1 taza cocido para acompañar'),
+      ],
+      instructions: [
+        'En una sartén honda, dora las tiras de pechuga con un toque de aceite durante 5 minutos. Retira y reserva.',
+        'En la misma sartén, sofríe la cebolla, el ajo y la zanahoria durante 3 minutos.',
+        'Agrega la cucharada de curry en polvo y tuesta las especias durante 30 segundos para liberar sus aromas.',
+        'Incorpora la crema pura y 1/4 taza de agua tibia o caldo, mezclando suavemente hasta formar una salsa tersa y dorada.',
+        'Regresa el pollo a la sartén, tapa y cocina a fuego lento durante 8 minutos hasta que la salsa espese.',
+        'Espolvorea el maní tostado picado por encima y sirve acompañado de arroz blanco caliente.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'pollo_plancha_vegetales',
+          title: 'Pechuga a la Plancha con Verduras al Vapor',
+          description: 'Versión ligera a la plancha sin salsa cremosa de curry.',
+          swappedIngredients: ['Limón', 'Aceite de oliva'],
+        ),
+        RecipeVariation(
+          recipeId: 'pechuga_parmesano_tomate',
+          title: 'Pechuga Gratinada al Parmesano',
+          description: 'Cubre el pollo con salsa de tomate y queso parmesano rallado.',
+          swappedIngredients: ['Queso parmesano', 'Tomate'],
+        ),
+      ],
+    ),
+    Recipe(
+      id: 'pechuga_parmesano_tomate',
+      title: 'Pechuga Gratinada al Parmesano',
+      description: 'Jugosos filetes de pechuga cubiertos con salsa de tomate natural y abundante queso parmesano rallado.',
+      category: 'Cena',
+      difficulty: 'Fácil',
+      prepTimeMinutes: 10,
+      cookTimeMinutes: 20,
+      servings: 3,
+      ingredients: [
+        RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb en filetes'),
+        RecipeIngredient(name: 'Queso parmesano', displayAmount: '1/2 taza rallado'),
+        RecipeIngredient(name: 'Tomate', displayAmount: '3 unidades maduras picadas'),
+        RecipeIngredient(name: 'Ajo', displayAmount: '2 dientes triturados'),
+        RecipeIngredient(name: 'Cebolla blanca', displayAmount: '1/2 unidad picada'),
+        RecipeIngredient(name: 'Orégano seco', displayAmount: '1 cucharadita'),
+        RecipeIngredient(name: 'Aceite de oliva', displayAmount: '1 cucharada'),
+      ],
+      instructions: [
+        'Sazona los filetes de pollo con sal, pimienta y ajo triturado.',
+        'En una sartén caliente con aceite de oliva, dora los filetes 3 minutos por lado.',
+        'En una olla pequeña, cocina los tomates picados con cebolla y orégano durante 8 minutos hasta tener una salsa espesa.',
+        'Baña los filetes de pollo con la salsa de tomate y espolvorea generosamente el queso parmesano rallado.',
+        'Tapa la sartén a fuego bajo (o lleva al horno a 180°C) por 5 minutos hasta que el queso parmesano se derrita y dore ligeramente.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'pollo_plancha_vegetales',
+          title: 'Pechuga a la Plancha con Verduras',
+          description: 'Versión ligera con verduras frescas al vapor.',
+          swappedIngredients: ['Güisquil', 'Zanahoria'],
+        ),
+        RecipeVariation(
+          recipeId: 'pollo_curry_crema',
+          title: 'Pechuga al Curry Cremoso con Maní',
+          description: 'Sustituye la salsa de tomate y queso por curry suave y maní.',
+          swappedIngredients: ['Curry', 'Maní', 'Crema pura'],
+        ),
+      ],
+    ),
+    Recipe(
+      id: 'pasta_gouda_espinaca',
+      title: 'Pasta Cremosa con Queso Gouda y Espinaca',
+      description: 'Pasta al dente en salsa suave de queso gouda fundido con hojas tiernas de espinaca y un toque de ajo.',
+      category: 'Almuerzo',
+      difficulty: 'Fácil',
+      prepTimeMinutes: 10,
+      cookTimeMinutes: 15,
+      servings: 3,
+      ingredients: [
+        RecipeIngredient(name: 'Pasta', displayAmount: '1/2 lb (espagueti o fideos)'),
+        RecipeIngredient(name: 'Queso gouda', displayAmount: '4 onzas en cubos o rallado'),
+        RecipeIngredient(name: 'Espinaca', displayAmount: '2 tazas de hojas limpias'),
+        RecipeIngredient(name: 'Crema pura', displayAmount: '1/2 taza'),
+        RecipeIngredient(name: 'Ajo', displayAmount: '2 dientes picados finamente'),
+        RecipeIngredient(name: 'Mantequilla', displayAmount: '1 cucharada'),
+      ],
+      instructions: [
+        'Hierve la pasta en abundante agua con sal según las instrucciones del empaque hasta que esté al dente. Escurre reservando 1/4 taza del agua de cocción.',
+        'En una cacerola, derrite la mantequilla a fuego medio y sofríe el ajo picado durante 1 minuto.',
+        'Agrega las hojas de espinaca y saltea hasta que reduzcan de volumen.',
+        'Vierte la crema pura y el queso gouda en trozos, revolviendo constantemente hasta que el queso se funda en una salsa cremosa.',
+        'Incorpora la pasta cocida y el agua reservada, mezclando bien para que la salsa cubra cada porción.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'pasta_parmesano_pollo',
+          title: 'Pasta con Pollo y Queso Parmesano',
+          description: 'Cambia el gouda por pechuga de pollo y queso parmesano rallado.',
+          swappedIngredients: ['Pechuga de pollo', 'Queso parmesano'],
+        ),
+      ],
+    ),
+    Recipe(
+      id: 'pasta_parmesano_pollo',
+      title: 'Pasta con Pollo y Queso Parmesano',
+      description: 'Pasta salteada con tiras de pechuga dorada, ajo, aceite de oliva y abundante queso parmesano.',
+      category: 'Almuerzo',
+      difficulty: 'Fácil',
+      prepTimeMinutes: 15,
+      cookTimeMinutes: 15,
+      servings: 3,
+      ingredients: [
+        RecipeIngredient(name: 'Pasta', displayAmount: '1/2 lb'),
+        RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1/2 lb en cubos'),
+        RecipeIngredient(name: 'Queso parmesano', displayAmount: '1/2 taza rallado'),
+        RecipeIngredient(name: 'Ajo', displayAmount: '3 dientes triturados'),
+        RecipeIngredient(name: 'Aceite de oliva', displayAmount: '2 cucharadas'),
+        RecipeIngredient(name: 'Perejil', displayAmount: '3 ramitas picadas'),
+      ],
+      instructions: [
+        'Cuece la pasta al dente en agua hirviendo con sal y escurre.',
+        'En una sartén grande, calienta el aceite de oliva y dora los cubos de pechuga sazonados con sal durante 6 minutos.',
+        'Agrega el ajo triturado y cocina a fuego suave por 1 minuto sin dejar que se queme.',
+        'Añade la pasta cocida y mezcla todo a fuego medio durante 2 minutos.',
+        'Retira del fuego, espolvorea el queso parmesano rallado y el perejil fresco picado antes de servir.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'pasta_gouda_espinaca',
+          title: 'Pasta Cremosa con Queso Gouda y Espinaca',
+          description: 'Sustituye el pollo por espinaca y queso gouda derretido.',
+          swappedIngredients: ['Queso gouda', 'Espinaca', 'Crema pura'],
+        ),
+      ],
+    ),
+    Recipe(
+      id: 'ensalada_manzana_nueces',
+      title: 'Ensalada de Manzana, Nueces y Queso Gouda',
+      description: 'Ensalada crujiente y balanceada con lechuga fresca, dados de manzana, trocitos de queso gouda y nueces tostadas.',
+      category: 'Ensaladas',
+      difficulty: 'Fácil',
+      prepTimeMinutes: 10,
+      cookTimeMinutes: 0,
+      servings: 2,
+      ingredients: [
+        RecipeIngredient(name: 'Lechuga', displayAmount: '1 unidad deshojada y limpia'),
+        RecipeIngredient(name: 'Manzana', displayAmount: '1 unidad en láminas finas'),
+        RecipeIngredient(name: 'Nueces', displayAmount: '1/3 taza troceadas'),
+        RecipeIngredient(name: 'Queso gouda', displayAmount: '3 onzas en cubitos'),
+        RecipeIngredient(name: 'Aceite de oliva', displayAmount: '1 cucharada'),
+        RecipeIngredient(name: 'Limón', displayAmount: '1 unidad (jugo)'),
+      ],
+      instructions: [
+        'Lava y trocea las hojas de lechuga con las manos y colócalas en una ensaladera.',
+        'Corta la manzana en rodajas finas o dados y rocíalas con unas gotas de limón para evitar que se oscurezcan.',
+        'Tuesta ligeramente las nueces troceadas en una sartén seca durante 2 minutos.',
+        'Agrega la manzana, los cubitos de queso gouda y las nueces tostadas sobre la lechuga.',
+        'Adereza con el aceite de oliva, jugo de limón y una pizca de sal, mezclando suavemente.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'ensalada_aguacate_tomate',
+          title: 'Ensalada Chapina de Aguacate y Tomate',
+          description: 'Versión tradicional chapina con aguacate, tomate, pepino y cilantro.',
+          swappedIngredients: ['Aguacate', 'Tomate', 'Pepino'],
+        ),
+      ],
+    ),
+    Recipe(
+      id: 'omelet_gouda_champinones',
+      title: 'Omelet con Queso Gouda y Champiñones',
+      description: 'Desayuno nutritivo con champiñones salteados al ajo y queso gouda fundido en una suave tortilla de huevo.',
+      category: 'Desayuno',
+      difficulty: 'Fácil',
+      prepTimeMinutes: 5,
+      cookTimeMinutes: 10,
+      servings: 1,
+      ingredients: [
+        RecipeIngredient(name: 'Huevo', displayAmount: '2 unidades batidas'),
+        RecipeIngredient(name: 'Queso gouda', displayAmount: '2 onzas rallado o en láminas'),
+        RecipeIngredient(name: 'Champiñones', displayAmount: '1/2 taza en rodajas'),
+        RecipeIngredient(name: 'Cebolla blanca', displayAmount: '1/4 unidad picada'),
+        RecipeIngredient(name: 'Aceite de oliva', displayAmount: '1 cucharadita'),
+      ],
+      instructions: [
+        'En una sartén pequeña, calienta el aceite y saltea la cebolla con los champiñones durante 3 minutos hasta que doren.',
+        'Bate los huevos con sal y viértelos sobre los champiñones.',
+        'Cocina a fuego medio-bajo hasta que la base esté firme.',
+        'Coloca el queso gouda en una mitad del omelet, dobla y cocina 1 minuto más hasta que el queso se derrita.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'omelet_espinaca_queso',
+          title: 'Omelet de Espinaca y Queso de Capas',
+          description: 'Versión tradicional con queso de capas y espinaca fresca.',
+          swappedIngredients: ['Espinaca', 'Queso de capas'],
+        ),
+      ],
+    ),
+    Recipe(
+      id: 'salteado_verduras_curry',
+      title: 'Salteado de Verduras al Curry con Maní',
+      description: 'Vegetales crujientes (brócoli, zanahoria y chile pimiento) aromatizados con curry en polvo y maní tostado.',
+      category: 'Cena',
+      difficulty: 'Fácil',
+      prepTimeMinutes: 10,
+      cookTimeMinutes: 12,
+      servings: 2,
+      ingredients: [
+        RecipeIngredient(name: 'Brócoli', displayAmount: '1 taza en arbolitos'),
+        RecipeIngredient(name: 'Zanahoria', displayAmount: '1 unidad en rodajas finas'),
+        RecipeIngredient(name: 'Chile pimiento', displayAmount: '1/2 unidad en julianas'),
+        RecipeIngredient(name: 'Curry', displayAmount: '1 cucharadita en polvo'),
+        RecipeIngredient(name: 'Maní', displayAmount: '3 cucharadas tostado'),
+        RecipeIngredient(name: 'Ajo', displayAmount: '2 dientes picados'),
+        RecipeIngredient(name: 'Aceite vegetal', displayAmount: '1 cucharada'),
+      ],
+      instructions: [
+        'En una sartén grande o wok, calienta el aceite vegetal y saltea el ajo picado con el brócoli y la zanahoria durante 4 minutos.',
+        'Agrega las julianas de chile pimiento y espolvorea el curry en polvo.',
+        'Saltea a fuego vivo durante 3 minutos para que los vegetales queden tiernos pero crujientes.',
+        'Agrega el maní tostado, mezcla bien por 1 minuto más y sirve caliente.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'pollo_curry_crema',
+          title: 'Pechuga al Curry Cremoso con Maní',
+          description: 'Agrega pechuga de pollo y crema pura para un plato fuerte completo.',
+          swappedIngredients: ['Pechuga de pollo', 'Crema pura'],
+        ),
       ],
     ),
   ];
