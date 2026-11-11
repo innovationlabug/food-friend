@@ -81,22 +81,22 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ## Phase 7: Recipe History, Preferences & Suggestion Ranking
 
-### - [ ] US-7.1: Recipe History Log ("Lo cociné") with Daily Idempotency Check
+### - [x] US-7.1: Recipe History Log ("Lo cociné") with Daily Idempotency Check
 **As a** user,  
 **I want** a `"Lo cociné"` button on each recipe that records the date I cooked it and increments its cooked count at most once per day,  
 **So that** the app accurately tracks my cooking history even if I tap the button multiple times on the same day.
 
 #### Acceptance Criteria
-- [ ] A local `RecipeHistoryService` (persisted locally on Web and Android) tracks per-recipe cooking records containing:
+- [x] A local `RecipeHistoryService` (persisted locally on Web and Android) tracks per-recipe cooking records containing:
   - `timesCooked` (`int`, default `0`)
   - `cookedDates` (`List<DateTime>` storing the dates when the recipe was cooked)
-- [ ] Each recipe on `RecipeDetailScreen` (and/or recipe card) displays a `"Lo cociné"` button in Spanish with a clean SVG icon.
-- [ ] When the user taps `"Lo cociné"` for a recipe not yet logged today:
+- [x] Each recipe on `RecipeDetailScreen` (and/or recipe card) displays a `"Lo cociné"` button in Spanish with a clean SVG icon.
+- [x] When the user taps `"Lo cociné"` for a recipe not yet logged today:
   - The current date is added to `cookedDates` and `timesCooked` increases by `1`.
   - Matching available ingredients have their internal `timesUsed` incremented and `lastUsed` updated.
   - A Spanish confirmation feedback is shown.
-- [ ] **Sanity check (same-day idempotency):** If the user taps `"Lo cociné"` multiple times on the same calendar day for the same recipe, it registers only once for that calendar day (`timesCooked` does not increment again on the same day, and the UI reflects that it was already logged today).
-- [ ] Unit and widget tests verify first-tap registration and same-day duplicate prevention.
+- [x] **Sanity check (same-day idempotency):** If the user taps `"Lo cociné"` multiple times on the same calendar day for the same recipe, it registers only once for that calendar day (`timesCooked` does not increment again on the same day, and the UI reflects that it was already logged today).
+- [x] Unit and widget tests verify first-tap registration and same-day duplicate prevention.
 
 ---
 

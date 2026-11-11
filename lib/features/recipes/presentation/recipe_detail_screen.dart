@@ -2,40 +2,106 @@ import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../data/local_recipe_dataset.dart';
+import '../data/recipe_history_service.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_search_result.dart';
 
 /// Detailed view for a single recipe.
 /// Displays title, required ingredients (highlighting available vs. missing items),
-/// and step-by-step preparation instructions in Spanish.
-class RecipeDetailScreen extends StatelessWidget {
+/// step-by-step preparation instructions, variations, and cooking history actions in Spanish.
+class RecipeDetailScreen extends StatefulWidget {
   const RecipeDetailScreen({
     super.key,
     required this.recipe,
     this.matchedIngredients = const [],
     this.missingIngredients = const [],
+    this.historyService,
   });
 
   /// Factory constructor when navigating with a [RecipeSearchResult].
   factory RecipeDetailScreen.fromResult({
     Key? key,
     required RecipeSearchResult result,
+    RecipeHistoryService? historyService,
   }) {
     return RecipeDetailScreen(
       key: key,
       recipe: result.recipe,
       matchedIngredients: result.matchedIngredients,
       missingIngredients: result.missingIngredients,
+      historyService: historyService,
     );
   }
 
   final Recipe recipe;
   final List<RecipeIngredient> matchedIngredients;
   final List<RecipeIngredient> missingIngredients;
+  final RecipeHistoryService? historyService;
+
+  @override
+  State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
+}
+
+class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  late final RecipeHistoryService _historyService;
+  bool _isCookedToday = false;
+  int _timesCooked = 0;
+  bool _isLoadingHistory = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _historyService = widget.historyService ?? RecipeHistoryService();
+    _loadHistoryStatus();
+  }
+
+  Future<void> _loadHistoryStatus() async {
+    final record = await _historyService.getRecord(widget.recipe.id);
+    if (!mounted) return;
+    setState(() {
+      _timesCooked = record.timesCooked;
+      _isCookedToday = record.isCookedToday();
+      _isLoadingHistory = false;
+    });
+  }
+
+  Future<void> _handleCookedTap() async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (_isCookedToday) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Esta receta ya fue registrada como cocinada hoy.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final updated = await _historyService.recordCooked(widget.recipe);
+    if (!mounted) return;
+
+    setState(() {
+      _timesCooked = updated.timesCooked;
+      _isCookedToday = true;
+    });
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('¡Receta registrada como cocinada!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final recipe = widget.recipe;
+    final matchedIngredients = widget.matchedIngredients;
+    final missingIngredients = widget.missingIngredients;
+
     // Determine missing items if not explicitly provided
     final matchedSet = matchedIngredients.map((i) => i.normalizedName).toSet();
     final effectiveMatched = matchedIngredients.isNotEmpty
@@ -59,10 +125,8 @@ class RecipeDetailScreen extends StatelessWidget {
                 _buildHeader(context),
                 const SizedBox(height: 16),
                 _buildMetadataRow(context),
-                if (recipe.hasVariations) ...[
-                  const SizedBox(height: 16),
-                  _buildVariationsButton(context),
-                ],
+                const SizedBox(height: 16),
+                _buildActionButtons(context),
                 const SizedBox(height: 24),
                 _buildIngredientsSection(
                   context,
@@ -83,6 +147,7 @@ class RecipeDetailScreen extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final recipe = widget.recipe;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,6 +176,7 @@ class RecipeDetailScreen extends StatelessWidget {
   Widget _buildMetadataRow(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final recipe = widget.recipe;
 
     final items = <Widget>[];
 
@@ -184,9 +250,78 @@ class RecipeDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildActionButtons(BuildContext context) {
+    final recipe = widget.recipe;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildCookedButton(context),
+        if (recipe.hasVariations) ...[
+          const SizedBox(height: 12),
+          _buildVariationsButton(context),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCookedButton(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    if (_isCookedToday) {
+      return FilledButton.tonalIcon(
+        onPressed: _handleCookedTap,
+        icon: AppSvgIcon(
+          assetName: 'check',
+          size: 18,
+          color: colorScheme.onSecondaryContainer,
+        ),
+        label: Text(
+          _timesCooked > 1
+              ? 'Cocinada hoy (Total: $_timesCooked veces)'
+              : 'Cocinada hoy (1 vez)',
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+
+    return OutlinedButton.icon(
+      onPressed: _isLoadingHistory ? null : _handleCookedTap,
+      icon: AppSvgIcon(
+        assetName: 'check',
+        size: 18,
+        color: colorScheme.primary,
+      ),
+      label: Text(
+        _timesCooked > 0 ? 'Lo cociné ($_timesCooked veces)' : 'Lo cociné',
+        style: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: colorScheme.primary,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        side: BorderSide(color: colorScheme.primary),
+      ),
+    );
+  }
+
   Widget _buildVariationsButton(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final recipe = widget.recipe;
 
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
@@ -216,6 +351,8 @@ class RecipeDetailScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final dataset = LocalRecipeDataset.instance;
+    final recipe = widget.recipe;
+    final matchedIngredients = widget.matchedIngredients;
 
     showModalBottomSheet<void>(
       context: context,
@@ -302,6 +439,7 @@ class RecipeDetailScreen extends StatelessWidget {
                                           recipe: linkedRecipe,
                                           matchedIngredients: matchedIngredients,
                                           missingIngredients: const [],
+                                          historyService: _historyService,
                                         ),
                                       ),
                                     );
@@ -400,97 +538,64 @@ class RecipeDetailScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Text(
-              '${recipe.ingredients.length} ingredientes',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${matched.length}/${widget.recipe.ingredients.length} listos',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onPrimaryContainer,
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-
-        // 1. Ingredients the user already has
+        const SizedBox(height: 16),
         if (matched.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                AppSvgIcon(
-                  assetName: 'check',
-                  size: 16,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Tienes en casa (${matched.length})',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
+          _buildSubSectionTitle(
+            context,
+            title: 'Tienes en casa (${matched.length})',
+            color: colorScheme.primary,
+            icon: Icons.check_circle_outline,
           ),
-          ...matched.map((ing) => _buildIngredientCard(
-                context,
-                ingredient: ing,
-                isAvailable: true,
-              )),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          ...matched.map((ing) => _buildIngredientRow(context, ing, isAvailable: true)),
+          const SizedBox(height: 16),
         ],
-
-        // 2. Additional ingredients needed
         if (missing.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                AppSvgIcon(
-                  assetName: 'shopping_cart',
-                  size: 16,
-                  color: colorScheme.error,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Ingredientes adicionales necesarios (${missing.length})',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.error,
-                  ),
-                ),
-              ],
-            ),
+          _buildSubSectionTitle(
+            context,
+            title: 'Ingredientes adicionales necesarios (${missing.length})',
+            color: colorScheme.error,
+            icon: Icons.add_shopping_cart,
           ),
-          ...missing.map((ing) => _buildIngredientCard(
-                context,
-                ingredient: ing,
-                isAvailable: false,
-              )),
+          const SizedBox(height: 8),
+          ...missing.map((ing) => _buildIngredientRow(context, ing, isAvailable: false)),
         ],
-
-        // 3. If user has all ingredients
         if (missing.isEmpty && matched.isNotEmpty) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+              color: colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
-                AppSvgIcon(
-                  assetName: 'check',
-                  size: 20,
-                  color: colorScheme.onPrimaryContainer,
-                ),
-                const SizedBox(width: 10),
+                Icon(Icons.thumb_up_alt_outlined, color: colorScheme.primary, size: 20),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '¡Excelente! Tienes todos los ingredientes necesarios para preparar este platillo.',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w500,
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -502,51 +607,65 @@ class RecipeDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildIngredientCard(
+  Widget _buildSubSectionTitle(
     BuildContext context, {
-    required RecipeIngredient ingredient,
+    required String title,
+    required Color color,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIngredientRow(
+    BuildContext context,
+    RecipeIngredient ingredient, {
     required bool isAvailable,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      color: isAvailable
-          ? colorScheme.primaryContainer.withValues(alpha: 0.25)
-          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: isAvailable
-              ? colorScheme.primary.withValues(alpha: 0.3)
-              : colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      child: Padding(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isAvailable
+              ? colorScheme.surface
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isAvailable
+                ? colorScheme.outlineVariant.withValues(alpha: 0.5)
+                : colorScheme.outlineVariant.withValues(alpha: 0.25),
+          ),
+        ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: isAvailable
-                    ? colorScheme.primary.withValues(alpha: 0.15)
-                    : colorScheme.outlineVariant.withValues(alpha: 0.3),
-                shape: BoxShape.circle,
-              ),
-              child: AppSvgIcon(
-                assetName: isAvailable ? 'check' : 'shopping_cart',
-                size: 16,
-                color: isAvailable ? colorScheme.primary : colorScheme.onSurfaceVariant,
-              ),
+            Icon(
+              isAvailable ? Icons.check_circle : Icons.radio_button_unchecked,
+              size: 18,
+              color: isAvailable ? colorScheme.primary : colorScheme.outline,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 ingredient.name,
-                style: theme.textTheme.bodyLarge?.copyWith(
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: isAvailable ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -567,6 +686,7 @@ class RecipeDetailScreen extends StatelessWidget {
   Widget _buildInstructionsSection(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final recipe = widget.recipe;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
