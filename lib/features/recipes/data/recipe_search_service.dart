@@ -1,6 +1,8 @@
 import '../../../core/utils/string_normalizer.dart';
 import '../domain/recipe.dart';
+import '../domain/recipe_history_record.dart';
 import '../domain/recipe_ingredient.dart';
+import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
 import 'local_recipe_dataset.dart';
 
@@ -30,12 +32,22 @@ class RecipeSearchService {
   /// [selectedIngredientNames]: The list of ingredient names provided by the user.
   /// [recipePool]: Optional subset of recipes to search against (defaults to all local recipes).
   /// [minMatchCount]: Minimum number of matching ingredients required for inclusion (default: 1).
+  /// [history]: Optional map of user recipe history records, used to filter out `Nunca` recipes.
   List<RecipeSearchResult> searchRecipes({
     required List<String> selectedIngredientNames,
     List<Recipe>? recipePool,
     int minMatchCount = 1,
+    Map<String, RecipeHistoryRecord>? history,
   }) {
-    final pool = recipePool ?? _dataset.recipes;
+    final rawPool = recipePool ?? _dataset.recipes;
+    final pool = rawPool.where((recipe) {
+      if (history != null && history.containsKey(recipe.id)) {
+        if (history[recipe.id]?.preference == RecipePreference.never) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
 
     if (selectedIngredientNames.isEmpty) {
       if (minMatchCount == 0) {

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
+import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
 import 'package:food_friend/features/recipes/domain/recipe_search_result.dart';
 import 'package:food_friend/features/recipes/domain/recipe_variation.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
@@ -231,6 +232,58 @@ void main() {
       final record = await historyService.getRecord(sampleRecipe.id);
       expect(record.timesCooked, 1);
       expect(record.isCookedToday(), isTrue);
+    });
+  });
+
+  group('US-7.2: Recipe Preference Marks (Favorita, Me gustó, No me gustó, Nunca)', () {
+    testWidgets('displays all 4 preference marks and allows setting and toggling them',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final historyService = RecipeHistoryService(preferences: prefs);
+
+      final result = RecipeSearchResult(
+        recipe: sampleRecipe,
+        matchedIngredients: sampleRecipe.ingredients,
+        missingIngredients: const [],
+      );
+
+      await tester.pumpWidget(MaterialApp(
+        home: RecipeDetailScreen.fromResult(
+          result: result,
+          historyService: historyService,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Verify preference chips are rendered
+      expect(find.text('Favorita'), findsOneWidget);
+      expect(find.text('Me gustó'), findsOneWidget);
+      expect(find.text('No me gustó'), findsOneWidget);
+      expect(find.text('Nunca'), findsOneWidget);
+
+      // 1. Tap "Favorita"
+      await tester.tap(find.text('Favorita'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Marcada como Favorita'), findsOneWidget);
+      var record = await historyService.getRecord(sampleRecipe.id);
+      expect(record.preference, RecipePreference.favorite);
+
+      // 2. Tap "Favorita" again to toggle off (returns to none)
+      await tester.tap(find.text('Favorita'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Preferencia eliminada'), findsOneWidget);
+      record = await historyService.getRecord(sampleRecipe.id);
+      expect(record.preference, RecipePreference.none);
+
+      // 3. Tap "Nunca"
+      await tester.tap(find.text('Nunca'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Marcada como Nunca (oculta de sugerencias)'), findsOneWidget);
+      record = await historyService.getRecord(sampleRecipe.id);
+      expect(record.preference, RecipePreference.never);
     });
   });
 }

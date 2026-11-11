@@ -4,6 +4,7 @@ import 'package:food_friend/features/ingredients/data/ingredient_storage_service
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
+import 'package:food_friend/features/recipes/data/recipe_search_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_history_record.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
@@ -169,6 +170,83 @@ void main() {
       final all = await historyService.getAllKnownRecipes();
       expect(all.length, greaterThan(LocalRecipeDataset.instance.recipes.length));
       expect(all.any((r) => r.id == externalRecipe.id), isTrue);
+    });
+  });
+
+  group('US-7.2: Recipe Preference Marks & Exclusion', () {
+    late SharedPreferences prefs;
+    late RecipeHistoryService historyService;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      historyService = RecipeHistoryService(preferences: prefs);
+    });
+
+    test('saves and toggles all four preference marks', () async {
+      // 1. Set to favorite
+      var rec = await historyService.setPreference(
+        testRecipe.id,
+        RecipePreference.favorite,
+      );
+      expect(rec.preference, RecipePreference.favorite);
+
+      // 2. Set to liked
+      rec = await historyService.setPreference(
+        testRecipe.id,
+        RecipePreference.liked,
+      );
+      expect(rec.preference, RecipePreference.liked);
+
+      // 3. Set to disliked
+      rec = await historyService.setPreference(
+        testRecipe.id,
+        RecipePreference.disliked,
+      );
+      expect(rec.preference, RecipePreference.disliked);
+
+      // 4. Set to never
+      rec = await historyService.setPreference(
+        testRecipe.id,
+        RecipePreference.never,
+      );
+      expect(rec.preference, RecipePreference.never);
+
+      // 5. Toggle back to none
+      rec = await historyService.setPreference(
+        testRecipe.id,
+        RecipePreference.none,
+      );
+      expect(rec.preference, RecipePreference.none);
+    });
+
+    test('RecipeSearchService excludes recipes marked as Nunca (never)', () async {
+      final searchService = RecipeSearchService();
+
+      // Ensure testRecipe matches 'Pechuga de pollo' normally
+      final normalResults = searchService.searchRecipes(
+        selectedIngredientNames: ['Pechuga de pollo'],
+        recipePool: [testRecipe],
+      );
+      expect(normalResults.length, 1);
+
+      // Mark testRecipe as never
+      final historyMap = {
+        testRecipe.id: RecipeHistoryRecord(
+          recipeId: testRecipe.id,
+          preference: RecipePreference.never,
+        ),
+      };
+
+      // Search with history containing 'never'
+      final filteredResults = searchService.searchRecipes(
+        selectedIngredientNames: ['Pechuga de pollo'],
+        recipePool: [testRecipe],
+        history: historyMap,
+      );
+
+      // Must be completely excluded
+      expect(filteredResults, isEmpty);
     });
   });
 }

@@ -100,20 +100,20 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-7.2: Recipe Preference Marks (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`)
+### - [x] US-7.2: Recipe Preference Marks (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`)
 **As a** user,  
 **I want** four preference options on each recipe (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`),  
 **So that** I can tell the app which recipes I want suggested more often, less often, or never again.
 
 #### Acceptance Criteria
-- [ ] A `RecipePreference` enum is defined with four selectable states (plus `none` when unmarked):
+- [x] A `RecipePreference` enum is defined with four selectable states (plus `none` when unmarked):
   - `favorite` (`Favorita`): Suggested more often.
   - `liked` (`Me gustó`): Suggested again normally/positively.
   - `disliked` (`No me gustó`): Suggested only as a last option alongside other disliked recipes.
   - `never` (`Nunca`): Permanently hidden from recipe suggestions (never deleted from local storage).
-- [ ] Each recipe presents four clear Spanish preference buttons/icons allowing the user to set or toggle their preference mark, persisted locally via `RecipeHistoryService`.
-- [ ] Marking a recipe as `Nunca` immediately excludes it from future recipe suggestion lists while keeping the recipe record intact in storage.
-- [ ] Unit and widget tests verify saving, toggling, and persisting all four preference states.
+- [x] Each recipe presents four clear Spanish preference buttons/icons allowing the user to set or toggle their preference mark, persisted locally via `RecipeHistoryService`.
+- [x] Marking a recipe as `Nunca` immediately excludes it from future recipe suggestion lists while keeping the recipe record intact in storage.
+- [x] Unit and widget tests verify saving, toggling, and persisting all four preference states.
 
 ---
 

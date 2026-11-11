@@ -5,6 +5,7 @@ import '../data/local_recipe_dataset.dart';
 import '../data/recipe_history_service.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
+import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
 
 /// Detailed view for a single recipe.
@@ -47,6 +48,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final RecipeHistoryService _historyService;
   bool _isCookedToday = false;
   int _timesCooked = 0;
+  RecipePreference _preference = RecipePreference.none;
   bool _isLoadingHistory = true;
 
   @override
@@ -62,6 +64,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     setState(() {
       _timesCooked = record.timesCooked;
       _isCookedToday = record.isCookedToday();
+      _preference = record.preference;
       _isLoadingHistory = false;
     });
   }
@@ -92,6 +95,35 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       const SnackBar(
         content: Text('¡Receta registrada como cocinada!'),
         duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _handlePreferenceToggle(RecipePreference target) async {
+    final newPref = _preference == target ? RecipePreference.none : target;
+    final updated = await _historyService.setPreference(
+      widget.recipe.id,
+      newPref,
+      recipe: widget.recipe,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _preference = updated.preference;
+    });
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          newPref == RecipePreference.none
+              ? 'Preferencia eliminada'
+              : newPref == RecipePreference.never
+                  ? 'Marcada como Nunca (oculta de sugerencias)'
+                  : 'Marcada como ${newPref.label}',
+        ),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -261,7 +293,106 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           const SizedBox(height: 12),
           _buildVariationsButton(context),
         ],
+        const SizedBox(height: 16),
+        _buildPreferencesSection(context),
       ],
+    );
+  }
+
+  Widget _buildPreferencesSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tu preferencia para esta receta:',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildPreferenceChip(
+                context,
+                preference: RecipePreference.favorite,
+                iconName: 'heart',
+                label: 'Favorita',
+                activeColor: Colors.red.shade600,
+              ),
+              _buildPreferenceChip(
+                context,
+                preference: RecipePreference.liked,
+                iconName: 'thumb_up',
+                label: 'Me gustó',
+                activeColor: Colors.green.shade700,
+              ),
+              _buildPreferenceChip(
+                context,
+                preference: RecipePreference.disliked,
+                iconName: 'thumb_down',
+                label: 'No me gustó',
+                activeColor: Colors.orange.shade800,
+              ),
+              _buildPreferenceChip(
+                context,
+                preference: RecipePreference.never,
+                iconName: 'block',
+                label: 'Nunca',
+                activeColor: colorScheme.error,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreferenceChip(
+    BuildContext context, {
+    required RecipePreference preference,
+    required String iconName,
+    required String label,
+    required Color activeColor,
+  }) {
+    final isSelected = _preference == preference;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return FilterChip(
+      selected: isSelected,
+      showCheckmark: false,
+      avatar: AppSvgIcon(
+        assetName: iconName,
+        size: 16,
+        color: isSelected ? activeColor : colorScheme.onSurfaceVariant,
+      ),
+      label: Text(label),
+      labelStyle: theme.textTheme.labelMedium?.copyWith(
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        color: isSelected ? activeColor : colorScheme.onSurface,
+      ),
+      selectedColor: activeColor.withValues(alpha: 0.15),
+      backgroundColor: colorScheme.surface,
+      side: BorderSide(
+        color: isSelected ? activeColor : colorScheme.outlineVariant.withValues(alpha: 0.6),
+        width: isSelected ? 1.5 : 1.0,
+      ),
+      onSelected: (_) => _handlePreferenceToggle(preference),
     );
   }
 
