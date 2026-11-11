@@ -351,4 +351,106 @@ void main() {
       expect(find.text('Guiso de Yuca'), findsOneWidget);
     });
   });
+
+  group('US-6.3: On-Demand AI Recipe Generation Button in Suggestions List', () {
+    testWidgets('displays "Generar más recetas con IA" button at the bottom of the list',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Aguacate', 'Tomate'],
+      ));
+      await tester.pumpAndSettle();
+
+      // Verify local recipe is shown
+      expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
+
+      // Verify AI generation button is present at the bottom
+      final aiButton = find.text('Generar más recetas con IA');
+      expect(aiButton, findsOneWidget);
+    });
+
+    testWidgets('tapping button calls API, shows loading state, and appends newly generated recipes',
+        (WidgetTester tester) async {
+      var apiCallCount = 0;
+      final mockClient = MockClient((request) async {
+        apiCallCount++;
+        // Simulate slight network delay
+        await Future.delayed(const Duration(milliseconds: 50));
+        return http.Response(
+          '{"success": true, "count": 1, "recipes": ['
+          '{"id": "ai_gen_1", "title": "Guiso Especial de Lentejas con IA", "category": "Almuerzo", "source": "gemini", "ingredients": [{"name": "Lentejas", "displayAmount": "1 taza"}], "instructions": ["Cocinar todo suavemente."] }'
+          ']}',
+          200,
+        );
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Lentejas'],
+        externalService: externalService,
+      ));
+      await tester.pumpAndSettle();
+
+      // Verify initial local recipe
+      expect(find.text('Sopa Nutritiva de Lentejas y Espinaca'), findsOneWidget);
+      expect(find.text('Guiso Especial de Lentejas con IA'), findsNothing);
+
+      // Tap on Generar más recetas con IA
+      final aiButton = find.text('Generar más recetas con IA');
+      expect(aiButton, findsOneWidget);
+      await tester.tap(aiButton);
+      await tester.pump(); // Advance to start loading state
+
+      // Verify loading state is shown
+      expect(find.text('Generando recetas con IA...'), findsOneWidget);
+
+      // Finish async request
+      await tester.pumpAndSettle();
+
+      // Verify API was called
+      expect(apiCallCount, equals(1));
+
+      // Verify original local recipe is preserved AND new AI recipe is appended
+      expect(find.text('Sopa Nutritiva de Lentejas y Espinaca'), findsOneWidget);
+      expect(find.text('Guiso Especial de Lentejas con IA'), findsOneWidget);
+      expect(find.text('1 receta(s) generada(s) con éxito con IA.'), findsOneWidget);
+    });
+
+    testWidgets('displays friendly error message when AI proxy fails and preserves existing results',
+        (WidgetTester tester) async {
+      final mockClient = MockClient((_) async {
+        throw http.ClientException('Network offline error');
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Aguacate', 'Tomate'],
+        externalService: externalService,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
+
+      final aiButton = find.text('Generar más recetas con IA');
+      await tester.tap(aiButton);
+      await tester.pumpAndSettle();
+
+      // Verify error snackbar is shown
+      expect(
+        find.textContaining('No fue posible conectar con el asistente de IA'),
+        findsOneWidget,
+      );
+
+      // Verify original results are still intact and app did not crash
+      expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
+      expect(find.text('Generar más recetas con IA'), findsOneWidget);
+    });
+  });
 }

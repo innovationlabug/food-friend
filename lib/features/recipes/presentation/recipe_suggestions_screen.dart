@@ -53,6 +53,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   late final ExternalRecipeService _externalService;
 
   bool _isLoading = true;
+  bool _isGeneratingAi = false;
   RecipeDiscoveryResponse? _discoveryResponse;
   List<RecipeSearchResult> _results = [];
   bool _showingAllRecipes = false;
@@ -162,6 +163,69 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     });
   }
 
+  Future<void> _generateAiRecipes() async {
+    if (_isGeneratingAi) return;
+
+    setState(() {
+      _isGeneratingAi = true;
+    });
+
+    try {
+      final ingredients = widget.selectedIngredientNames.isNotEmpty
+          ? widget.selectedIngredientNames
+          : ['Pollo', 'Tomate'];
+
+      final newRecipes = await _externalService.fetchExternalRecipes(ingredients);
+
+      if (!mounted) return;
+
+      if (newRecipes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudieron generar recetas adicionales en este momento.'),
+          ),
+        );
+      } else {
+        final newResults = _searchService.searchRecipes(
+          selectedIngredientNames: widget.selectedIngredientNames,
+          recipePool: newRecipes,
+          minMatchCount: 0,
+        );
+
+        setState(() {
+          final existingIds = _results.map((r) => r.recipe.id).toSet();
+          for (final res in newResults) {
+            if (!existingIds.contains(res.recipe.id)) {
+              _results.add(res);
+              existingIds.add(res.recipe.id);
+            }
+          }
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${newRecipes.length} receta(s) generada(s) con éxito con IA.'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No fue posible conectar con el asistente de IA o te encuentras sin conexión. Tus recetas actuales siguen disponibles.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingAi = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -228,7 +292,65 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                   },
                 ),
         ),
+        const SizedBox(height: 8),
+        _buildAiGenerationButton(context),
       ],
+    );
+  }
+
+  Widget _buildAiGenerationButton(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          side: BorderSide(color: colorScheme.primary),
+        ),
+        onPressed: _isGeneratingAi ? null : _generateAiRecipes,
+        child: _isGeneratingAi
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Generando recetas con IA...',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AppSvgIcon(
+                    assetName: 'restaurant',
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Generar más recetas con IA',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 

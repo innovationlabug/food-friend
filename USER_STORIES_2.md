@@ -65,17 +65,17 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-6.3: On-Demand AI Recipe Generation Button in Suggestions List
+### - [x] US-6.3: On-Demand AI Recipe Generation Button in Suggestions List
 **As a** user browsing recipe suggestions,  
 **I want** a button at the bottom of the recipe suggestion list to generate additional recipes using AI,  
 **So that** I can request fresh recipe ideas beyond the local dataset whenever I want more options.
 
 #### Acceptance Criteria
-- [ ] At the bottom of the recipe list on `RecipeSuggestionsScreen`, a button in Spanish (e.g., `"Generar más recetas con IA"`) is displayed even when local recipes are already listed.
-- [ ] Tapping the button calls the backend serverless proxy (`POST /api/recipes`) with the user's selected ingredients and appends the newly generated Spanish recipes to the list without removing existing local matches.
-- [ ] A clear Spanish loading state is shown on the button while awaiting the response, preventing duplicate concurrent requests.
-- [ ] If the LLM proxy call fails or the device is offline, a friendly Spanish message is displayed (and fallback recipes are provided if available) without crashing or clearing existing results.
-- [ ] Widget and unit tests verify the button's presence, loading state, appending of AI recipes, and error resilience.
+- [x] At the bottom of the recipe list on `RecipeSuggestionsScreen`, a button in Spanish (e.g., `"Generar más recetas con IA"`) is displayed even when local recipes are already listed.
+- [x] Tapping the button calls the backend serverless proxy (`POST /api/recipes`) with the user's selected ingredients and appends the newly generated Spanish recipes to the list without removing existing local matches.
+- [x] A clear Spanish loading state is shown on the button while awaiting the response, preventing duplicate concurrent requests.
+- [x] If the LLM proxy call fails or the device is offline, a friendly Spanish message is displayed (and fallback recipes are provided if available) without crashing or clearing existing results.
+- [x] Widget and unit tests verify the button's presence, loading state, appending of AI recipes, and error resilience.
 
 ---
 
