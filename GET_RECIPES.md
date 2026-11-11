@@ -284,4 +284,84 @@ Phase 6 expands the local culinary knowledge base of Food Friend, introduces pre
 | Full Project Test Suite (`flutter test`) | Complete unit, widget, and end-to-end integration test suites across all phases | **PASSED** (141 tests) |
 | Static Analysis (`flutter analyze`) | Static analysis across the entire project | **PASSED** (0 issues) |
 
+---
+
+## 9. Recipe History, Preferences & Suggestion Ranking (Phase 7) - US-7.1 through US-7.4 Report
+
+### Overview
+Phase 7 introduces persistent cooking history tracking with daily idempotency, user preference markings (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`), preference- and variety-aware suggestion ranking, and a dedicated Recipe Management (`Gestión de Recetas`) view.
+
+- **Branch:** `feature/recipe-history-and-ranking`
+- **Scope:** Cooking log ("Lo cociné"), pantry ingredient usage counter synchronization, same-day duplicate prevention, four preference states, suggestion exclusion of `Nunca` recipes, composite recipe ranking algorithm, and the complete `RecipeManagementScreen` view with filter tabs (`Todas`, `Favoritas`, `Cocinadas`, `Ocultas (Nunca)`).
+
+---
+
+### User Stories Breakdown
+
+#### US-7.1: Recipe History Log ("Lo cociné") with Daily Idempotency Check
+- **`RecipeHistoryService` & `RecipeHistoryRecord`:**
+  - Implemented in [`lib/features/recipes/data/recipe_history_service.dart`](file:///c:/Users/luisr/food-friend/lib/features/recipes/data/recipe_history_service.dart) and [`lib/features/recipes/domain/recipe_history_record.dart`](file:///c:/Users/luisr/food-friend/lib/features/recipes/domain/recipe_history_record.dart), persisted locally via `SharedPreferences`.
+  - Tracks `timesCooked` and `cookedDates` per recipe.
+- **Action Button in `RecipeDetailScreen`:**
+  - Displays `"Lo cociné"` button with clean SVG check icon.
+  - Tapping logs cooking, increments `timesCooked`, and increments `timesUsed` and updates `lastUsed` on matching pantry ingredients in `IngredientStorageService`.
+  - Button state updates to indicate `"Cocinada hoy (1 vez)"`.
+- **Sanity Check (Same-Day Idempotency):**
+  - Tapping multiple times on the same calendar day registers only once.
+  - Subsequent same-day taps show feedback that the recipe was already cooked today without incrementing `timesCooked`.
+
+#### US-7.2: Recipe Preference Marks (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`)
+- **`RecipePreference` Domain Model:**
+  - Defined in [`lib/features/recipes/domain/recipe_preference.dart`](file:///c:/Users/luisr/food-friend/lib/features/recipes/domain/recipe_preference.dart) with 5 states: `none`, `favorite`, `liked`, `disliked`, and `never`.
+- **Clean SVG Icons:**
+  - Added Lucide-style SVG icons without emoji characters: `assets/icons/heart.svg`, `assets/icons/thumb_up.svg`, `assets/icons/thumb_down.svg`, `assets/icons/block.svg`.
+- **Interactive Preference Selector:**
+  - Renders 4 filter chips in `RecipeDetailScreen`.
+  - Tapping an active mark toggles it off back to `none`.
+  - Persisted via `RecipeHistoryService.setPreference(...)`.
+- **Immediate Exclusion:**
+  - Marking a recipe as `Nunca` immediately excludes it from future suggestion lists while preserving it in local storage.
+
+#### US-7.3: Preference- & History-Aware Recipe Suggestion Ranking
+- **`RecipeSearchService` Ranking Algorithm:**
+  - Incorporates user preference marks and cooking history from `RecipeHistoryService`:
+    1. Recipes marked `Nunca` (`never`) are strictly filtered out of suggestion results.
+    2. Active recipes (`favorite`, `liked`, or unmarked) are ranked ahead of any `disliked` (`No me gustó`) recipes, even when disliked has more matching ingredients.
+    3. `favorite` receives a ranking boost (+12.0), followed by `liked` (+6.0).
+    4. Variety balance: recipes cooked today (-4.0) or this week (-2.0) are balanced to encourage meal variety.
+    5. Recipes marked `disliked` appear at the very end of the suggestion list as a last option.
+- **Unit Verification:**
+  - Comprehensive unit test suite in `test/unit/recipe_search_service_test.dart` verifies exact ordering across all 5 preference states and variety balance.
+
+#### US-7.4: Recipe Management & History View (`Gestión de Recetas`)
+- **Presentation Component:**
+  - Implemented in [`lib/features/recipes/presentation/recipe_management_screen.dart`](file:///c:/Users/luisr/food-friend/lib/features/recipes/presentation/recipe_management_screen.dart).
+  - Accessible directly from `HomeScreen` via `"Gestión de recetas"` feature card.
+- **Filter Tabs:**
+  - `Todas`: Lists all known recipes (local dataset plus any cached AI recipes).
+  - `Favoritas`: Filters recipes marked as `favorite`.
+  - `Cocinadas`: Filters recipes with `timesCooked > 0`.
+  - `Ocultas (Nunca)`: Filters recipes marked as `never`.
+- **Card Controls & Restoration:**
+  - Displays cooking frequency badge (`timesCooked`).
+  - Presents 4 quick-toggle preference chips directly on each card.
+  - Tapping `Nunca` to change or clear preference immediately restores the recipe to normal suggestion eligibility with feedback notice.
+  - Tapping card opens `RecipeDetailScreen`.
+
+---
+
+### Phase 7 Test Suite Verification Summary
+
+| Test Suite | Scope | Result |
+| :--- | :--- | :--- |
+| `test/unit/recipe_history_service_test.dart` | `RecipeHistoryRecord` model, daily idempotency, pantry ingredient synchronization, all 4 preference marks, search exclusion | **PASSED** (10 tests) |
+| `test/unit/recipe_search_service_test.dart` | Local matching, synonym bridges, strict `Nunca` exclusion, active over disliked, exact preference ordering (`Favorita` > `Me gustó` > `Sin marcar` > `No me gustó`), variety balance | **PASSED** (13 tests) |
+| `test/features/recipe_detail_screen_test.dart` | Recipe details, variations, "Lo cociné" button, daily idempotency check, 4 preference chips toggling and persistence | **PASSED** (6 tests) |
+| `test/features/home_screen_test.dart` | Home screen shell, cards, navigation to "Gestionar recetas" | **PASSED** (5 tests) |
+| `test/features/recipe_management_screen_test.dart` | Recipe management UI, filter tabs (`Todas`, `Favoritas`, `Cocinadas`, `Ocultas`), restoring `Nunca` recipes, detail navigation | **PASSED** (4 tests) |
+| `test/integration/recipe_discovery_flow_test.dart` | E2E discovery flow + E2E Phase 7 flow: Clean state $\rightarrow$ Cook log ("Lo cociné") $\rightarrow$ Idempotency $\rightarrow$ Preference toggle $\rightarrow$ Gestión de Recetas restore | **PASSED** (3 tests) |
+| Full Workspace Suite (`flutter test`) | Total tests across all unit, widget, and integration tests | **PASSED** (163 tests) |
+| Static Analysis (`flutter analyze`) | Static analysis across the entire project | **PASSED** (0 issues) |
+
+
 
