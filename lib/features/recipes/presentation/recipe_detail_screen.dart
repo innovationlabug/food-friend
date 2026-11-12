@@ -15,24 +15,30 @@ class RecipeDetailScreen extends StatelessWidget {
     required this.recipe,
     this.matchedIngredients = const [],
     this.missingIngredients = const [],
+    this.previousRecipeIds = const [],
   });
 
   /// Factory constructor when navigating with a [RecipeSearchResult].
   factory RecipeDetailScreen.fromResult({
     Key? key,
     required RecipeSearchResult result,
+    List<String> previousRecipeIds = const [],
   }) {
     return RecipeDetailScreen(
       key: key,
       recipe: result.recipe,
       matchedIngredients: result.matchedIngredients,
       missingIngredients: result.missingIngredients,
+      previousRecipeIds: previousRecipeIds,
     );
   }
 
   final Recipe recipe;
   final List<RecipeIngredient> matchedIngredients;
   final List<RecipeIngredient> missingIngredients;
+
+  /// IDs of recipes previously opened in this navigation branch to prevent loops.
+  final List<String> previousRecipeIds;
 
   @override
   Widget build(BuildContext context) {
@@ -212,13 +218,13 @@ class RecipeDetailScreen extends StatelessWidget {
     );
   }
 
-  void _showVariationsSheet(BuildContext context) {
-    final theme = Theme.of(context);
+  void _showVariationsSheet(BuildContext rootContext) {
+    final theme = Theme.of(rootContext);
     final colorScheme = theme.colorScheme;
     final dataset = LocalRecipeDataset.instance;
 
     showModalBottomSheet<void>(
-      context: context,
+      context: rootContext,
       isScrollControlled: true,
       backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
@@ -230,7 +236,7 @@ class RecipeDetailScreen extends StatelessWidget {
           minChildSize: 0.4,
           maxChildSize: 0.9,
           expand: false,
-          builder: (context, scrollController) {
+          builder: (sheetContext, scrollController) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
@@ -294,17 +300,47 @@ class RecipeDetailScreen extends StatelessWidget {
                             onTap: linkedRecipe == null
                                 ? null
                                 : () {
-                                    Navigator.pop(bottomSheetContext);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => RecipeDetailScreen(
-                                          recipe: linkedRecipe,
-                                          matchedIngredients: matchedIngredients,
-                                          missingIngredients: const [],
-                                        ),
-                                      ),
-                                    );
+                                    if (previousRecipeIds.contains(linkedRecipe.id)) {
+                                      // Already in the navigation stack: pop back to the existing route instance!
+                                      Navigator.popUntil(
+                                        rootContext,
+                                        (route) =>
+                                            route.settings.name == 'recipe_${linkedRecipe.id}' ||
+                                            (route.isFirst && previousRecipeIds.first == linkedRecipe.id),
+                                      );
+                                    } else {
+                                      Navigator.pop(bottomSheetContext);
+
+                                      if (previousRecipeIds.isNotEmpty) {
+                                        // Already exploring a variation: replace current variation to avoid endless stack
+                                        Navigator.pushReplacement(
+                                          rootContext,
+                                          MaterialPageRoute(
+                                            settings: RouteSettings(name: 'recipe_${linkedRecipe.id}'),
+                                            builder: (_) => RecipeDetailScreen(
+                                              recipe: linkedRecipe,
+                                              matchedIngredients: matchedIngredients,
+                                              missingIngredients: const [],
+                                              previousRecipeIds: previousRecipeIds,
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        // First variation from the initial recipe: push with route name
+                                        Navigator.push(
+                                          rootContext,
+                                          MaterialPageRoute(
+                                            settings: RouteSettings(name: 'recipe_${linkedRecipe.id}'),
+                                            builder: (_) => RecipeDetailScreen(
+                                              recipe: linkedRecipe,
+                                              matchedIngredients: matchedIngredients,
+                                              missingIngredients: const [],
+                                              previousRecipeIds: [recipe.id],
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
                                   },
                             child: Padding(
                               padding: const EdgeInsets.all(14),

@@ -66,6 +66,20 @@ class LocalRecipeDataset {
         'Vierte el recado licuado sobre la olla, añade las ramitas de cilantro y deja hervir a fuego suave durante 15 minutos hasta que las verduras estén suaves.',
         'Sirve caliente acompañado de arroz blanco o tortillas recién salidas.',
       ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'guiso_pollo_perulero',
+          title: 'Guiso de Pollo con Perulero y Güisquil',
+          description: 'Versión más ligera con salsa suave de tomate y perulero sin recado tostado.',
+          swappedIngredients: ['Perulero', 'Cilantro'],
+        ),
+        RecipeVariation(
+          recipeId: 'caldo_pollo_verduras',
+          title: 'Caldo de Pollo con Verduras Frescas',
+          description: 'Preparación en caldo reconfortante con hierbabuena fresca.',
+          swappedIngredients: ['Hierbabuena', 'Elote', 'Zanahoria'],
+        ),
+      ],
     ),
     Recipe(
       id: 'caldo_pollo_verduras',
@@ -92,6 +106,20 @@ class LocalRecipeDataset {
         'Incorpora las rodajas de elote y zanahoria, cocinando tapado a fuego medio durante 10 minutos.',
         'Añade el güisquil y las papas. Cocina por 15 minutos más hasta que todos los vegetales estén tiernos pero firmes.',
         'Justo antes de apagar el fuego, añade las ramitas de hierbabuena fresca, tapa la olla y deja reposar 3 minutos antes de servir.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'pepian_pollo',
+          title: 'Pepián de Pollo Tradicional',
+          description: 'Transforma el caldo en el recado tradicional con chiles secos tostados.',
+          swappedIngredients: ['Chile pasa', 'Chile guaque', 'Miltomate'],
+        ),
+        RecipeVariation(
+          recipeId: 'guiso_pollo_perulero',
+          title: 'Guiso de Pollo con Perulero y Güisquil',
+          description: 'Guiso en caldillo de tomate natural con perulero y güisquil.',
+          swappedIngredients: ['Perulero', 'Tomate'],
+        ),
       ],
     ),
     Recipe(
@@ -120,6 +148,20 @@ class LocalRecipeDataset {
         'Licúa los vegetales asados con una taza del caldo reservado hasta formar una salsa tersa.',
         'En una cacerola, vierte la salsa y agrega las papas, las zanahorias y la carne deshebrada.',
         'Cocina a fuego medio-bajo durante 15 minutos hasta que las verduras estén suaves y los sabores se hayan integrado por completo.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'salpicon_res',
+          title: 'Salpicón de Res Fresco con Rábano y Hierbabuena',
+          description: 'Plato frío refrescante con carne picada, rábano crujiente y hierbabuena.',
+          swappedIngredients: ['Rábano', 'Hierbabuena', 'Limón'],
+        ),
+        RecipeVariation(
+          recipeId: 'picado_res_verduras',
+          title: 'Carne Molida Guisada con Verduras',
+          description: 'Versión rápida con carne molida y vegetales finamente picados.',
+          swappedIngredients: ['Carne molida de res', 'Ejote'],
+        ),
       ],
     ),
     Recipe(
@@ -178,6 +220,14 @@ class LocalRecipeDataset {
         'Añade las ramitas de epazote fresco y sal al gusto. Deja hervir a fuego lento por 10 minutos más.',
         'Sirve los frijoles calientes en tazones con su caldo y corónalos con rebanadas de queso de capas.',
       ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'desayuno_chapin_saludable',
+          title: 'Desayuno Típico Saludable',
+          description: 'Acompaña los frijoles con huevos al gusto, plátano cocido y chirmol.',
+          swappedIngredients: ['Huevo', 'Plátano maduro', 'Tomate'],
+        ),
+      ],
     ),
     Recipe(
       id: 'tortitas_ejote_salsa',
@@ -203,6 +253,14 @@ class LocalRecipeDataset {
         'Pasa cada manojito de ejotes por el huevo batido y cocínalos en una sartén antiadherente ligeramente engrasada hasta dorar por ambos lados.',
         'Para la salsa, cocina los tomates, cebolla y ajo con 1/2 taza de agua, licúa y hierve en una olla pequeña por 5 minutos.',
         'Baña las tortitas doradas con la salsa de tomate caliente antes de servir.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'salteado_verduras_curry',
+          title: 'Salteado de Verduras al Curry con Maní',
+          description: 'Vegetales salteados al wok con especias de curry y maní tostado.',
+          swappedIngredients: ['Brócoli', 'Curry', 'Maní'],
+        ),
       ],
     ),
     Recipe(
@@ -267,6 +325,20 @@ class LocalRecipeDataset {
         'Exprime el jugo de los limones sobre la preparación y añade sal al gusto.',
         'Mezcla todo vigorosamente y deja reposar en refrigeración 10 minutos antes de servir con tortillas o tostadas horneadas.',
       ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'hilachas_res',
+          title: 'Hilachas de Res Saludables',
+          description: 'Guiso caliente de res deshebrada en salsa de tomate con papas y zanahorias.',
+          swappedIngredients: ['Tomate', 'Miltomate', 'Papa', 'Zanahoria'],
+        ),
+        RecipeVariation(
+          recipeId: 'picado_res_verduras',
+          title: 'Carne Molida Guisada con Verduras',
+          description: 'Guiso caliente de carne molida con verduras tiernas picadas.',
+          swappedIngredients: ['Carne molida de res', 'Papa', 'Ejote'],
+        ),
+      ],
     ),
     Recipe(
       id: 'sopa_lentejas_espinaca',
@@ -293,6 +365,14 @@ class LocalRecipeDataset {
         'Tapa la olla y cocina a fuego medio durante 25 minutos hasta que las lentejas y verduras estén tiernas.',
         'Agrega las hojas de espinaca en el último minuto de cocción, remueve suavemente y apaga el fuego.',
       ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'caldo_pollo_verduras',
+          title: 'Caldo de Pollo con Verduras Frescas',
+          description: 'Sustituye las lentejas por pechuga de pollo y elote tierno.',
+          swappedIngredients: ['Pechuga de pollo', 'Elote', 'Hierbabuena'],
+        ),
+      ],
     ),
     Recipe(
       id: 'pescado_limon_cilantro',
@@ -316,6 +396,14 @@ class LocalRecipeDataset {
         'Sazona los filetes con sal, el ajo picado, las julianas de cebolla morada y el cilantro.',
         'Rocía el jugo de limón y el aceite de oliva sobre el pescado.',
         'Cocina al vapor o en sartén tapada a fuego medio-bajo durante 10 a 12 minutos hasta que el pescado se deshaga fácilmente con un tenedor.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'ceviche_aguacate_pepino',
+          title: 'Ceviche Vegetariano de Aguacate y Pepino',
+          description: 'Opción fresca sin cocción con aguacate cremoso, pepino y cebolla morada.',
+          swappedIngredients: ['Aguacate', 'Pepino', 'Tomate'],
+        ),
       ],
     ),
     Recipe(
@@ -374,6 +462,20 @@ class LocalRecipeDataset {
         'Agrega los cubos de güisquil y perulero, junto con las ramitas de cilantro.',
         'Tapa la olla y cocina a fuego suave por 15 minutos más hasta que los vegetales estén tiernos y el pollo completamente cocido.',
       ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'pepian_pollo',
+          title: 'Pepián de Pollo Tradicional',
+          description: 'Eleva el guiso a pepián tradicional con recado de chiles secos tostados.',
+          swappedIngredients: ['Chile pasa', 'Chile guaque', 'Papa', 'Ejote'],
+        ),
+        RecipeVariation(
+          recipeId: 'caldo_pollo_verduras',
+          title: 'Caldo de Pollo con Verduras Frescas',
+          description: 'Preparación en caldo ligero con hierbabuena fresca y elote en rodajas.',
+          swappedIngredients: ['Hierbabuena', 'Elote', 'Papa'],
+        ),
+      ],
     ),
     Recipe(
       id: 'arroz_vegetales_pollo',
@@ -400,6 +502,20 @@ class LocalRecipeDataset {
         'Vierte 2 tazas de agua caliente o caldo con sal al gusto.',
         'Lleva a ebullición, baja el fuego al mínimo, tapa la cacerola y deja cocinar 18 minutos sin destapar hasta que el agua se absorba.',
       ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'pasta_parmesano_pollo',
+          title: 'Pasta con Pollo y Queso Parmesano',
+          description: 'Cambia el arroz por pasta al dente con queso parmesano rallado.',
+          swappedIngredients: ['Pasta', 'Queso parmesano'],
+        ),
+        RecipeVariation(
+          recipeId: 'pollo_plancha_vegetales',
+          title: 'Pechuga a la Plancha con Verduras al Vapor',
+          description: 'Pechuga a la plancha con verduras al vapor sin arroz.',
+          swappedIngredients: ['Güisquil', 'Limón'],
+        ),
+      ],
     ),
     Recipe(
       id: 'desayuno_chapin_saludable',
@@ -425,6 +541,20 @@ class LocalRecipeDataset {
         'Cocina los huevos revueltos o estrellados en una sartén con poco aceite.',
         'Sirve en un plato dividido: huevos bañados en chirmol, frijoles negros con queso de capas y rodajas de plátano cocido.',
       ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'frijoles_parados_queso',
+          title: 'Frijoles Negros Parados con Epazote y Queso',
+          description: 'Versión ligera de frijoles negros con caldo aromático de epazote.',
+          swappedIngredients: ['Epazote'],
+        ),
+        RecipeVariation(
+          recipeId: 'omelet_espinaca_queso',
+          title: 'Omelet de Espinaca y Queso de Capas',
+          description: 'Huevos preparados en omelet con espinaca y queso de capas.',
+          swappedIngredients: ['Espinaca'],
+        ),
+      ],
     ),
     Recipe(
       id: 'ceviche_aguacate_pepino',
@@ -448,6 +578,20 @@ class LocalRecipeDataset {
         'Añade el pepino picado, el tomate y el cilantro.',
         'Agrega los dados de aguacate e integra suavemente con una cuchara de madera para que no se deshagan.',
         'Sirve frío con tostadas horneadas o galletas saladas.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'ensalada_aguacate_tomate',
+          title: 'Ensalada Chapina de Aguacate y Tomate',
+          description: 'Ensalada tradicional aderezada con aceite de oliva.',
+          swappedIngredients: ['Aceite de oliva'],
+        ),
+        RecipeVariation(
+          recipeId: 'pescado_limon_cilantro',
+          title: 'Filete de Pescado al Vapor con Limón y Cilantro',
+          description: 'Plato caliente con filete de pescado cocido al vapor y cebolla morada.',
+          swappedIngredients: ['Limón', 'Ajo', 'Aceite de oliva'],
+        ),
       ],
     ),
     Recipe(
@@ -474,6 +618,20 @@ class LocalRecipeDataset {
         'Añade las papas, zanahorias y ejotes picados.',
         'Vierte los tomates licuados y sazona con sal y un toque de laurel o tomillo.',
         'Tapa y cocina a fuego medio-bajo durante 15 minutos hasta que las verduras estén tiernas y el jugo haya espesado.',
+      ],
+      variations: [
+        RecipeVariation(
+          recipeId: 'hilachas_res',
+          title: 'Hilachas de Res Saludables',
+          description: 'Carne deshebrada cocida a fuego lento con salsa de miltomate y chile pimiento.',
+          swappedIngredients: ['Posta de res', 'Miltomate', 'Chile pimiento'],
+        ),
+        RecipeVariation(
+          recipeId: 'salpicon_res',
+          title: 'Salpicón de Res Fresco con Rábano y Hierbabuena',
+          description: 'Plato frío cítrico con rábano y hierbabuena fresca.',
+          swappedIngredients: ['Rábano', 'Hierbabuena', 'Limón'],
+        ),
       ],
     ),
     Recipe(

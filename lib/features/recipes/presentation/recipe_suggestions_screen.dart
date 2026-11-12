@@ -559,6 +559,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
+              settings: RouteSettings(name: 'recipe_${result.recipe.id}'),
               builder: (_) => RecipeDetailScreen.fromResult(result: result),
             ),
           );
