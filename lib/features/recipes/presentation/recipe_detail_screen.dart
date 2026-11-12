@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../data/local_recipe_dataset.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_search_result.dart';
@@ -14,24 +15,30 @@ class RecipeDetailScreen extends StatelessWidget {
     required this.recipe,
     this.matchedIngredients = const [],
     this.missingIngredients = const [],
+    this.previousRecipeIds = const [],
   });
 
   /// Factory constructor when navigating with a [RecipeSearchResult].
   factory RecipeDetailScreen.fromResult({
     Key? key,
     required RecipeSearchResult result,
+    List<String> previousRecipeIds = const [],
   }) {
     return RecipeDetailScreen(
       key: key,
       recipe: result.recipe,
       matchedIngredients: result.matchedIngredients,
       missingIngredients: result.missingIngredients,
+      previousRecipeIds: previousRecipeIds,
     );
   }
 
   final Recipe recipe;
   final List<RecipeIngredient> matchedIngredients;
   final List<RecipeIngredient> missingIngredients;
+
+  /// IDs of recipes previously opened in this navigation branch to prevent loops.
+  final List<String> previousRecipeIds;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +65,10 @@ class RecipeDetailScreen extends StatelessWidget {
                 _buildHeader(context),
                 const SizedBox(height: 16),
                 _buildMetadataRow(context),
+                if (recipe.hasVariations) ...[
+                  const SizedBox(height: 16),
+                  _buildVariationsButton(context),
+                ],
                 const SizedBox(height: 24),
                 _buildIngredientsSection(
                   context,
@@ -176,6 +187,232 @@ class RecipeDetailScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildVariationsButton(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        side: BorderSide(color: colorScheme.primary),
+      ),
+      icon: AppSvgIcon(
+        assetName: 'restaurant',
+        size: 18,
+        color: colorScheme.primary,
+      ),
+      label: Text(
+        'Ver variaciones (${recipe.variations.length})',
+        style: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: colorScheme.primary,
+        ),
+      ),
+      onPressed: () => _showVariationsSheet(context),
+    );
+  }
+
+  void _showVariationsSheet(BuildContext rootContext) {
+    final theme = Theme.of(rootContext);
+    final colorScheme = theme.colorScheme;
+    final dataset = LocalRecipeDataset.instance;
+
+    showModalBottomSheet<void>(
+      context: rootContext,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bottomSheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (sheetContext, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.outlineVariant,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      AppSvgIcon(
+                        assetName: 'restaurant',
+                        size: 20,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Variaciones de la receta',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Cambia 1 o 2 ingredientes para disfrutar un plato diferente:',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      itemCount: recipe.variations.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final variation = recipe.variations[index];
+                        final linkedRecipe = dataset.getRecipeById(variation.recipeId);
+
+                        return Card(
+                          elevation: 0,
+                          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: linkedRecipe == null
+                                ? null
+                                : () {
+                                    if (previousRecipeIds.contains(linkedRecipe.id)) {
+                                      // Already in the navigation stack: pop back to the existing route instance!
+                                      Navigator.popUntil(
+                                        rootContext,
+                                        (route) =>
+                                            route.settings.name == 'recipe_${linkedRecipe.id}' ||
+                                            (route.isFirst && previousRecipeIds.first == linkedRecipe.id),
+                                      );
+                                    } else {
+                                      Navigator.pop(bottomSheetContext);
+
+                                      if (previousRecipeIds.isNotEmpty) {
+                                        // Already exploring a variation: replace current variation to avoid endless stack
+                                        Navigator.pushReplacement(
+                                          rootContext,
+                                          MaterialPageRoute(
+                                            settings: RouteSettings(name: 'recipe_${linkedRecipe.id}'),
+                                            builder: (_) => RecipeDetailScreen(
+                                              recipe: linkedRecipe,
+                                              matchedIngredients: matchedIngredients,
+                                              missingIngredients: const [],
+                                              previousRecipeIds: previousRecipeIds,
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        // First variation from the initial recipe: push with route name
+                                        Navigator.push(
+                                          rootContext,
+                                          MaterialPageRoute(
+                                            settings: RouteSettings(name: 'recipe_${linkedRecipe.id}'),
+                                            builder: (_) => RecipeDetailScreen(
+                                              recipe: linkedRecipe,
+                                              matchedIngredients: matchedIngredients,
+                                              missingIngredients: const [],
+                                              previousRecipeIds: [recipe.id],
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          variation.title,
+                                          style: theme.textTheme.titleSmall?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: colorScheme.onSurface,
+                                          ),
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        color: colorScheme.primary,
+                                      ),
+                                    ],
+                                  ),
+                                  if (variation.description != null) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      variation.description!,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                  if (variation.swappedIngredients.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      children: variation.swappedIngredients.map((item) {
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.primaryContainer.withValues(alpha: 0.4),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            item,
+                                            style: theme.textTheme.labelSmall?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: colorScheme.onPrimaryContainer,
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

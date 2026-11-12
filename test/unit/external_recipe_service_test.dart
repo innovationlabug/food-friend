@@ -42,7 +42,7 @@ void main() {
       final mockClient = MockClient((request) async {
         externalApiCalled = true;
         final body = jsonDecode(request.body) as Map<String, dynamic>;
-        expect(body['ingredients'], contains('curry'));
+        expect(body['ingredients'], contains('berenjena'));
 
         const mockResponse = {
           'success': true,
@@ -79,7 +79,7 @@ void main() {
 
       // Unmatched ingredient locally
       final response = await service.discoverRecipes(
-        selectedIngredients: ['curry'],
+        selectedIngredients: ['berenjena'],
         localSearchService: localSearchService,
       );
 

@@ -142,6 +142,7 @@ class IngredientCatalog {
           children: [
             CategoryNode(id: 'atun_lata', name: 'Atún en lata'),
             CategoryNode(id: 'camarones', name: 'Camarones'),
+            CategoryNode(id: 'filete_pescado', name: 'Filete de pescado', synonyms: ['pescado', 'filete']),
             CategoryNode(id: 'filete_robalo', name: 'Filete de robalo'),
             CategoryNode(id: 'filete_tilapia', name: 'Filete de tilapia'),
             CategoryNode(id: 'mojarra', name: 'Mojarra entera'),

@@ -1,7 +1,9 @@
 import 'recipe_ingredient.dart';
+import 'recipe_variation.dart';
 
 /// Represents a cooking recipe with standardized Spanish metadata,
-/// ingredient requirements, and ordered step-by-step preparation instructions.
+/// ingredient requirements, ordered step-by-step preparation instructions,
+/// and linked pre-defined recipe variations.
 class Recipe {
   const Recipe({
     required this.id,
@@ -15,6 +17,7 @@ class Recipe {
     this.difficulty,
     this.category,
     this.source = 'local',
+    this.variations = const [],
   });
 
   /// Factory constructor to deserialize from JSON map.
@@ -37,6 +40,13 @@ class Recipe {
       difficulty: json['difficulty'] as String?,
       category: json['category'] as String?,
       source: json['source'] as String? ?? 'local',
+      variations: (json['variations'] as List<dynamic>?)
+              ?.map((e) => RecipeVariation.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          (json['variationIds'] as List<dynamic>?)
+              ?.map((id) => RecipeVariation(recipeId: id.toString(), title: id.toString()))
+              .toList() ??
+          const [],
     );
   }
 
@@ -73,6 +83,15 @@ class Recipe {
   /// Origin of the recipe ('local' for offline preloaded recipes, or 'external').
   final String source;
 
+  /// Pre-defined variations of this recipe linking to related recipes.
+  final List<RecipeVariation> variations;
+
+  /// List of variation identifiers for direct ID lookup.
+  List<String> get variationIds => variations.map((v) => v.recipeId).toList();
+
+  /// Whether this recipe has at least one pre-defined variation.
+  bool get hasVariations => variations.isNotEmpty;
+
   /// Total estimated time in minutes (prep + cook).
   int? get totalTimeMinutes {
     if (prepTimeMinutes == null && cookTimeMinutes == null) return null;
@@ -93,6 +112,8 @@ class Recipe {
       if (difficulty != null) 'difficulty': difficulty,
       if (category != null) 'category': category,
       'source': source,
+      if (variations.isNotEmpty) 'variations': variations.map((v) => v.toJson()).toList(),
+      if (variations.isNotEmpty) 'variationIds': variationIds,
     };
   }
 
@@ -109,6 +130,7 @@ class Recipe {
     String? difficulty,
     String? category,
     String? source,
+    List<RecipeVariation>? variations,
   }) {
     return Recipe(
       id: id ?? this.id,
@@ -122,6 +144,7 @@ class Recipe {
       difficulty: difficulty ?? this.difficulty,
       category: category ?? this.category,
       source: source ?? this.source,
+      variations: variations ?? this.variations,
     );
   }
 

@@ -39,43 +39,43 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ## Phase 6: Recipe Variations, Dataset Expansion & On-Demand AI Generation
 
-### - [ ] US-6.1: Expanded Local Recipe Dataset & Pre-Defined Recipe Variations Model
+### - [x] US-6.1: Expanded Local Recipe Dataset & Pre-Defined Recipe Variations Model
 **As a** user who cooks for multiple days of the week,  
 **I want** the app to include a larger collection of local Spanish recipes—including recipes using the newly added ingredients and pre-defined recipe variations that swap only one or two ingredients,  
 **So that** I can enjoy varied meals throughout the week without getting bored of eating the exact same dish.
 
 #### Acceptance Criteria
-- [ ] The `Recipe` domain model supports linking pre-defined variations (e.g., via `variationIds` or embedded `RecipeVariation` references pointing to related recipes that share most base ingredients while changing 1–2 ingredients or preparation style).
-- [ ] `LocalRecipeDataset` is expanded with new healthy Spanish recipes that incorporate the newly added catalog ingredients (including `nueces`, `maní`, `queso gouda`, `queso parmesano`, and `curry`).
-- [ ] Multiple recipes in `LocalRecipeDataset` include sensible pre-defined variations (for example, a base chicken/vegetable dish and variations changing the sauce/spice such as `curry` or swapping a side/topping).
-- [ ] Serialization (`toJson` / `fromJson`) and unit tests validate variation links and confirm that every recipe ingredient maps cleanly to `IngredientCatalog`.
+- [x] The `Recipe` domain model supports linking pre-defined variations (e.g., via `variationIds` or embedded `RecipeVariation` references pointing to related recipes that share most base ingredients while changing 1–2 ingredients or preparation style).
+- [x] `LocalRecipeDataset` is expanded with new healthy Spanish recipes that incorporate the newly added catalog ingredients (including `nueces`, `maní`, `queso gouda`, `queso parmesano`, and `curry`).
+- [x] Multiple recipes in `LocalRecipeDataset` include sensible pre-defined variations (for example, a base chicken/vegetable dish and variations changing the sauce/spice such as `curry` or swapping a side/topping).
+- [x] Serialization (`toJson` / `fromJson`) and unit tests validate variation links and confirm that every recipe ingredient maps cleanly to `IngredientCatalog`.
 
 ---
 
-### - [ ] US-6.2: Recipe Variations Viewer in Recipe Detail Screen
+### - [x] US-6.2: Recipe Variations Viewer in Recipe Detail Screen
 **As a** user viewing a recipe,  
 **I want** to see a button to explore variations when that recipe has variations available,  
 **So that** I can easily switch to a similar dish using almost the same ingredients.
 
 #### Acceptance Criteria
-- [ ] On `RecipeDetailScreen`, if the selected recipe has one or more pre-defined variations, a clear button in Spanish (e.g., `"Ver variaciones"`) with an SVG icon is displayed.
-- [ ] If a recipe has no variations defined, the variations button is not shown.
-- [ ] Tapping `"Ver variaciones"` presents the linked variation recipes (showing how the variation differs in ingredients/preparation) and allows the user to open any variation's full Recipe Detail view.
-- [ ] Widget tests verify that the button appears only when variations exist and navigates cleanly to the selected variation.
+- [x] On `RecipeDetailScreen`, if the selected recipe has one or more pre-defined variations, a clear button in Spanish (e.g., `"Ver variaciones"`) with an SVG icon is displayed.
+- [x] If a recipe has no variations defined, the variations button is not shown.
+- [x] Tapping `"Ver variaciones"` presents the linked variation recipes (showing how the variation differs in ingredients/preparation) and allows the user to open any variation's full Recipe Detail view.
+- [x] Widget tests verify that the button appears only when variations exist and navigates cleanly to the selected variation.
 
 ---
 
-### - [ ] US-6.3: On-Demand AI Recipe Generation Button in Suggestions List
+### - [x] US-6.3: On-Demand AI Recipe Generation Button in Suggestions List
 **As a** user browsing recipe suggestions,  
 **I want** a button at the bottom of the recipe suggestion list to generate additional recipes using AI,  
 **So that** I can request fresh recipe ideas beyond the local dataset whenever I want more options.
 
 #### Acceptance Criteria
-- [ ] At the bottom of the recipe list on `RecipeSuggestionsScreen`, a button in Spanish (e.g., `"Generar más recetas con IA"`) is displayed even when local recipes are already listed.
-- [ ] Tapping the button calls the backend serverless proxy (`POST /api/recipes`) with the user's selected ingredients and appends the newly generated Spanish recipes to the list without removing existing local matches.
-- [ ] A clear Spanish loading state is shown on the button while awaiting the response, preventing duplicate concurrent requests.
-- [ ] If the LLM proxy call fails or the device is offline, a friendly Spanish message is displayed (and fallback recipes are provided if available) without crashing or clearing existing results.
-- [ ] Widget and unit tests verify the button's presence, loading state, appending of AI recipes, and error resilience.
+- [x] At the bottom of the recipe list on `RecipeSuggestionsScreen`, a button in Spanish (e.g., `"Generar más recetas con IA"`) is displayed even when local recipes are already listed.
+- [x] Tapping the button calls the backend serverless proxy (`POST /api/recipes`) with the user's selected ingredients and appends the newly generated Spanish recipes to the list without removing existing local matches.
+- [x] A clear Spanish loading state is shown on the button while awaiting the response, preventing duplicate concurrent requests.
+- [x] If the LLM proxy call fails or the device is offline, a friendly Spanish message is displayed (and fallback recipes are provided if available) without crashing or clearing existing results.
+- [x] Widget and unit tests verify the button's presence, loading state, appending of AI recipes, and error resilience.
 
 ---
 

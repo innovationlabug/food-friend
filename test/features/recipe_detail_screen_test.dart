@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
 import 'package:food_friend/features/recipes/domain/recipe_search_result.dart';
+import 'package:food_friend/features/recipes/domain/recipe_variation.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 
 void main() {
@@ -106,6 +108,121 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+  });
+
+  group('US-6.2: Recipe Variations Viewer in RecipeDetailScreen', () {
+    testWidgets('does not display variations button when recipe has no variations',
+        (WidgetTester tester) async {
+      final result = RecipeSearchResult(
+        recipe: sampleRecipe,
+        matchedIngredients: const [],
+        missingIngredients: sampleRecipe.ingredients,
+      );
+
+      await tester.pumpWidget(createTestWidget(result: result));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Ver variaciones'), findsNothing);
+    });
+
+    testWidgets('displays variations button when recipe has variations and opens variations sheet',
+        (WidgetTester tester) async {
+      const recipeWithVariations = Recipe(
+        id: 'pollo_plancha_test',
+        title: 'Pechuga a la Plancha',
+        ingredients: [
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+        ],
+        instructions: ['Cocinar el pollo.'],
+        variations: [
+          RecipeVariation(
+            recipeId: 'pollo_curry_crema',
+            title: 'Pechuga al Curry Cremoso con Maní',
+            description: 'Baña el pollo con salsa de curry y maní tostado.',
+            swappedIngredients: ['Curry', 'Maní', 'Crema pura'],
+          ),
+        ],
+      );
+
+      final result = RecipeSearchResult(
+        recipe: recipeWithVariations,
+        matchedIngredients: const [],
+        missingIngredients: recipeWithVariations.ingredients,
+      );
+
+      await tester.pumpWidget(createTestWidget(result: result));
+      await tester.pumpAndSettle();
+
+      // Verify button is displayed with correct label
+      final variationsButton = find.text('Ver variaciones (1)');
+      expect(variationsButton, findsOneWidget);
+
+      // Tap variations button
+      await tester.tap(variationsButton);
+      await tester.pumpAndSettle();
+
+      // Verify variations sheet is presented
+      expect(find.text('Variaciones de la receta'), findsOneWidget);
+      expect(find.text('Pechuga al Curry Cremoso con Maní'), findsOneWidget);
+      expect(find.text('Baña el pollo con salsa de curry y maní tostado.'), findsOneWidget);
+      expect(find.text('Curry'), findsOneWidget);
+      expect(find.text('Maní'), findsOneWidget);
+      expect(find.text('Crema pura'), findsOneWidget);
+
+      // Tap variation card to navigate to its detail screen
+      await tester.tap(find.text('Pechuga al Curry Cremoso con Maní'));
+      await tester.pumpAndSettle();
+
+      // Verify navigated to the linked recipe detail view
+      expect(find.text('Pechuga al Curry Cremoso con Maní'), findsAtLeastNWidgets(1));
+      expect(find.text('Tiras de pechuga de pollo en una salsa cremosa de curry aromático con vegetales y maní tostado.'), findsOneWidget);
+    });
+
+    testWidgets('prevents navigation recursion loop by popping back when an opened recipe is re-selected',
+        (WidgetTester tester) async {
+      final dataset = LocalRecipeDataset.instance;
+      final curryRecipe = dataset.getRecipeById('pollo_curry_crema')!;
+      final result = RecipeSearchResult(
+        recipe: curryRecipe,
+        matchedIngredients: const [],
+        missingIngredients: curryRecipe.ingredients,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          onGenerateRoute: (settings) {
+            return MaterialPageRoute<void>(
+              settings: RouteSettings(name: 'recipe_${curryRecipe.id}'),
+              builder: (_) => RecipeDetailScreen.fromResult(
+                result: result,
+              ),
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap variations on Curry
+      await tester.tap(find.textContaining('Ver variaciones'));
+      await tester.pumpAndSettle();
+
+      // Tap Pechuga a la Plancha (which links back to Curry)
+      await tester.tap(find.text('Pechuga a la Plancha con Verduras al Vapor'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pechuga a la Plancha con Verduras al Vapor'), findsAtLeastNWidgets(1));
+
+      // Tap variations on Plancha
+      await tester.tap(find.textContaining('Ver variaciones'));
+      await tester.pumpAndSettle();
+
+      // Tap Curry (already in history stack)
+      await tester.tap(find.text('Pechuga al Curry Cremoso con Maní'));
+      await tester.pumpAndSettle();
+
+      // Verified: returns cleanly to Curry
+      expect(find.text('Pechuga al Curry Cremoso con Maní'), findsAtLeastNWidgets(1));
     });
   });
 }

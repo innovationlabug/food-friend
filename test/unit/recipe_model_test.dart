@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:food_friend/features/ingredients/data/ingredient_catalog.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
 import 'package:food_friend/features/recipes/domain/recipe_search_result.dart';
+import 'package:food_friend/features/recipes/domain/recipe_variation.dart';
 
 void main() {
   group('US-4.1: Recipe & RecipeIngredient Models', () {
@@ -150,6 +152,116 @@ void main() {
       expect(titles.any((t) => t.contains('caldo de pollo')), isTrue);
       expect(titles.any((t) => t.contains('frijoles negros')), isTrue);
       expect(titles.any((t) => t.contains('salpicón') || t.contains('salpicon')), isTrue);
+    });
+  });
+
+  group('US-6.1: Expanded Local Recipe Dataset & Pre-Defined Recipe Variations Model', () {
+    test('RecipeVariation serializes and deserializes accurately', () {
+      const variation = RecipeVariation(
+        recipeId: 'pollo_curry_crema',
+        title: 'Pechuga al Curry Cremoso con Maní',
+        description: 'Salsa suave de curry con crema y maní tostado.',
+        swappedIngredients: ['Curry', 'Crema pura', 'Maní'],
+      );
+
+      final json = variation.toJson();
+      expect(json['recipeId'], equals('pollo_curry_crema'));
+      expect(json['title'], equals('Pechuga al Curry Cremoso con Maní'));
+      expect(json['description'], equals('Salsa suave de curry con crema y maní tostado.'));
+      expect(json['swappedIngredients'], equals(['Curry', 'Crema pura', 'Maní']));
+
+      final fromJson = RecipeVariation.fromJson(json);
+      expect(fromJson.recipeId, equals(variation.recipeId));
+      expect(fromJson.title, equals(variation.title));
+      expect(fromJson.description, equals(variation.description));
+      expect(fromJson.swappedIngredients, equals(variation.swappedIngredients));
+      expect(fromJson, equals(variation));
+    });
+
+    test('Recipe serializes and deserializes variations and variationIds', () {
+      const recipe = Recipe(
+        id: 'pollo_test',
+        title: 'Pollo Test',
+        ingredients: [
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+        ],
+        instructions: ['Cocinar'],
+        variations: [
+          RecipeVariation(
+            recipeId: 'pollo_var_1',
+            title: 'Pollo al Curry',
+            description: 'Con curry',
+            swappedIngredients: ['Curry'],
+          ),
+        ],
+      );
+
+      expect(recipe.hasVariations, isTrue);
+      expect(recipe.variationIds, equals(['pollo_var_1']));
+
+      final json = recipe.toJson();
+      expect(json['variations'], isNotNull);
+      expect(json['variationIds'], equals(['pollo_var_1']));
+
+      final deserialized = Recipe.fromJson(json);
+      expect(deserialized.hasVariations, isTrue);
+      expect(deserialized.variations.length, equals(1));
+      expect(deserialized.variations.first.recipeId, equals('pollo_var_1'));
+      expect(deserialized.variations.first.title, equals('Pollo al Curry'));
+      expect(deserialized.variationIds, equals(['pollo_var_1']));
+    });
+
+    test('LocalRecipeDataset contains recipes using newly added staples (nueces, maní, queso gouda, queso parmesano, curry)', () {
+      final dataset = LocalRecipeDataset.instance;
+      final allRecipeIngredients = dataset.recipes
+          .expand((r) => r.ingredients)
+          .map((i) => i.name.toLowerCase())
+          .toSet();
+
+      expect(allRecipeIngredients.contains('nueces'), isTrue, reason: 'Dataset should include Nueces');
+      expect(allRecipeIngredients.contains('maní'), isTrue, reason: 'Dataset should include Maní');
+      expect(allRecipeIngredients.contains('queso gouda'), isTrue, reason: 'Dataset should include Queso gouda');
+      expect(allRecipeIngredients.contains('queso parmesano'), isTrue, reason: 'Dataset should include Queso parmesano');
+      expect(allRecipeIngredients.contains('curry'), isTrue, reason: 'Dataset should include Curry');
+    });
+
+    test('Multiple recipes include sensible pre-defined variations linking to valid recipes', () {
+      final dataset = LocalRecipeDataset.instance;
+      final recipesWithVariations = dataset.recipes.where((r) => r.hasVariations).toList();
+
+      expect(recipesWithVariations.length, greaterThanOrEqualTo(5),
+          reason: 'Expected at least 5 recipes with pre-defined variations');
+
+      final allRecipeIds = dataset.recipes.map((r) => r.id).toSet();
+
+      for (final recipe in recipesWithVariations) {
+        for (final variation in recipe.variations) {
+          expect(variation.recipeId, isNotEmpty);
+          expect(variation.title, isNotEmpty);
+          expect(allRecipeIds.contains(variation.recipeId), isTrue,
+              reason: 'Variation ID "${variation.recipeId}" on recipe "${recipe.id}" must exist in LocalRecipeDataset');
+
+          // Check that LocalRecipeDataset.getVariationsFor(recipe) resolves the linked recipes cleanly
+          final resolvedVariations = dataset.getVariationsFor(recipe);
+          expect(resolvedVariations.any((r) => r.id == variation.recipeId), isTrue);
+        }
+      }
+    });
+
+    test('Every recipe ingredient maps cleanly to IngredientCatalog', () {
+      final dataset = LocalRecipeDataset.instance;
+      final catalog = IngredientCatalog.instance;
+
+      for (final recipe in dataset.recipes) {
+        for (final ingredient in recipe.ingredients) {
+          final closest = catalog.getClosestMatch(ingredient.name);
+          expect(
+            closest,
+            isNotNull,
+            reason: 'Ingredient "${ingredient.name}" in recipe "${recipe.title}" should map to catalog',
+          );
+        }
+      }
     });
   });
 }
