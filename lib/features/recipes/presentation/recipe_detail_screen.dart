@@ -120,7 +120,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           newPref == RecipePreference.none
               ? 'Preferencia eliminada'
               : newPref == RecipePreference.never
-                  ? 'Marcada como Nunca (oculta de sugerencias)'
+                  ? 'Receta oculta de sugerencias'
                   : 'Marcada como ${newPref.label}',
         ),
         duration: const Duration(seconds: 2),
@@ -300,8 +300,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Widget _buildPreferencesSection(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -312,50 +311,37 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           color: colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
         children: [
-          Text(
-            'Tu preferencia para esta receta:',
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurfaceVariant,
-            ),
+          _buildPreferenceChip(
+            context,
+            preference: RecipePreference.favorite,
+            iconName: 'heart',
+            label: 'Favorita',
+            activeColor: Colors.red.shade600,
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildPreferenceChip(
-                context,
-                preference: RecipePreference.favorite,
-                iconName: 'heart',
-                label: 'Favorita',
-                activeColor: Colors.red.shade600,
-              ),
-              _buildPreferenceChip(
-                context,
-                preference: RecipePreference.liked,
-                iconName: 'thumb_up',
-                label: 'Me gustó',
-                activeColor: Colors.green.shade700,
-              ),
-              _buildPreferenceChip(
-                context,
-                preference: RecipePreference.disliked,
-                iconName: 'thumb_down',
-                label: 'No me gustó',
-                activeColor: Colors.orange.shade800,
-              ),
-              _buildPreferenceChip(
-                context,
-                preference: RecipePreference.never,
-                iconName: 'block',
-                label: 'Nunca',
-                activeColor: colorScheme.error,
-              ),
-            ],
+          _buildPreferenceChip(
+            context,
+            preference: RecipePreference.liked,
+            iconName: 'thumb_up',
+            label: 'Me gustó',
+            activeColor: Colors.green.shade700,
+          ),
+          _buildPreferenceChip(
+            context,
+            preference: RecipePreference.disliked,
+            iconName: 'thumb_down',
+            label: 'No me gustó',
+            activeColor: Colors.orange.shade800,
+          ),
+          _buildPreferenceChip(
+            context,
+            preference: RecipePreference.never,
+            iconName: 'block',
+            label: _preference == RecipePreference.never ? 'Oculta' : 'Ocultar',
+            activeColor: colorScheme.error,
           ),
         ],
       ),

@@ -255,11 +255,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Verify preference chips are rendered
+      // Verify preference chips are rendered without redundant heading text
+      expect(find.text('Tu preferencia para esta receta:'), findsNothing);
       expect(find.text('Favorita'), findsOneWidget);
       expect(find.text('Me gustó'), findsOneWidget);
       expect(find.text('No me gustó'), findsOneWidget);
-      expect(find.text('Nunca'), findsOneWidget);
+      expect(find.text('Ocultar'), findsOneWidget);
 
       // 1. Tap "Favorita"
       await tester.tap(find.text('Favorita'));
@@ -277,11 +278,13 @@ void main() {
       record = await historyService.getRecord(sampleRecipe.id);
       expect(record.preference, RecipePreference.none);
 
-      // 3. Tap "Nunca"
-      await tester.tap(find.text('Nunca'));
+      // 3. Tap "Ocultar" -> label updates to "Oculta"
+      await tester.tap(find.text('Ocultar'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Marcada como Nunca (oculta de sugerencias)'), findsOneWidget);
+      expect(find.text('Oculta'), findsOneWidget);
+      expect(find.text('Ocultar'), findsNothing);
+      expect(find.text('Receta oculta de sugerencias'), findsOneWidget);
       record = await historyService.getRecord(sampleRecipe.id);
       expect(record.preference, RecipePreference.never);
     });

@@ -44,10 +44,64 @@ void main() {
       expect(find.text('Recetas sugeridas'), findsOneWidget);
       expect(find.textContaining('receta(s) disponible(s)'), findsOneWidget);
       expect(find.text('Con base en 3 ingrediente(s) seleccionado(s)'), findsOneWidget);
+      expect(
+        find.text('Cambiar ingredientes para nuevas sugerencias'),
+        findsOneWidget,
+      );
 
       // Verify recipe cards are displayed
       expect(find.text('Caldo de Pollo con Verduras Frescas'), findsOneWidget);
       expect(find.textContaining('Tienes 3 de 8 ingredientes'), findsOneWidget);
+    });
+
+    testWidgets(
+        'header ingredient button returns from suggestions to ShoppingListScreen and lets user modify ingredients',
+        (WidgetTester tester) async {
+      final storage = IngredientStorageService();
+      await storage.saveIngredients([
+        const Ingredient(name: 'Tomate'),
+        const Ingredient(name: 'Aguacate'),
+        const Ingredient(name: 'Pepino'),
+      ]);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ShoppingListScreen(storageService: storage),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Buscar recetas (3)'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
+      final changeBtn = find.text('Cambiar ingredientes para nuevas sugerencias');
+      expect(changeBtn, findsOneWidget);
+
+      await tester.tap(changeBtn);
+      await tester.pumpAndSettle();
+
+      // Returns cleanly to ShoppingListScreen
+      expect(find.byType(ShoppingListScreen), findsOneWidget);
+      expect(find.text('Ingredientes disponibles (3)'), findsOneWidget);
+    });
+
+    testWidgets(
+        'header ingredient button navigates to ShoppingListScreen when opened directly',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Aguacate', 'Tomate', 'Pepino'],
+      ));
+      await tester.pumpAndSettle();
+
+      final changeBtn = find.text('Cambiar ingredientes para nuevas sugerencias');
+      expect(changeBtn, findsOneWidget);
+
+      await tester.tap(changeBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ShoppingListScreen), findsOneWidget);
+      expect(find.text('Ingredientes disponibles'), findsOneWidget);
     });
 
     testWidgets('tapping a recipe card navigates to RecipeDetailScreen',

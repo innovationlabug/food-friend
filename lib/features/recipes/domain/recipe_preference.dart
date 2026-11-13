@@ -16,7 +16,7 @@ enum RecipePreference {
       case RecipePreference.disliked:
         return 'No me gustó';
       case RecipePreference.never:
-        return 'Nunca';
+        return 'Oculta';
       case RecipePreference.none:
         return 'Sin marcar';
     }

@@ -267,7 +267,7 @@ void main() {
     expect(find.textContaining('Todas'), findsOneWidget);
     expect(find.textContaining('Favoritas (0)'), findsOneWidget);
     expect(find.textContaining('Cocinadas (0)'), findsOneWidget);
-    expect(find.textContaining('Ocultas (Nunca) (0)'), findsOneWidget);
+    expect(find.textContaining('Ocultas (0)'), findsOneWidget);
 
     // 4. Open recipe detail for "Pepián de Pollo Tradicional"
     final pepianCard = find.text('Pepián de Pollo Tradicional');
@@ -291,12 +291,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Esta receta ya fue registrada como cocinada hoy.'), findsOneWidget);
 
-    // 7. Mark recipe as "Nunca"
-    final nuncaBtn = find.text('Nunca');
-    expect(nuncaBtn, findsOneWidget);
-    await tester.tap(nuncaBtn);
+    // 7. Hide recipe via "Ocultar" button
+    final ocultarBtn = find.text('Ocultar');
+    expect(ocultarBtn, findsOneWidget);
+    await tester.tap(ocultarBtn);
     await tester.pumpAndSettle();
-    expect(find.text('Marcada como Nunca (oculta de sugerencias)'), findsOneWidget);
+    expect(find.text('Oculta'), findsOneWidget);
+    expect(find.text('Receta oculta de sugerencias'), findsOneWidget);
 
     // 8. Pop back to RecipeManagementScreen
     await tester.tap(find.byType(BackButton));
@@ -304,25 +305,25 @@ void main() {
 
     expect(find.byType(RecipeManagementScreen), findsOneWidget);
     expect(find.textContaining('Cocinadas (1)'), findsOneWidget);
-    expect(find.textContaining('Ocultas (Nunca) (1)'), findsOneWidget);
+    expect(find.textContaining('Ocultas (1)'), findsOneWidget);
 
-    // 9. Filter by "Ocultas (Nunca)"
-    await tester.tap(find.textContaining('Ocultas (Nunca)'));
+    // 9. Filter by "Ocultas"
+    await tester.tap(find.textContaining('Ocultas ('));
     await tester.pumpAndSettle();
 
     expect(find.text('Pepián de Pollo Tradicional'), findsOneWidget);
 
-    // 10. Restore from "Nunca" directly from the management card
-    final cardNuncaChip = find.descendant(
+    // 10. Restore from "Oculta" directly from the management card
+    final cardOcultaChip = find.descendant(
       of: find.byType(Card),
-      matching: find.text('Nunca'),
+      matching: find.text('Oculta'),
     );
-    expect(cardNuncaChip, findsOneWidget);
-    await tester.tap(cardNuncaChip);
+    expect(cardOcultaChip, findsOneWidget);
+    await tester.tap(cardOcultaChip);
     await tester.pumpAndSettle();
 
     expect(find.text('Receta restablecida para sugerencias'), findsOneWidget);
-    expect(find.text('No tienes recetas ocultas (Nunca).'), findsOneWidget);
+    expect(find.text('No tienes recetas ocultas.'), findsOneWidget);
 
     // 11. Navigate back to HomeScreen
     await tester.tap(find.byType(BackButton));

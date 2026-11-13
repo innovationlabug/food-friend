@@ -21,22 +21,19 @@ class RecipeManagementScreen extends StatefulWidget {
   State<RecipeManagementScreen> createState() => _RecipeManagementScreenState();
 }
 
-enum _ManagementFilter {
+enum _CookedFilter {
   todas,
-  favoritas,
   cocinadas,
-  ocultas;
+  noCocinadas;
 
   String get label {
     switch (this) {
-      case _ManagementFilter.todas:
+      case _CookedFilter.todas:
         return 'Todas';
-      case _ManagementFilter.favoritas:
-        return 'Favoritas';
-      case _ManagementFilter.cocinadas:
+      case _CookedFilter.cocinadas:
         return 'Cocinadas';
-      case _ManagementFilter.ocultas:
-        return 'Ocultas (Nunca)';
+      case _CookedFilter.noCocinadas:
+        return 'No cocinadas';
     }
   }
 }
@@ -46,7 +43,65 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
   bool _isLoading = true;
   List<Recipe> _allRecipes = [];
   Map<String, RecipeHistoryRecord> _history = {};
-  _ManagementFilter _activeFilter = _ManagementFilter.todas;
+  _CookedFilter _activeCookedFilter = _CookedFilter.todas;
+  RecipePreference? _activePreferenceFilter;
+  String? _selectedCategory;
+
+  static const List<({RecipePreference pref, String label})> _preferenceFilterOptions = [
+    (pref: RecipePreference.favorite, label: 'Favoritas'),
+    (pref: RecipePreference.liked, label: 'Me gustó'),
+    (pref: RecipePreference.disliked, label: 'No me gustó'),
+    (pref: RecipePreference.never, label: 'Ocultas'),
+    (pref: RecipePreference.none, label: 'Sin marcar'),
+  ];
+
+  static const List<String> _baseMealCategories = [
+    'Desayuno',
+    'Almuerzo',
+    'Cena',
+    'Sopas y Caldos',
+    'Ensaladas',
+  ];
+
+  List<String> get _availableCategories {
+    final list = <String>[..._baseMealCategories];
+    for (final recipe in _allRecipes) {
+      final cat = recipe.category?.trim();
+      if (cat != null && cat.isNotEmpty) {
+        final norm = cat[0].toUpperCase() + cat.substring(1);
+        if (!list.any((existing) => existing.toLowerCase() == norm.toLowerCase())) {
+          list.add(norm);
+        }
+      }
+    }
+    return list;
+  }
+
+  bool _matchesCategory(Recipe recipe, String? category) {
+    if (category == null) return true;
+    final rCat = recipe.category?.trim().toLowerCase();
+    if (rCat == null) return false;
+    final fCat = category.trim().toLowerCase();
+    return rCat == fCat || rCat.contains(fCat) || fCat.contains(rCat);
+  }
+
+  bool _matchesCookedFilter(Recipe recipe, _CookedFilter filter) {
+    final record = _history[recipe.id] ?? RecipeHistoryRecord(recipeId: recipe.id);
+    switch (filter) {
+      case _CookedFilter.todas:
+        return true;
+      case _CookedFilter.cocinadas:
+        return record.timesCooked > 0;
+      case _CookedFilter.noCocinadas:
+        return record.timesCooked == 0;
+    }
+  }
+
+  bool _matchesPreferenceFilter(Recipe recipe, RecipePreference? pref) {
+    if (pref == null) return true;
+    final record = _history[recipe.id] ?? RecipeHistoryRecord(recipeId: recipe.id);
+    return record.preference == pref;
+  }
 
   @override
   void initState() {
@@ -72,37 +127,50 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
   }
 
   List<Recipe> get _filteredRecipes {
-    return _allRecipes.where((recipe) {
-      final record = _history[recipe.id] ?? RecipeHistoryRecord(recipeId: recipe.id);
-
-      // Tab filter
-      switch (_activeFilter) {
-        case _ManagementFilter.todas:
-          return true;
-        case _ManagementFilter.favoritas:
-          return record.preference == RecipePreference.favorite;
-        case _ManagementFilter.cocinadas:
-          return record.timesCooked > 0;
-        case _ManagementFilter.ocultas:
-          return record.preference == RecipePreference.never;
-      }
-    }).toList();
+    return _allRecipes
+        .where(
+          (recipe) =>
+              _matchesCookedFilter(recipe, _activeCookedFilter) &&
+              _matchesPreferenceFilter(recipe, _activePreferenceFilter) &&
+              _matchesCategory(recipe, _selectedCategory),
+        )
+        .toList();
   }
 
-  int _countForFilter(_ManagementFilter filter) {
-    return _allRecipes.where((recipe) {
-      final record = _history[recipe.id] ?? RecipeHistoryRecord(recipeId: recipe.id);
-      switch (filter) {
-        case _ManagementFilter.todas:
-          return true;
-        case _ManagementFilter.favoritas:
-          return record.preference == RecipePreference.favorite;
-        case _ManagementFilter.cocinadas:
-          return record.timesCooked > 0;
-        case _ManagementFilter.ocultas:
-          return record.preference == RecipePreference.never;
-      }
-    }).length;
+  int _countForCookedFilter(_CookedFilter filter) {
+    if (filter == _CookedFilter.todas) {
+      return _allRecipes.length;
+    }
+    return _allRecipes
+        .where(
+          (recipe) =>
+              _matchesCookedFilter(recipe, filter) &&
+              _matchesPreferenceFilter(recipe, _activePreferenceFilter) &&
+              _matchesCategory(recipe, _selectedCategory),
+        )
+        .length;
+  }
+
+  int _countForPreferenceFilter(RecipePreference pref) {
+    return _allRecipes
+        .where(
+          (recipe) =>
+              _matchesCookedFilter(recipe, _activeCookedFilter) &&
+              _matchesPreferenceFilter(recipe, pref) &&
+              _matchesCategory(recipe, _selectedCategory),
+        )
+        .length;
+  }
+
+  int _countForCategory(String category) {
+    return _allRecipes
+        .where(
+          (recipe) =>
+              _matchesCookedFilter(recipe, _activeCookedFilter) &&
+              _matchesPreferenceFilter(recipe, _activePreferenceFilter) &&
+              _matchesCategory(recipe, category),
+        )
+        .length;
   }
 
   Future<void> _updatePreference(Recipe recipe, RecipePreference target) async {
@@ -129,7 +197,7 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
     } else if (newPref == RecipePreference.none) {
       message = 'Preferencia eliminada';
     } else if (newPref == RecipePreference.never) {
-      message = 'Marcada como Nunca (oculta de sugerencias)';
+      message = 'Receta oculta de sugerencias';
     } else {
       message = 'Marcada como ${newPref.label}';
     }
@@ -158,7 +226,11 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
                   children: [
                     _buildHeader(context),
                     const SizedBox(height: 16),
-                    _buildFilterTabs(context),
+                    _buildCookedFilterRow(context),
+                    const SizedBox(height: 8),
+                    _buildPreferenceFilterRow(context),
+                    const SizedBox(height: 8),
+                    _buildCategoryFilterRow(context),
                     const SizedBox(height: 16),
                     Expanded(
                       child: _buildRecipeList(context),
@@ -174,19 +246,26 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(
-          'Administra tu recetario',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+        Flexible(
+          child: Text(
+            'Administra tu recetario',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Consulta tu frecuencia de cocina y modifica marcas de preferencia o recetas ocultas.',
-          style: theme.textTheme.bodyMedium?.copyWith(
+        const SizedBox(width: 8),
+        Tooltip(
+          message:
+              'Aquí puedes ver todas las recetas, consultar cuántas veces las has cocinado y marcarlas fácilmente como Favorita, Me gustó, No me gustó u ocultarlas.',
+          triggerMode: TooltipTriggerMode.tap,
+          preferBelow: true,
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          child: Icon(
+            Icons.info_outline,
+            size: 20,
             color: colorScheme.onSurfaceVariant,
           ),
         ),
@@ -194,42 +273,144 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
     );
   }
 
-  Widget _buildFilterTabs(BuildContext context) {
+  Widget _buildStyledFilterChip(
+    BuildContext context, {
+    required String label,
+    required bool isSelected,
+    required VoidCallback onSelected,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: FilterChip(
+        selected: isSelected,
+        showCheckmark: false,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+        label: Text(label),
+        labelStyle: theme.textTheme.labelMedium?.copyWith(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+        ),
+        selectedColor: colorScheme.primaryContainer,
+        backgroundColor: colorScheme.surface,
+        side: BorderSide(
+          color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
+        ),
+        onSelected: (_) => onSelected(),
+      ),
+    );
+  }
+
+  Widget _buildCookedFilterRow(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: _ManagementFilter.values.map((filter) {
-          final isSelected = _activeFilter == filter;
-          final count = _countForFilter(filter);
+        children: _CookedFilter.values.map((filter) {
+          final isSelected = filter == _CookedFilter.todas
+              ? (_activeCookedFilter == _CookedFilter.todas &&
+                  _activePreferenceFilter == null &&
+                  _selectedCategory == null)
+              : _activeCookedFilter == filter;
+          final count = _countForCookedFilter(filter);
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              selected: isSelected,
-              showCheckmark: false,
-              label: Text('${filter.label} ($count)'),
-              labelStyle: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
-              ),
-              selectedColor: colorScheme.primaryContainer,
-              backgroundColor: colorScheme.surface,
-              side: BorderSide(
-                color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
-              ),
-              onSelected: (_) {
-                setState(() {
-                  _activeFilter = filter;
-                });
-              },
-            ),
+          return _buildStyledFilterChip(
+            context,
+            label: '${filter.label} ($count)',
+            isSelected: isSelected,
+            onSelected: () {
+              setState(() {
+                if (filter == _CookedFilter.todas) {
+                  _activeCookedFilter = _CookedFilter.todas;
+                  _activePreferenceFilter = null;
+                  _selectedCategory = null;
+                } else {
+                  _activeCookedFilter =
+                      _activeCookedFilter == filter ? _CookedFilter.todas : filter;
+                }
+              });
+            },
           );
         }).toList(),
       ),
     );
+  }
+
+  Widget _buildPreferenceFilterRow(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _preferenceFilterOptions.map((option) {
+          final isSelected = _activePreferenceFilter == option.pref;
+          final count = _countForPreferenceFilter(option.pref);
+
+          return _buildStyledFilterChip(
+            context,
+            label: '${option.label} ($count)',
+            isSelected: isSelected,
+            onSelected: () {
+              setState(() {
+                _activePreferenceFilter =
+                    _activePreferenceFilter == option.pref ? null : option.pref;
+              });
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCategoryFilterRow(BuildContext context) {
+    final categories = _availableCategories;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: categories.map((cat) {
+          final isSelected = _selectedCategory == cat;
+          final count = _countForCategory(cat);
+
+          return _buildStyledFilterChip(
+            context,
+            label: '$cat ($count)',
+            isSelected: isSelected,
+            onSelected: () {
+              setState(() {
+                _selectedCategory = _selectedCategory == cat ? null : cat;
+              });
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _emptyMessageForActiveFilters() {
+    switch (_activePreferenceFilter) {
+      case RecipePreference.favorite:
+        return 'Aún no has marcado ninguna receta como Favorita.';
+      case RecipePreference.liked:
+        return 'Aún no has marcado ninguna receta con Me gustó.';
+      case RecipePreference.disliked:
+        return 'No tienes recetas marcadas con No me gustó.';
+      case RecipePreference.never:
+        return 'No tienes recetas ocultas.';
+      case RecipePreference.none:
+        return 'No hay recetas sin preferencia marcada en esta vista.';
+      case null:
+        switch (_activeCookedFilter) {
+          case _CookedFilter.todas:
+            return 'No se encontraron recetas en el catálogo.';
+          case _CookedFilter.cocinadas:
+            return 'Aún no has registrado ninguna receta cocinada.';
+          case _CookedFilter.noCocinadas:
+            return 'Todas las recetas del catálogo ya han sido cocinadas.';
+        }
+    }
   }
 
   Widget _buildRecipeList(BuildContext context) {
@@ -238,20 +419,40 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
     final recipes = _filteredRecipes;
 
     if (recipes.isEmpty) {
-      String emptyMessage;
-      switch (_activeFilter) {
-        case _ManagementFilter.todas:
-          emptyMessage = 'No se encontraron recetas en el catálogo.';
-          break;
-        case _ManagementFilter.favoritas:
-          emptyMessage = 'Aún no has marcado ninguna receta como Favorita.';
-          break;
-        case _ManagementFilter.cocinadas:
-          emptyMessage = 'Aún no has registrado ninguna receta cocinada.';
-          break;
-        case _ManagementFilter.ocultas:
-          emptyMessage = 'No tienes recetas ocultas (Nunca).';
-          break;
+      if (_selectedCategory != null) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppSvgIcon(
+                  assetName: 'restaurant',
+                  size: 40,
+                  color: colorScheme.outline,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No se encontraron recetas de tipo "$_selectedCategory" en esta vista.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _selectedCategory = null;
+                    });
+                  },
+                  icon: const Icon(Icons.clear, size: 18),
+                  label: const Text('Mostrar todas las categorías'),
+                ),
+              ],
+            ),
+          ),
+        );
       }
 
       return Center(
@@ -267,7 +468,7 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                emptyMessage,
+                _emptyMessageForActiveFilters(),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
@@ -410,7 +611,9 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
                     recipe: recipe,
                     preference: RecipePreference.never,
                     iconName: 'block',
-                    label: 'Nunca',
+                    label: record.preference == RecipePreference.never
+                        ? 'Oculta'
+                        : 'Ocultar',
                     isSelected: record.preference == RecipePreference.never,
                     activeColor: colorScheme.error,
                   ),
