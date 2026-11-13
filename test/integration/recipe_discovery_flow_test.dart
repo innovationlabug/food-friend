@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
+import 'package:food_friend/features/recipes/presentation/recipe_management_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
 import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
 import 'package:food_friend/main.dart';
@@ -243,5 +244,91 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
+  });
+
+  testWidgets(
+      'E2E Flow Phase 7: Clean state -> Cook log ("Lo cociné") -> Idempotency -> Preference toggle -> Gestión de Recetas restore',
+      (WidgetTester tester) async {
+    // 1. Launch app
+    await tester.pumpWidget(const FoodFriendApp());
+    await tester.pumpAndSettle();
+
+    // 2. Navigate to Gestión de recetas from HomeScreen
+    final manageBtn = find.text('Gestionar recetas');
+    expect(manageBtn, findsOneWidget);
+    await tester.ensureVisible(manageBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(manageBtn);
+    await tester.pumpAndSettle();
+
+    // 3. Verify RecipeManagementScreen and filter tabs
+    expect(find.byType(RecipeManagementScreen), findsOneWidget);
+    expect(find.text('Gestión de Recetas'), findsOneWidget);
+    expect(find.textContaining('Todas'), findsOneWidget);
+    expect(find.textContaining('Favoritas (0)'), findsOneWidget);
+    expect(find.textContaining('Cocinadas (0)'), findsOneWidget);
+    expect(find.textContaining('Ocultas (0)'), findsOneWidget);
+
+    // 4. Open recipe detail for "Pepián de Pollo Tradicional"
+    final pepianCard = find.text('Pepián de Pollo Tradicional');
+    expect(pepianCard, findsOneWidget);
+    await tester.tap(pepianCard);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RecipeDetailScreen), findsOneWidget);
+
+    // 5. Test "Lo cociné" button first tap
+    final cookedBtn = find.text('Lo cociné');
+    expect(cookedBtn, findsOneWidget);
+    await tester.tap(cookedBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('¡Receta registrada como cocinada!'), findsOneWidget);
+    expect(find.text('Cocinada hoy (1 vez)'), findsOneWidget);
+
+    // 6. Test same-day idempotency check
+    await tester.tap(find.text('Cocinada hoy (1 vez)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Esta receta ya fue registrada como cocinada hoy.'), findsOneWidget);
+
+    // 7. Hide recipe via "Ocultar" button
+    final ocultarBtn = find.text('Ocultar');
+    expect(ocultarBtn, findsOneWidget);
+    await tester.tap(ocultarBtn);
+    await tester.pumpAndSettle();
+    expect(find.text('Oculta'), findsOneWidget);
+    expect(find.text('Receta oculta de sugerencias'), findsOneWidget);
+
+    // 8. Pop back to RecipeManagementScreen
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RecipeManagementScreen), findsOneWidget);
+    expect(find.textContaining('Cocinadas (1)'), findsOneWidget);
+    expect(find.textContaining('Ocultas (1)'), findsOneWidget);
+
+    // 9. Filter by "Ocultas"
+    await tester.tap(find.textContaining('Ocultas ('));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pepián de Pollo Tradicional'), findsOneWidget);
+
+    // 10. Restore from "Oculta" directly from the management card
+    final cardOcultaChip = find.descendant(
+      of: find.byType(Card),
+      matching: find.text('Oculta'),
+    );
+    expect(cardOcultaChip, findsOneWidget);
+    await tester.tap(cardOcultaChip);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Receta restablecida para sugerencias'), findsOneWidget);
+    expect(find.text('No tienes recetas ocultas.'), findsOneWidget);
+
+    // 11. Navigate back to HomeScreen
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
   });
 }

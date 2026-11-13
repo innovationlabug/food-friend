@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../../shopping_list/presentation/shopping_list_screen.dart';
 import '../data/external_recipe_service.dart';
+import '../data/recipe_history_service.dart';
 import '../data/recipe_search_service.dart';
+import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
 import 'recipe_detail_screen.dart';
 
@@ -15,6 +18,8 @@ class RecipeSuggestionsScreen extends StatefulWidget {
     required this.selectedIngredientNames,
     this.searchService,
     this.externalService,
+    this.historyService,
+    this.openedFromIngredientList = false,
   });
 
   /// The list of ingredient names selected by the user.
@@ -26,12 +31,20 @@ class RecipeSuggestionsScreen extends StatefulWidget {
   /// Optional injected external service for API queries and fallback coordination.
   final ExternalRecipeService? externalService;
 
+  /// Optional injected history service for preferences and cooking records.
+  final RecipeHistoryService? historyService;
+
+  /// Whether this screen was pushed from [ShoppingListScreen].
+  final bool openedFromIngredientList;
+
   /// Helper static method for easy navigation.
   static Future<void> navigate(
     BuildContext context, {
     required List<String> selectedIngredientNames,
     RecipeSearchService? searchService,
     ExternalRecipeService? externalService,
+    RecipeHistoryService? historyService,
+    bool openedFromIngredientList = false,
   }) {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -39,6 +52,8 @@ class RecipeSuggestionsScreen extends StatefulWidget {
           selectedIngredientNames: selectedIngredientNames,
           searchService: searchService,
           externalService: externalService,
+          historyService: historyService,
+          openedFromIngredientList: openedFromIngredientList,
         ),
       ),
     );
@@ -51,6 +66,7 @@ class RecipeSuggestionsScreen extends StatefulWidget {
 class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   late final RecipeSearchService _searchService;
   late final ExternalRecipeService _externalService;
+  late final RecipeHistoryService _historyService;
 
   bool _isLoading = true;
   bool _isGeneratingAi = false;
@@ -105,6 +121,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     super.initState();
     _searchService = widget.searchService ?? RecipeSearchService();
     _externalService = widget.externalService ?? ExternalRecipeService();
+    _historyService = widget.historyService ?? RecipeHistoryService();
     _performDiscovery();
   }
 
@@ -113,15 +130,22 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
       _isLoading = true;
     });
 
+    final history = await _historyService.getHistory();
+
     final response = await _externalService.discoverRecipes(
       selectedIngredients: widget.selectedIngredientNames,
       localSearchService: _searchService,
+      history: history,
     );
 
     if (mounted) {
+      final filteredResults = response.results
+          .where((r) => history[r.recipe.id]?.preference != RecipePreference.never)
+          .toList();
+
       setState(() {
         _discoveryResponse = response;
-        _results = response.results;
+        _results = filteredResults;
         _isLoading = false;
         _showingAllRecipes = false;
         _selectedCategory = 'Todos';
@@ -129,8 +153,12 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     }
   }
 
-  void _showAllLocalRecipes() {
-    final all = _searchService.getAllRecipes().map((r) {
+  Future<void> _showAllLocalRecipes() async {
+    final history = await _historyService.getHistory();
+    final all = _searchService
+        .getAllRecipes()
+        .where((r) => history[r.id]?.preference != RecipePreference.never)
+        .map((r) {
       final matched = <String>{};
       final missing = <String>{};
       for (final ing in r.ingredients) {
@@ -466,6 +494,24 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     );
   }
 
+  void _navigateToIngredientList() {
+    if (widget.openedFromIngredientList && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    final route = MaterialPageRoute<void>(
+      builder: (_) => ShoppingListScreen(
+        externalRecipeService: widget.externalService,
+      ),
+    );
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pushReplacement(route);
+    } else {
+      Navigator.of(context).push(route);
+    }
+  }
+
   Widget _buildHeaderBanner(BuildContext context, {int? displayedCount}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -493,36 +539,72 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              shape: BoxShape.circle,
-            ),
-            child: AppSvgIcon(
-              assetName: 'restaurant',
-              size: 20,
-              color: colorScheme.onPrimaryContainer,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  bannerTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Con base en $ingredientCount ingrediente(s) seleccionado(s)',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                child: AppSvgIcon(
+                  assetName: 'restaurant',
+                  size: 20,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      bannerTitle,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Con base en $ingredientCount ingrediente(s) seleccionado(s)',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: _navigateToIngredientList,
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              visualDensity: VisualDensity.compact,
+              side: BorderSide(
+                color: colorScheme.primary.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppSvgIcon(
+                  assetName: 'shopping_cart',
+                  size: 16,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Cambiar ingredientes para nuevas sugerencias',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.primary,
+                    ),
                   ),
                 ),
               ],
@@ -560,9 +642,14 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               settings: RouteSettings(name: 'recipe_${result.recipe.id}'),
-              builder: (_) => RecipeDetailScreen.fromResult(result: result),
+              builder: (_) => RecipeDetailScreen.fromResult(
+                result: result,
+                historyService: _historyService,
+              ),
             ),
-          );
+          ).then((_) {
+            _performDiscovery();
+          });
         },
         child: Padding(
           padding: const EdgeInsets.all(16),

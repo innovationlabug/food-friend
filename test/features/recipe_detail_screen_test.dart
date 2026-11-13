@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
+import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
+import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
 import 'package:food_friend/features/recipes/domain/recipe_search_result.dart';
 import 'package:food_friend/features/recipes/domain/recipe_variation.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
   const sampleRecipe = Recipe(
     id: 'test_caldo',
     title: 'Caldo de Pollo Casero',
@@ -223,6 +231,109 @@ void main() {
 
       // Verified: returns cleanly to Curry
       expect(find.text('Pechuga al Curry Cremoso con Maní'), findsAtLeastNWidgets(1));
+    });
+  });
+
+  group('US-7.1: Recipe History Log ("Lo cociné") & Daily Idempotency', () {
+    testWidgets('displays "Lo cociné" button, registers first tap, and prevents same-day duplicates',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final historyService = RecipeHistoryService(preferences: prefs);
+
+      final result = RecipeSearchResult(
+        recipe: sampleRecipe,
+        matchedIngredients: sampleRecipe.ingredients,
+        missingIngredients: const [],
+      );
+
+      await tester.pumpWidget(MaterialApp(
+        home: RecipeDetailScreen.fromResult(
+          result: result,
+          historyService: historyService,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Verify "Lo cociné" button is present initially
+      final cookedButton = find.text('Lo cociné');
+      expect(cookedButton, findsOneWidget);
+
+      // Tap "Lo cociné" for the first time today
+      await tester.tap(cookedButton);
+      await tester.pumpAndSettle();
+
+      // Verify confirmation feedback SnackBar
+      expect(find.text('¡Receta registrada como cocinada!'), findsOneWidget);
+
+      // Verify button updates to indicate it was cooked today
+      expect(find.text('Cocinada hoy (1 vez)'), findsOneWidget);
+
+      // Tap again on the same day (sanity check for same-day idempotency)
+      await tester.tap(find.text('Cocinada hoy (1 vez)'));
+      await tester.pumpAndSettle();
+
+      // Verify already cooked message is displayed
+      expect(find.text('Esta receta ya fue registrada como cocinada hoy.'), findsOneWidget);
+
+      // Verify persisted count in service remains exactly 1
+      final record = await historyService.getRecord(sampleRecipe.id);
+      expect(record.timesCooked, 1);
+      expect(record.isCookedToday(), isTrue);
+    });
+  });
+
+  group('US-7.2: Recipe Preference Marks (Favorita, Me gustó, No me gustó, Nunca)', () {
+    testWidgets('displays all 4 preference marks and allows setting and toggling them',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final historyService = RecipeHistoryService(preferences: prefs);
+
+      final result = RecipeSearchResult(
+        recipe: sampleRecipe,
+        matchedIngredients: sampleRecipe.ingredients,
+        missingIngredients: const [],
+      );
+
+      await tester.pumpWidget(MaterialApp(
+        home: RecipeDetailScreen.fromResult(
+          result: result,
+          historyService: historyService,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Verify preference chips are rendered without redundant heading text
+      expect(find.text('Tu preferencia para esta receta:'), findsNothing);
+      expect(find.text('Favorita'), findsOneWidget);
+      expect(find.text('Me gustó'), findsOneWidget);
+      expect(find.text('No me gustó'), findsOneWidget);
+      expect(find.text('Ocultar'), findsOneWidget);
+
+      // 1. Tap "Favorita"
+      await tester.tap(find.text('Favorita'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Marcada como Favorita'), findsOneWidget);
+      var record = await historyService.getRecord(sampleRecipe.id);
+      expect(record.preference, RecipePreference.favorite);
+
+      // 2. Tap "Favorita" again to toggle off (returns to none)
+      await tester.tap(find.text('Favorita'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Preferencia eliminada'), findsOneWidget);
+      record = await historyService.getRecord(sampleRecipe.id);
+      expect(record.preference, RecipePreference.none);
+
+      // 3. Tap "Ocultar" -> label updates to "Oculta"
+      await tester.tap(find.text('Ocultar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Oculta'), findsOneWidget);
+      expect(find.text('Ocultar'), findsNothing);
+      expect(find.text('Receta oculta de sugerencias'), findsOneWidget);
+      record = await historyService.getRecord(sampleRecipe.id);
+      expect(record.preference, RecipePreference.never);
     });
   });
 }

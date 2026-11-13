@@ -3,6 +3,7 @@ import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/presentation/add_ingredient_screen.dart';
+import '../../recipes/presentation/recipe_management_screen.dart';
 import '../../recipes/presentation/recipe_suggestions_screen.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 
@@ -103,6 +104,22 @@ class HomeScreen extends StatelessWidget {
           buttonLabel: 'Ver sugerencias',
           onPressed: () => _openRecipeSuggestions(context),
         ),
+        const SizedBox(height: 16),
+        _buildFeatureCard(
+          context: context,
+          iconName: 'restaurant',
+          title: 'Gestión de recetas',
+          description:
+              'Revisa tu historial de cocina, recetas favoritas y administra recetas ocultas.',
+          buttonLabel: 'Gestionar recetas',
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const RecipeManagementScreen(),
+              ),
+            );
+          },
+        ),
       ],
     );
   }
@@ -152,7 +169,12 @@ class HomeScreen extends StatelessWidget {
                 },
               ),
             ),
-            const SizedBox(width: 20),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Expanded(
               child: _buildFeatureCard(
                 context: context,
@@ -162,6 +184,24 @@ class HomeScreen extends StatelessWidget {
                     'Descubre recetas saludables y variadas basadas en lo que tienes a mano.',
                 buttonLabel: 'Ver sugerencias',
                 onPressed: () => _openRecipeSuggestions(context),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: _buildFeatureCard(
+                context: context,
+                iconName: 'restaurant',
+                title: 'Gestión de recetas',
+                description:
+                    'Revisa tu historial de cocina, recetas favoritas y administra recetas ocultas.',
+                buttonLabel: 'Gestionar recetas',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const RecipeManagementScreen(),
+                    ),
+                  );
+                },
               ),
             ),
           ],

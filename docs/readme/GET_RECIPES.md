@@ -74,3 +74,38 @@ Cuando el usuario selecciona ingredientes poco habituales o combinaciones sin re
 - **Incorporación No Destructiva:** Las recetas devueltas por la IA se anexan a la lista actual eliminando posibles duplicados por título o identificador, preservando intactas las sugerencias locales existentes.
 - **Resiliencia ante Fallos:** En caso de corte de red o error en el *backend*, se notifica al usuario con un mensaje amigable en español mediante un *SnackBar*, manteniendo visibles los resultados previos sin interrupciones.
 
+---
+
+## 5. Historial de Cocina, Preferencias y Gestión de Recetas (Fase 7)
+
+### 5.1. Registro de Cocina ("Lo cociné") e Idempotencia Diaria (US-7.1)
+- **Servicio de Historial (`RecipeHistoryService`):** Administra localmente en Web y Android el contador `timesCooked` y las fechas `cookedDates` por cada receta.
+- **Botón de Acción en Detalle:** En `RecipeDetailScreen`, se incorpora el botón *"Lo cociné"* con icono SVG. Al pulsarlo:
+  - Incrementa en 1 el contador `timesCooked` y registra la fecha actual.
+  - Sincroniza con `IngredientStorageService`, incrementando el contador de uso interno (`timesUsed`) y la fecha (`lastUsed`) de los ingredientes disponibles utilizados.
+  - Actualiza el estado visual a *"Cocinada hoy (1 vez)"*.
+- **Idempotencia Diaria:** Pulsaciones repetidas en el mismo día calendario se registran una única vez, evitando inflar las estadísticas por toques involuntarios y mostrando el mensaje *"Esta receta ya fue registrada como cocinada hoy."*
+
+### 5.2. Marcas de Preferencia de Recetas (US-7.2)
+- **Estados de Preferencia (`RecipePreference`):**
+  - *Favorita:* Impulso prioritario en las recomendaciones.
+  - *Me gustó:* Recomendación positiva estándar.
+  - *No me gustó:* Relegada al final de la lista como última opción.
+  - *Nunca:* Oculta de inmediato y permanentemente de las sugerencias (sin eliminarla del almacenamiento).
+  - *Sin marcar:* Estado neutro por defecto.
+- **Iconografía SVG Limpia:** Integración de iconos SVG vectoriales sin caracteres emoji: `heart.svg`, `thumb_up.svg`, `thumb_down.svg` y `block.svg`.
+- **Selector Interactivo:** Chips de preferencia en `RecipeDetailScreen` que permiten asignar o deseleccionar marcas con confirmación en español.
+
+### 5.3. Algoritmo de Puntuación Culinaria Sensible a Preferencias e Historial (US-7.3)
+- `RecipeSearchService` evalúa las preferencias y la frecuencia de cocina al rankear las sugerencias:
+  1. Las recetas marcadas como *Nunca* se excluyen estrictamente de los resultados.
+  2. Las recetas activas (*Favorita*, *Me gustó*, *Sin marcar*) se posicionan siempre antes de cualquier receta clasificada como *No me gustó*, incluso si esta última tiene mayor número de ingredientes coincidentes.
+  3. Entre recetas con nivel de coincidencia similar, *Favorita* recibe una bonificación (+12), seguida de *Me gustó* (+6).
+  4. Equilibrio de variedad: las recetas preparadas hoy (-4) o en los últimos días reciben un ajuste para fomentar la rotación de platillos.
+  5. Las recetas marcadas como *No me gustó* se desplazan al final del listado.
+
+### 5.4. Pantalla de Gestión de Recetas (US-7.4)
+- **Acceso Principal:** Tarjeta de navegación *"Gestión de recetas"* en `HomeScreen`.
+- **Pestañas de Filtrado:** Filtros por categoría de gestión: *Todas*, *Favoritas*, *Cocinadas* y *Ocultas (Nunca)* con contadores actualizados en tiempo real.
+- **Acciones Rápidas y Restauración:** Cada tarjeta de receta exhibe las veces cocinadas y chips directos de preferencia. Modificar o retirar la marca *Nunca* restablece inmediatamente la receta para volver a sugerirse en la búsqueda de recetas.
+

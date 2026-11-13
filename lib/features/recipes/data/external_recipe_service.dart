@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../domain/recipe.dart';
+import '../domain/recipe_history_record.dart';
+import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
 import 'recipe_search_service.dart';
 
@@ -48,6 +50,7 @@ class ExternalRecipeService {
   Future<RecipeDiscoveryResponse> discoverRecipes({
     required List<String> selectedIngredients,
     required RecipeSearchService localSearchService,
+    Map<String, RecipeHistoryRecord>? history,
   }) async {
     if (selectedIngredients.isEmpty) {
       return const RecipeDiscoveryResponse(
@@ -60,6 +63,7 @@ class ExternalRecipeService {
     final localMatches = localSearchService.searchRecipes(
       selectedIngredientNames: selectedIngredients,
       minMatchCount: 1,
+      history: history,
     );
 
     if (localMatches.isNotEmpty) {
@@ -78,6 +82,7 @@ class ExternalRecipeService {
           selectedIngredientNames: selectedIngredients,
           recipePool: externalRecipes,
           minMatchCount: 0,
+          history: history,
         );
 
         final resolvedSource = (externalRecipes.first.source == 'gemini')
@@ -97,7 +102,7 @@ class ExternalRecipeService {
     final partials = localSearchService.findClosestPartialMatches(
       selectedIngredients,
       limit: 5,
-    );
+    ).where((r) => history?[r.recipe.id]?.preference != RecipePreference.never).toList();
 
     return RecipeDiscoveryResponse(
       results: partials,

@@ -162,6 +162,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       context,
       selectedIngredientNames: _selectedIngredientNames.toList(),
       externalService: widget.externalRecipeService,
+      openedFromIngredientList: true,
     );
   }
 

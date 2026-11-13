@@ -81,68 +81,68 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ## Phase 7: Recipe History, Preferences & Suggestion Ranking
 
-### - [ ] US-7.1: Recipe History Log ("Lo cociné") with Daily Idempotency Check
+### - [x] US-7.1: Recipe History Log ("Lo cociné") with Daily Idempotency Check
 **As a** user,  
 **I want** a `"Lo cociné"` button on each recipe that records the date I cooked it and increments its cooked count at most once per day,  
 **So that** the app accurately tracks my cooking history even if I tap the button multiple times on the same day.
 
 #### Acceptance Criteria
-- [ ] A local `RecipeHistoryService` (persisted locally on Web and Android) tracks per-recipe cooking records containing:
+- [x] A local `RecipeHistoryService` (persisted locally on Web and Android) tracks per-recipe cooking records containing:
   - `timesCooked` (`int`, default `0`)
   - `cookedDates` (`List<DateTime>` storing the dates when the recipe was cooked)
-- [ ] Each recipe on `RecipeDetailScreen` (and/or recipe card) displays a `"Lo cociné"` button in Spanish with a clean SVG icon.
-- [ ] When the user taps `"Lo cociné"` for a recipe not yet logged today:
+- [x] Each recipe on `RecipeDetailScreen` (and/or recipe card) displays a `"Lo cociné"` button in Spanish with a clean SVG icon.
+- [x] When the user taps `"Lo cociné"` for a recipe not yet logged today:
   - The current date is added to `cookedDates` and `timesCooked` increases by `1`.
   - Matching available ingredients have their internal `timesUsed` incremented and `lastUsed` updated.
   - A Spanish confirmation feedback is shown.
-- [ ] **Sanity check (same-day idempotency):** If the user taps `"Lo cociné"` multiple times on the same calendar day for the same recipe, it registers only once for that calendar day (`timesCooked` does not increment again on the same day, and the UI reflects that it was already logged today).
-- [ ] Unit and widget tests verify first-tap registration and same-day duplicate prevention.
+- [x] **Sanity check (same-day idempotency):** If the user taps `"Lo cociné"` multiple times on the same calendar day for the same recipe, it registers only once for that calendar day (`timesCooked` does not increment again on the same day, and the UI reflects that it was already logged today).
+- [x] Unit and widget tests verify first-tap registration and same-day duplicate prevention.
 
 ---
 
-### - [ ] US-7.2: Recipe Preference Marks (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`)
+### - [x] US-7.2: Recipe Preference Marks (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`)
 **As a** user,  
 **I want** four preference options on each recipe (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`),  
 **So that** I can tell the app which recipes I want suggested more often, less often, or never again.
 
 #### Acceptance Criteria
-- [ ] A `RecipePreference` enum is defined with four selectable states (plus `none` when unmarked):
+- [x] A `RecipePreference` enum is defined with four selectable states (plus `none` when unmarked):
   - `favorite` (`Favorita`): Suggested more often.
   - `liked` (`Me gustó`): Suggested again normally/positively.
   - `disliked` (`No me gustó`): Suggested only as a last option alongside other disliked recipes.
   - `never` (`Nunca`): Permanently hidden from recipe suggestions (never deleted from local storage).
-- [ ] Each recipe presents four clear Spanish preference buttons/icons allowing the user to set or toggle their preference mark, persisted locally via `RecipeHistoryService`.
-- [ ] Marking a recipe as `Nunca` immediately excludes it from future recipe suggestion lists while keeping the recipe record intact in storage.
-- [ ] Unit and widget tests verify saving, toggling, and persisting all four preference states.
+- [x] Each recipe presents four clear Spanish preference buttons/icons allowing the user to set or toggle their preference mark, persisted locally via `RecipeHistoryService`.
+- [x] Marking a recipe as `Nunca` immediately excludes it from future recipe suggestion lists while keeping the recipe record intact in storage.
+- [x] Unit and widget tests verify saving, toggling, and persisting all four preference states.
 
 ---
 
-### - [ ] US-7.3: Preference- & History-Aware Recipe Suggestion Ranking
+### - [x] US-7.3: Preference- & History-Aware Recipe Suggestion Ranking
 **As a** user,  
 **I want** recipe suggestions to prioritize my favorite and liked recipes, demote disliked recipes to the bottom, and hide recipes marked as `Nunca`,  
 **So that** suggested meals match my tastes and cooking history.
 
 #### Acceptance Criteria
-- [ ] `RecipeSearchService` incorporates user preference marks and cooking history from `RecipeHistoryService` when filtering and ranking recipes:
+- [x] `RecipeSearchService` incorporates user preference marks and cooking history from `RecipeHistoryService` when filtering and ranking recipes:
   1. Recipes marked `Nunca` (`never`) are strictly filtered out of suggestion results.
   2. Active recipes (`favorite`, `liked`, or unmarked) are ranked ahead of any `disliked` (`No me gustó`) recipes.
   3. Among recipes with comparable ingredient match scores, `favorite` (`Favorita`) recipes receive a ranking boost, followed by `liked` (`Me gustó`), while recently cooked recipes are balanced to encourage variety.
   4. Recipes marked `disliked` (`No me gustó`) appear at the very end of the suggestion list as a last option.
-- [ ] Unit tests verify the exact ordering behavior across `favorite`, `liked`, unmarked, `disliked`, and `never` recipes.
+- [x] Unit tests verify the exact ordering behavior across `favorite`, `liked`, unmarked, `disliked`, and `never` recipes.
 
 ---
 
-### - [ ] US-7.4: Recipe Management & History View (`Gestión de Recetas`)
+### - [x] US-7.4: Recipe Management & History View (`Gestión de Recetas`)
 **As a** user,  
 **I want** a dedicated view to see and manage all recipes—including those marked as `Nunca`—and review my cooking history,  
 **So that** I can amend any preference mark if I clicked `Nunca` by accident.
 
 #### Acceptance Criteria
-- [ ] A **Gestión de Recetas** screen is accessible from the main navigation / Home Screen.
-- [ ] The view lists all known recipes (all local dataset recipes plus any saved AI/external recipes in history), including recipes marked with `Nunca` (`never`), with filter tabs or sections (e.g., `Todas`, `Favoritas`, `Cocinadas`, `Ocultas (Nunca)`).
-- [ ] For each recipe, the user can see how many times they cooked it (`timesCooked`), its current preference state, and can directly change or clear the preference mark (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`) or open its detail view.
-- [ ] Changing a recipe from `Nunca` to another state immediately restores it to normal recipe suggestion eligibility.
-- [ ] Widget tests verify viewing hidden (`Nunca`) recipes and restoring them via preference changes.
+- [x] A **Gestión de Recetas** screen is accessible from the main navigation / Home Screen.
+- [x] The view lists all known recipes (all local dataset recipes plus any saved AI/external recipes in history), including recipes marked with `Nunca` (`never`), with filter tabs or sections (e.g., `Todas`, `Favoritas`, `Cocinadas`, `Ocultas (Nunca)`).
+- [x] For each recipe, the user can see how many times they cooked it (`timesCooked`), its current preference state, and can directly change or clear the preference mark (`Favorita`, `Me gustó`, `No me gustó`, `Nunca`) or open its detail view.
+- [x] Changing a recipe from `Nunca` to another state immediately restores it to normal recipe suggestion eligibility.
+- [x] Widget tests verify viewing hidden (`Nunca`) recipes and restoring them via preference changes.
 
 ---
 
