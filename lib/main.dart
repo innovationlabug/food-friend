@@ -23,8 +23,10 @@ class FoodFriendApp extends StatelessWidget {
   Widget _getInitialScreen() {
     final route = Uri.base.queryParameters['route'];
     switch (route) {
+      case 'available_ingredients':
+        return const ShoppingListScreen(initialTab: 0);
       case 'shopping_list':
-        return const ShoppingListScreen();
+        return const ShoppingListScreen(initialTab: 1);
       case 'add_ingredient':
         return const AddIngredientScreen();
       case 'fridge':

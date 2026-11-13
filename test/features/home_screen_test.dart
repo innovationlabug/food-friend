@@ -97,6 +97,25 @@ void main() {
       expect(find.byType(ShoppingListScreen), findsOneWidget);
     });
 
+    testWidgets('navigates to ShoppingListScreen Lista de compras tab when tapping Ir a lista de compras',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final buyListBtn = find.text('Ir a lista de compras');
+      expect(buyListBtn, findsOneWidget);
+
+      await tester.ensureVisible(buyListBtn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(buyListBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ShoppingListScreen), findsOneWidget);
+      expect(find.text('Lista de compras'), findsOneWidget);
+      expect(find.text('Tu lista de compras está vacía'), findsOneWidget);
+    });
+
     testWidgets('navigates to RecipeManagementScreen when tapping Gestionar recetas',
         (tester) async {
       await tester.pumpWidget(createTestWidget());

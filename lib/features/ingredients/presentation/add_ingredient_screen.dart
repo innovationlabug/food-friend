@@ -23,6 +23,7 @@ class AddIngredientScreen extends StatefulWidget {
     this.parserService,
     this.initialTab = 0,
     this.openedFromShoppingList = false,
+    this.isShoppingList = false,
   });
 
   /// Storage service used to persist ingredients.
@@ -40,6 +41,9 @@ class AddIngredientScreen extends StatefulWidget {
   /// Whether this screen was opened from the shopping list screen.
   final bool openedFromShoppingList;
 
+  /// Whether additions target the Shopping List ("Lista de Compras") instead of available ingredients.
+  final bool isShoppingList;
+
   /// Helper to navigate to this screen.
   static Future<Ingredient?> navigate(
     BuildContext context, {
@@ -48,6 +52,7 @@ class AddIngredientScreen extends StatefulWidget {
     ReceiptParserService? parserService,
     int initialTab = 0,
     bool openedFromShoppingList = true,
+    bool isShoppingList = false,
   }) {
     return Navigator.of(context).push<Ingredient>(
       MaterialPageRoute(
@@ -57,6 +62,7 @@ class AddIngredientScreen extends StatefulWidget {
           parserService: parserService,
           initialTab: initialTab,
           openedFromShoppingList: openedFromShoppingList,
+          isShoppingList: isShoppingList,
         ),
       ),
     );
@@ -84,10 +90,11 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
   void initState() {
     super.initState();
     _storageService = widget.storageService ?? IngredientStorageService();
+    final tabCount = widget.isShoppingList ? 2 : 3;
     _tabController = TabController(
-      length: 3,
+      length: tabCount,
       vsync: this,
-      initialIndex: widget.initialTab,
+      initialIndex: widget.initialTab.clamp(0, tabCount - 1),
     );
     _searchController.addListener(_onSearchChanged);
     _loadTipPreference();
@@ -153,7 +160,11 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ingrediente "$ingredientName" agregado'),
+          content: Text(
+            widget.isShoppingList
+                ? '"$ingredientName" agregado a la lista de compras'
+                : 'Ingrediente "$ingredientName" agregado',
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -188,7 +199,8 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => ShoppingListScreen(
-            storageService: _storageService,
+            storageService: widget.isShoppingList ? null : _storageService,
+            initialTab: widget.isShoppingList ? 1 : 0,
           ),
         ),
       );
@@ -214,7 +226,11 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Agregar ingrediente'),
+          title: Text(
+            widget.isShoppingList
+                ? 'Agregar a lista de compras'
+                : 'Agregar ingrediente',
+          ),
           actions: [
             TextButton.icon(
               onPressed: _goToIngredientList,
@@ -228,19 +244,20 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
           ],
           bottom: TabBar(
             controller: _tabController,
-            tabs: const [
-              Tab(
+            tabs: [
+              const Tab(
                 icon: Icon(Icons.search),
                 text: 'Buscar',
               ),
-              Tab(
+              const Tab(
                 icon: Icon(Icons.category_outlined),
                 text: 'Categorías',
               ),
-              Tab(
-                icon: Icon(Icons.photo_camera_outlined),
-                text: 'Foto',
-              ),
+              if (!widget.isShoppingList)
+                const Tab(
+                  icon: Icon(Icons.photo_camera_outlined),
+                  text: 'Foto',
+                ),
             ],
           ),
         ),
@@ -252,7 +269,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               children: [
                 _buildSearchTab(theme, colorScheme),
                 _buildCategoriesTab(theme, colorScheme),
-                _buildPhotoTab(theme, colorScheme),
+                if (!widget.isShoppingList) _buildPhotoTab(theme, colorScheme),
               ],
             ),
           ),

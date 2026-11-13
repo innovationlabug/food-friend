@@ -4,6 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/amount_unit.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 import 'package:food_friend/main.dart' as app;
 
 void main() {
@@ -17,9 +18,10 @@ void main() {
     // Verify root shell headers and cards render in Spanish
     expect(find.text('Food Friend'), findsOneWidget);
     expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
-    expect(find.text('Lista de compras'), findsAtLeastNWidgets(1));
+    expect(find.text('Ingredientes disponibles'), findsOneWidget);
+    expect(find.text('Lista de compras'), findsOneWidget);
     expect(find.text('¿Qué cocino hoy?'), findsOneWidget);
-    expect(find.text('Asistente de nutrición'), findsOneWidget);
+    expect(find.text('Gestión de recetas'), findsOneWidget);
   });
 
   testWidgets('E2E integration test: verifies ingredient persistence and deduplication service',
@@ -58,13 +60,13 @@ void main() {
     app.main();
     await tester.pumpAndSettle();
 
-    // Navigate to Shopping List screen
-    final navButton = find.text('Ir a lista de compras').first;
+    // Navigate to Available Ingredients screen
+    final navButton = find.text('Ir a ingredientes disponibles').first;
     await tester.tap(navButton);
     await tester.pumpAndSettle();
 
-    // Verify on Shopping List
-    expect(find.text('Lista de compras'), findsOneWidget);
+    // Verify on Available Ingredients screen
+    expect(find.text('Ingredientes disponibles'), findsOneWidget);
     expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
 
     // Open add ingredient dialog
@@ -75,7 +77,7 @@ void main() {
     // Fill in ingredient name
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Nombre del ingrediente'),
-      'Frijol colorado',
+      'Frijoles colorados',
     );
 
     // Save ingredient
@@ -87,7 +89,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify item displayed in list
-    expect(find.text('Frijol colorado'), findsOneWidget);
+    expect(find.text('Frijoles colorados'), findsOneWidget);
     expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);
 
     // Remove ingredient
@@ -97,7 +99,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify empty state is restored
-    expect(find.text('Frijol colorado'), findsNothing);
+    expect(find.text('Frijoles colorados'), findsNothing);
     expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
 
     // Cleanup
@@ -117,8 +119,8 @@ void main() {
     app.main();
     await tester.pumpAndSettle();
 
-    // Navigate to Shopping List
-    await tester.tap(find.text('Ir a lista de compras').first);
+    // Navigate to Available Ingredients screen
+    await tester.tap(find.text('Ir a ingredientes disponibles').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Ingredientes disponibles (3)'), findsOneWidget);
@@ -156,7 +158,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Navigate to Add Ingredients screen
-    await tester.tap(find.text('Añadir ingredientes').first);
+    final addIngredientsBtn = find.text('Añadir ingredientes').first;
+    await tester.ensureVisible(addIngredientsBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(addIngredientsBtn);
     await tester.pumpAndSettle();
 
     expect(find.text('Agregar ingrediente'), findsOneWidget);
@@ -169,27 +174,76 @@ void main() {
     expect(find.text('Escanear refrigerador'), findsAtLeastNWidgets(1));
     expect(find.text('Escanear recibo'), findsAtLeastNWidgets(1));
 
-    // Tap Refrigerador card
-    await tester.tap(find.text('Escanear refrigerador').first);
+    // Tap Refrigerador button
+    final fridgeBtn = find.widgetWithText(FilledButton, 'Escanear refrigerador');
+    await tester.ensureVisible(fridgeBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(fridgeBtn);
     await tester.pumpAndSettle();
     expect(find.text('Escanear refrigerador'), findsAtLeastNWidgets(1));
     expect(find.text('Detectar ingredientes por foto'), findsOneWidget);
 
     // Go back
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
-    // Tap Recibo card
-    await tester.tap(find.text('Escanear recibo').first);
+    // Tap Recibo button
+    final receiptBtn = find.widgetWithText(FilledButton, 'Escanear recibo');
+    await tester.ensureVisible(receiptBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(receiptBtn);
     await tester.pumpAndSettle();
     expect(find.text('Escanear recibo'), findsAtLeastNWidgets(1));
     expect(find.text('Extraer alimentos de factura / ticket'), findsOneWidget);
 
     // Go back
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
     // Cleanup
     await storage.clearIngredients();
+  });
+
+  testWidgets('E2E integration test US-8.1: adds items to Lista de compras independently from Mis ingredientes',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // Navigate to Lista de compras
+    final buyListBtn = find.text('Ir a lista de compras').first;
+    await tester.ensureVisible(buyListBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(buyListBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lista de compras'), findsOneWidget);
+    expect(find.text('Tu lista de compras está vacía'), findsOneWidget);
+
+    // Add ingredient via search suggestion
+    await tester.tap(find.widgetWithText(FilledButton, 'Agregar a lista de compras'));
+    await tester.pumpAndSettle();
+
+    final searchField = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
+    await tester.enterText(searchField, 'aguacate');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Aguacate'));
+    await tester.pumpAndSettle();
+
+    // Return to Lista de compras
+    await tester.tap(find.text('Ver lista'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Por comprar (1)'), findsOneWidget);
+    expect(find.text('Aguacate'), findsOneWidget);
+    expect(await pantry.getIngredients(), isEmpty);
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
   });
 }

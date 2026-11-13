@@ -148,18 +148,18 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ## Phase 8: Dedicated Shopping List ("Lista de Compras" vs. "Mis Ingredientes")
 
-### - [ ] US-8.1: Separate Shopping List Storage & Input via Text Search and Categories
+### - [x] US-8.1: Separate Shopping List Storage & Input via Text Search and Categories
 **As a** user,  
 **I want** a dedicated Shopping List (`Lista de Compras`) separate from my available home ingredients (`Mis Ingredientes`), where I can add items to buy via text search or category browsing,  
 **So that** I can keep track of what I need to purchase at the supermarket versus what I already have at home.
 
 #### Acceptance Criteria
-- [ ] Local storage maintains two distinct lists:
+- [x] Local storage maintains two distinct lists:
   - **Mis Ingredientes (Disponibles en casa):** Used as the source for recipe generation and populated via manual add, fridge/receipt scan, or moving bought items from the shopping list.
   - **Lista de Compras (Por comprar):** Items the user plans to buy.
-- [ ] Users can add items to the **Lista de Compras** using the same Spanish autocomplete text field (with closest-match fallback) and hierarchical category browser from `IngredientCatalog`, as well as quick-adding missing ingredients from `RecipeDetailScreen`.
-- [ ] Duplicate items added to the Shopping List are consolidated cleanly without creating duplicate rows.
-- [ ] Unit and widget tests verify independent persistence of both lists and adding items to the Shopping List.
+- [x] Users can add items to the **Lista de Compras** using the same Spanish autocomplete text field (with closest-match fallback) and hierarchical category browser from `IngredientCatalog`, as well as quick-adding missing ingredients from `RecipeDetailScreen`.
+- [x] Duplicate items added to the Shopping List are consolidated cleanly without creating duplicate rows.
+- [x] Unit and widget tests verify independent persistence of both lists and adding items to the Shopping List.
 
 ---
 

@@ -6,11 +6,13 @@ import '../domain/ingredient.dart';
 /// Local persistence service for ingredients on Flutter Web and Android.
 /// Backed by SharedPreferences (localStorage on Web, SharedPreferences on Android).
 class IngredientStorageService {
-  IngredientStorageService({SharedPreferences? preferences}) {
-    _preferences = preferences;
-  }
+  IngredientStorageService({
+    this._preferences,
+    this._storageKey = IngredientStorageService.storageKey,
+  });
 
   SharedPreferences? _preferences;
+  final String _storageKey;
 
   static const String storageKey = 'food_friend_ingredients';
 
@@ -22,7 +24,7 @@ class IngredientStorageService {
   /// Returns an empty list if no ingredients have been saved yet.
   Future<List<Ingredient>> getIngredients() async {
     final prefs = await _prefs;
-    final jsonString = prefs.getString(storageKey);
+    final jsonString = prefs.getString(_storageKey);
     if (jsonString == null || jsonString.trim().isEmpty) {
       return <Ingredient>[];
     }
@@ -46,7 +48,7 @@ class IngredientStorageService {
     final prefs = await _prefs;
     final consolidated = consolidateList(ingredients);
     final jsonList = consolidated.map((item) => item.toJson()).toList();
-    await prefs.setString(storageKey, jsonEncode(jsonList));
+    await prefs.setString(_storageKey, jsonEncode(jsonList));
   }
 
   /// Adds a new ingredient to local storage.
@@ -99,7 +101,13 @@ class IngredientStorageService {
   /// Clears all stored ingredients.
   Future<void> clearIngredients() async {
     final prefs = await _prefs;
-    await prefs.remove(storageKey);
+    await prefs.remove(_storageKey);
+  }
+
+  /// Returns true if an equivalent ingredient name is already stored.
+  Future<bool> containsIngredient(String name) async {
+    final currentList = await getIngredients();
+    return currentList.any((item) => StringNormalizer.areEquivalent(item.name, name));
   }
 
   /// Consolidates a list of ingredients so that any items with equivalent
