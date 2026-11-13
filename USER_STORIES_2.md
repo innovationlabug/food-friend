@@ -148,32 +148,32 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ## Phase 8: Dedicated Shopping List ("Lista de Compras" vs. "Mis Ingredientes")
 
-### - [ ] US-8.1: Separate Shopping List Storage & Input via Text Search and Categories
+### - [x] US-8.1: Separate Shopping List Storage & Input via Text Search and Categories
 **As a** user,  
 **I want** a dedicated Shopping List (`Lista de Compras`) separate from my available home ingredients (`Mis Ingredientes`), where I can add items to buy via text search or category browsing,  
 **So that** I can keep track of what I need to purchase at the supermarket versus what I already have at home.
 
 #### Acceptance Criteria
-- [ ] Local storage maintains two distinct lists:
+- [x] Local storage maintains two distinct lists:
   - **Mis Ingredientes (Disponibles en casa):** Used as the source for recipe generation and populated via manual add, fridge/receipt scan, or moving bought items from the shopping list.
   - **Lista de Compras (Por comprar):** Items the user plans to buy.
-- [ ] Users can add items to the **Lista de Compras** using the same Spanish autocomplete text field (with closest-match fallback) and hierarchical category browser from `IngredientCatalog`, as well as quick-adding missing ingredients from `RecipeDetailScreen`.
-- [ ] Duplicate items added to the Shopping List are consolidated cleanly without creating duplicate rows.
-- [ ] Unit and widget tests verify independent persistence of both lists and adding items to the Shopping List.
+- [x] Users can add items to the **Lista de Compras** using the same Spanish autocomplete text field (with closest-match fallback) and hierarchical category browser from `IngredientCatalog`, as well as quick-adding missing ingredients from `RecipeDetailScreen`.
+- [x] Duplicate items added to the Shopping List are consolidated cleanly without creating duplicate rows.
+- [x] Unit and widget tests verify independent persistence of both lists and adding items to the Shopping List.
 
 ---
 
-### - [ ] US-8.2: Shopping List Item Actions (`Comprado` & `Descartar`)
+### - [x] US-8.2: Shopping List Item Actions (`Comprado` & `Descartar`)
 **As a** user at the supermarket,  
 **I want** each item in my Shopping List to have `"Comprado"` and `"Descartar"` buttons,  
 **So that** bought items move directly into my available home ingredients while unneeded items are removed.
 
 #### Acceptance Criteria
-- [ ] In the **Lista de Compras** view, every shopping list item displays two explicit action buttons (using clean SVG icons and Spanish labels/tooltips):
+- [x] In the **Lista de Compras** view, every shopping list item displays two explicit action buttons (using clean SVG icons and Spanish labels/tooltips):
   - **`Comprado` (`Bought`):** Removes the item from the Shopping List and automatically adds it to the user's available **Mis Ingredientes** list (consolidating if already present).
   - **`Descartar` (`Dismiss`):** Removes the item from the Shopping List without adding it to the available ingredients list.
-- [ ] Brief Spanish feedback (SnackBar) confirms when an item is moved to **Mis Ingredientes** or dismissed.
-- [ ] Widget and integration tests verify that tapping `Comprado` transfers the ingredient to available ingredients and makes it immediately selectable for recipe generation, while `Descartar` removes it completely.
+- [x] Brief Spanish feedback (SnackBar) confirms when an item is moved to **Mis Ingredientes** or dismissed.
+- [x] Widget and integration tests verify that tapping `Comprado` transfers the ingredient to available ingredients and makes it immediately selectable for recipe generation, while `Descartar` removes it completely.
 
 ---
 

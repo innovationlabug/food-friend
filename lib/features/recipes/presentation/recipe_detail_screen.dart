@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../../ingredients/domain/ingredient.dart';
+import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../data/local_recipe_dataset.dart';
 import '../data/recipe_history_service.dart';
 import '../domain/recipe.dart';
@@ -19,6 +22,7 @@ class RecipeDetailScreen extends StatefulWidget {
     this.missingIngredients = const [],
     this.previousRecipeIds = const [],
     this.historyService,
+    this.shoppingListService,
   });
 
   /// Factory constructor when navigating with a [RecipeSearchResult].
@@ -27,6 +31,7 @@ class RecipeDetailScreen extends StatefulWidget {
     required RecipeSearchResult result,
     List<String> previousRecipeIds = const [],
     RecipeHistoryService? historyService,
+    ShoppingListStorageService? shoppingListService,
   }) {
     return RecipeDetailScreen(
       key: key,
@@ -35,6 +40,7 @@ class RecipeDetailScreen extends StatefulWidget {
       missingIngredients: result.missingIngredients,
       previousRecipeIds: previousRecipeIds,
       historyService: historyService,
+      shoppingListService: shoppingListService,
     );
   }
 
@@ -44,6 +50,7 @@ class RecipeDetailScreen extends StatefulWidget {
   /// IDs of recipes previously opened in this navigation branch to prevent loops.
   final List<String> previousRecipeIds;
   final RecipeHistoryService? historyService;
+  final ShoppingListStorageService? shoppingListService;
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -51,16 +58,95 @@ class RecipeDetailScreen extends StatefulWidget {
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final RecipeHistoryService _historyService;
+  late final ShoppingListStorageService _shoppingListService;
   bool _isCookedToday = false;
   int _timesCooked = 0;
   RecipePreference _preference = RecipePreference.none;
   bool _isLoadingHistory = true;
+  Set<String> _shoppingListNormalizedNames = {};
 
   @override
   void initState() {
     super.initState();
     _historyService = widget.historyService ?? RecipeHistoryService();
+    _shoppingListService = widget.shoppingListService ?? ShoppingListStorageService();
     _loadHistoryStatus();
+    _loadShoppingListStatus();
+  }
+
+  Future<void> _loadShoppingListStatus() async {
+    final items = await _shoppingListService.getIngredients();
+    if (!mounted) return;
+    setState(() {
+      _shoppingListNormalizedNames =
+          items.map((item) => StringNormalizer.normalize(item.name)).toSet();
+    });
+  }
+
+  Future<void> _addMissingToShoppingList(RecipeIngredient ingredient) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final normalized = ingredient.normalizedName;
+
+    if (_shoppingListNormalizedNames.contains(normalized)) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('"${ingredient.name}" ya está en tu lista de compras'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final updated = await _shoppingListService.addIngredient(
+      Ingredient(name: ingredient.name),
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _shoppingListNormalizedNames =
+          updated.map((item) => StringNormalizer.normalize(item.name)).toSet();
+    });
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('"${ingredient.name}" agregado a la lista de compras'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _addAllMissingToShoppingList(
+    List<RecipeIngredient> missing,
+  ) async {
+    final toAdd = missing
+        .where((i) => !_shoppingListNormalizedNames.contains(i.normalizedName))
+        .map((i) => Ingredient(name: i.name))
+        .toList();
+
+    if (toAdd.isEmpty) return;
+
+    final updated = await _shoppingListService.addIngredients(toAdd);
+    if (!mounted) return;
+
+    setState(() {
+      _shoppingListNormalizedNames =
+          updated.map((item) => StringNormalizer.normalize(item.name)).toSet();
+    });
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          toAdd.length == 1
+              ? '"${toAdd.first.name}" agregado a la lista de compras'
+              : '${toAdd.length} ingredientes agregados a la lista de compras',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _loadHistoryStatus() async {
@@ -577,6 +663,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                               missingIngredients: const [],
                                               previousRecipeIds: previousRecipeIds,
                                               historyService: _historyService,
+                                              shoppingListService: _shoppingListService,
                                             ),
                                           ),
                                         );
@@ -592,6 +679,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                               missingIngredients: const [],
                                               previousRecipeIds: [recipe.id],
                                               historyService: _historyService,
+                                              shoppingListService: _shoppingListService,
                                             ),
                                           ),
                                         );
@@ -721,11 +809,33 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           const SizedBox(height: 16),
         ],
         if (missing.isNotEmpty) ...[
-          _buildSubSectionTitle(
-            context,
-            title: 'Ingredientes adicionales necesarios (${missing.length})',
-            color: colorScheme.error,
-            icon: Icons.add_shopping_cart,
+          Row(
+            children: [
+              Expanded(
+                child: _buildSubSectionTitle(
+                  context,
+                  title: 'Ingredientes adicionales necesarios (${missing.length})',
+                  color: colorScheme.error,
+                  icon: Icons.add_shopping_cart,
+                ),
+              ),
+              if (missing.any(
+                (i) => !_shoppingListNormalizedNames.contains(i.normalizedName),
+              ))
+                TextButton.icon(
+                  onPressed: () => _addAllMissingToShoppingList(missing),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  icon: AppSvgIcon(
+                    assetName: 'shopping_cart',
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
+                  label: const Text('Agregar todos'),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           ...missing.map((ing) => _buildIngredientRow(context, ing, isAvailable: false)),
@@ -773,11 +883,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
+        Flexible(
+          child: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
         ),
       ],
@@ -791,6 +903,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final inShoppingList =
+        !isAvailable && _shoppingListNormalizedNames.contains(ingredient.normalizedName);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -824,13 +938,32 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
               ),
             ),
-            Text(
-              ingredient.displayAmount,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
+            Flexible(
+              child: Text(
+                ingredient.displayAmount,
+                textAlign: TextAlign.end,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
+            if (!isAvailable) ...[
+              const SizedBox(width: 4),
+              IconButton(
+                tooltip: inShoppingList
+                    ? 'En lista de compras'
+                    : 'Agregar a lista de compras',
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                icon: AppSvgIcon(
+                  assetName: inShoppingList ? 'check' : 'shopping_cart',
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                onPressed: () => _addMissingToShoppingList(ingredient),
+              ),
+            ],
           ],
         ),
       ),

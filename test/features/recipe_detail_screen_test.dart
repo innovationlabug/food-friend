@@ -9,6 +9,7 @@ import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
 import 'package:food_friend/features/recipes/domain/recipe_search_result.dart';
 import 'package:food_friend/features/recipes/domain/recipe_variation.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
+import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -334,6 +335,59 @@ void main() {
       expect(find.text('Receta oculta de sugerencias'), findsOneWidget);
       record = await historyService.getRecord(sampleRecipe.id);
       expect(record.preference, RecipePreference.never);
+    });
+  });
+
+  group('US-8.1: Quick-add missing ingredients from RecipeDetailScreen to Shopping List', () {
+    testWidgets('quick-adds single and all missing ingredients to ShoppingListStorageService',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final shoppingService = ShoppingListStorageService(preferences: prefs);
+
+      final result = RecipeSearchResult(
+        recipe: sampleRecipe,
+        matchedIngredients: const [
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+          RecipeIngredient(name: 'Papa', displayAmount: '2 unidades'),
+        ],
+        missingIngredients: const [
+          RecipeIngredient(name: 'Güisquil', displayAmount: '1 unidad'),
+          RecipeIngredient(name: 'Zanahoria', displayAmount: '2 unidades'),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen.fromResult(
+            result: result,
+            shoppingListService: shoppingService,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final addMissingButtons = find.byTooltip('Agregar a lista de compras');
+      expect(addMissingButtons, findsNWidgets(2));
+
+      // Quick-add first missing ingredient (Güisquil)
+      await tester.ensureVisible(addMissingButtons.first);
+      await tester.pumpAndSettle();
+      await tester.tap(addMissingButtons.first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('"Güisquil" agregado a la lista de compras'), findsOneWidget);
+      var saved = await shoppingService.getIngredients();
+      expect(saved.map((e) => e.name), equals(['Güisquil']));
+
+      // Now 1 item left to add via "Agregar todos"
+      final addAllBtn = find.text('Agregar todos');
+      expect(addAllBtn, findsOneWidget);
+      await tester.tap(addAllBtn);
+      await tester.pumpAndSettle();
+
+      saved = await shoppingService.getIngredients();
+      expect(saved.map((e) => e.name), equals(['Güisquil', 'Zanahoria']));
+      expect(find.text('Agregar todos'), findsNothing);
     });
   });
 }

@@ -23,6 +23,81 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  List<Widget> _buildCards(BuildContext context) {
+    return [
+      _buildFeatureCard(
+        context: context,
+        iconName: 'restaurant',
+        title: 'Ingredientes disponibles',
+        description:
+            'Gestiona tus ingredientes disponibles en casa y selecciona qué usar para cocinar.',
+        buttonLabel: 'Ir a ingredientes disponibles',
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const ShoppingListScreen(initialTab: 0),
+            ),
+          );
+        },
+        isPrimary: true,
+      ),
+      _buildFeatureCard(
+        context: context,
+        iconName: 'shopping_cart',
+        title: 'Lista de compras',
+        description:
+            'Organiza los productos que necesitas comprar en el supermercado.',
+        buttonLabel: 'Ir a lista de compras',
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const ShoppingListScreen(initialTab: 1),
+            ),
+          );
+        },
+      ),
+      _buildFeatureCard(
+        context: context,
+        iconName: 'plus',
+        title: 'Agregar ingredientes',
+        description:
+            'Busca o explora ingredientes por categoría para añadirlos rápidamente a tu despensa.',
+        buttonLabel: 'Añadir ingredientes',
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const AddIngredientScreen(),
+            ),
+          );
+        },
+      ),
+      _buildFeatureCard(
+        context: context,
+        iconName: 'restaurant',
+        title: '¿Qué cocino hoy?',
+        description:
+            'Descubre recetas saludables y variadas basadas en lo que tienes a mano.',
+        buttonLabel: 'Ver sugerencias',
+        onPressed: () => _openRecipeSuggestions(context),
+      ),
+      _buildFeatureCard(
+        context: context,
+        iconName: 'restaurant',
+        title: 'Gestión de recetas',
+        description:
+            'Revisa tu historial de cocina, recetas favoritas y administra recetas ocultas.',
+        buttonLabel: 'Gestionar recetas',
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const RecipeManagementScreen(),
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -57,155 +132,48 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMobileLayout(BuildContext context) {
+    final cards = _buildCards(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildHeroHeader(context),
         const SizedBox(height: 24),
-        _buildFeatureCard(
-          context: context,
-          iconName: 'shopping_cart',
-          title: 'Ingredientes disponibles',
-          description:
-              'Gestiona tus ingredientes disponibles y despensa.',
-          buttonLabel: 'Ir a ingredientes disponibles',
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const ShoppingListScreen(),
-              ),
-            );
-          },
-          isPrimary: true,
-        ),
-        const SizedBox(height: 16),
-        _buildFeatureCard(
-          context: context,
-          iconName: 'plus',
-          title: 'Agregar ingredientes',
-          description:
-              'Busca o explora ingredientes por categoría para añadirlos rápidamente a tu despensa o lista.',
-          buttonLabel: 'Añadir ingredientes',
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const AddIngredientScreen(),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildFeatureCard(
-          context: context,
-          iconName: 'restaurant',
-          title: '¿Qué cocino hoy?',
-          description:
-              'Descubre recetas saludables y variadas basadas en lo que tienes a mano.',
-          buttonLabel: 'Ver sugerencias',
-          onPressed: () => _openRecipeSuggestions(context),
-        ),
-        const SizedBox(height: 16),
-        _buildFeatureCard(
-          context: context,
-          iconName: 'restaurant',
-          title: 'Gestión de recetas',
-          description:
-              'Revisa tu historial de cocina, recetas favoritas y administra recetas ocultas.',
-          buttonLabel: 'Gestionar recetas',
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const RecipeManagementScreen(),
-              ),
-            );
-          },
-        ),
+        for (int i = 0; i < cards.length; i++) ...[
+          cards[i],
+          if (i < cards.length - 1) const SizedBox(height: 16),
+        ],
       ],
     );
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
+    final cards = _buildCards(context);
+    final rows = <Widget>[];
+    for (int i = 0; i < cards.length; i += 2) {
+      final hasSecond = i + 1 < cards.length;
+      rows.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: cards[i]),
+            const SizedBox(width: 20),
+            Expanded(
+              child: hasSecond ? cards[i + 1] : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      );
+      if (i + 2 < cards.length) {
+        rows.add(const SizedBox(height: 20));
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeroHeader(context),
         const SizedBox(height: 32),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _buildFeatureCard(
-                context: context,
-                iconName: 'shopping_cart',
-                title: 'Ingredientes disponibles',
-                description:
-                    'Gestiona tus ingredientes disponibles y despensa.',
-                buttonLabel: 'Ir a ingredientes disponibles',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const ShoppingListScreen(),
-                    ),
-                  );
-                },
-                isPrimary: true,
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: _buildFeatureCard(
-                context: context,
-                iconName: 'plus',
-                title: 'Agregar ingredientes',
-                description:
-                    'Busca o explora ingredientes por categoría para añadirlos rápidamente a tu despensa.',
-                buttonLabel: 'Añadir ingredientes',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const AddIngredientScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _buildFeatureCard(
-                context: context,
-                iconName: 'restaurant',
-                title: '¿Qué cocino hoy?',
-                description:
-                    'Descubre recetas saludables y variadas basadas en lo que tienes a mano.',
-                buttonLabel: 'Ver sugerencias',
-                onPressed: () => _openRecipeSuggestions(context),
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: _buildFeatureCard(
-                context: context,
-                iconName: 'restaurant',
-                title: 'Gestión de recetas',
-                description:
-                    'Revisa tu historial de cocina, recetas favoritas y administra recetas ocultas.',
-                buttonLabel: 'Gestionar recetas',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const RecipeManagementScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+        ...rows,
       ],
     );
   }

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/amount_unit.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
 import 'package:food_friend/main.dart';
 
@@ -14,9 +15,17 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  Widget createTestWidget({IngredientStorageService? storageService}) {
+  Widget createTestWidget({
+    IngredientStorageService? storageService,
+    ShoppingListStorageService? shoppingListService,
+    int initialTab = 0,
+  }) {
     return MaterialApp(
-      home: ShoppingListScreen(storageService: storageService),
+      home: ShoppingListScreen(
+        storageService: storageService,
+        shoppingListService: shoppingListService,
+        initialTab: initialTab,
+      ),
     );
   }
 
@@ -198,6 +207,144 @@ void main() {
       // Verify on Shopping List Screen
       expect(find.text('Ingredientes disponibles'), findsOneWidget);
       expect(find.text('No tienes ingredientes guardados'), findsOneWidget);
+    });
+  });
+
+  group('US-8.1: Dedicated Lista de Compras tab & independent input', () {
+    testWidgets('switches to Por comprar tab and adds items via search and categories without altering pantry',
+        (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+      await pantry.addIngredient(const Ingredient(name: 'Pollo'));
+
+      await tester.pumpWidget(
+        createTestWidget(
+          storageService: pantry,
+          shoppingListService: shopping,
+          initialTab: 1,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify shopping list empty state and AppBar title
+      expect(find.text('Lista de compras'), findsOneWidget);
+      expect(find.text('Tu lista de compras está vacía'), findsOneWidget);
+
+      // Tap button to add items to shopping list
+      await tester.tap(find.widgetWithText(FilledButton, 'Agregar a lista de compras'));
+      await tester.pumpAndSettle();
+
+      // Verify AddIngredientScreen in shopping list mode (no Foto tab)
+      expect(find.text('Agregar a lista de compras'), findsOneWidget);
+      expect(find.text('Foto'), findsNothing);
+
+      // Add via search suggestion
+      final searchInput = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
+      await tester.enterText(searchInput, 'tomate');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tomate'));
+      await tester.pumpAndSettle();
+
+      // Add duplicate via closest-match fallback ('tomte' -> Tomate)
+      await tester.enterText(searchInput, 'tomte');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
+      await tester.pumpAndSettle();
+
+      // Add via category browser
+      await tester.tap(find.text('Categorías'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Granos, Cereales y Harinas'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Frijoles'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Frijoles negros'));
+      await tester.pumpAndSettle();
+
+      // Return to shopping list
+      await tester.tap(find.text('Ver lista'));
+      await tester.pumpAndSettle();
+
+      // Consolidated count is 2 (Tomate + Frijoles negros)
+      expect(find.text('Por comprar (2)'), findsOneWidget);
+      expect(find.text('Tomate'), findsOneWidget);
+      expect(find.text('Frijoles negros'), findsOneWidget);
+
+      // Verify pantry was untouched
+      final pantryItems = await pantry.getIngredients();
+      expect(pantryItems.map((e) => e.name), equals(['Pollo']));
+
+      // Clear shopping list and verify pantry still intact
+      await tester.tap(find.byTooltip('Vaciar lista de compras'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Vaciar lista'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tu lista de compras está vacía'), findsOneWidget);
+      expect((await pantry.getIngredients()).map((e) => e.name), equals(['Pollo']));
+    });
+  });
+
+  group('US-8.2: Shopping list item actions Comprado & Descartar', () {
+    testWidgets('Comprado moves item to Mis ingredientes and Descartar removes without adding',
+        (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+
+      await shopping.addIngredients([
+        const Ingredient(name: 'Tomate'),
+        const Ingredient(name: 'Cilantro'),
+      ]);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          storageService: pantry,
+          shoppingListService: shopping,
+          initialTab: 1,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify both Comprado and Descartar buttons with tooltips are shown
+      expect(find.text('Comprado'), findsNWidgets(2));
+      expect(find.text('Descartar'), findsNWidgets(2));
+      expect(find.byTooltip('Marcar como comprado'), findsNWidgets(2));
+      expect(find.byTooltip('Descartar de la lista'), findsNWidgets(2));
+
+      // Tap Comprado on Tomate (first card)
+      await tester.tap(find.text('Comprado').first);
+      await tester.pumpAndSettle();
+
+      // SnackBar confirmation and shopping list updated
+      expect(find.text('"Tomate" movido a Mis ingredientes'), findsOneWidget);
+      expect(find.text('Por comprar (1)'), findsOneWidget);
+      expect(find.text('Cilantro'), findsOneWidget);
+
+      // Tap Descartar on Cilantro
+      await tester.tap(find.text('Descartar').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('"Cilantro" descartado de la lista de compras'), findsOneWidget);
+      expect(find.text('Tu lista de compras está vacía'), findsOneWidget);
+
+      // Verify persistence: Tomate is in pantry, Cilantro is nowhere
+      expect((await pantry.getIngredients()).map((e) => e.name), equals(['Tomate']));
+      expect(await shopping.getIngredients(), isEmpty);
+
+      // Switch to Mis ingredientes tab: Tomate is selected and ready for Buscar recetas
+      await tester.tap(find.text('Mis ingredientes'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);
+      expect(find.text('Tomate'), findsOneWidget);
+      expect(find.text('Buscar recetas (1)'), findsOneWidget);
     });
   });
 }
