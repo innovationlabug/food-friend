@@ -246,4 +246,70 @@ void main() {
     await pantry.clearIngredients();
     await shopping.clearIngredients();
   });
+
+  testWidgets(
+      'E2E integration test US-8.2: marks shopping item Comprado to generate recipes and Descartar removes completely',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // Navigate to Lista de compras and add Tomate and Salchicha via UI
+    final buyListBtn = find.text('Ir a lista de compras').first;
+    await tester.ensureVisible(buyListBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(buyListBtn);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Agregar a lista de compras'));
+    await tester.pumpAndSettle();
+
+    final searchField = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
+    await tester.enterText(searchField, 'tomate');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tomate'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(searchField, 'salchicha');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Salchicha'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ver lista'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Por comprar (2)'), findsOneWidget);
+
+    // Mark Tomate as Comprado
+    await tester.tap(find.text('Comprado').first);
+    await tester.pumpAndSettle();
+    expect(find.text('"Tomate" movido a Mis ingredientes'), findsOneWidget);
+
+    // Dismiss Salchicha
+    await tester.tap(find.text('Descartar').first);
+    await tester.pumpAndSettle();
+    expect(find.text('"Salchicha" descartado de la lista de compras'), findsOneWidget);
+    expect(find.text('Tu lista de compras está vacía'), findsOneWidget);
+
+    // Switch to Mis ingredientes and verify Tomate is ready for Buscar recetas
+    await tester.tap(find.text('Mis ingredientes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);
+    expect(find.text('Tomate'), findsOneWidget);
+    expect(find.text('Buscar recetas (1)'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buscar recetas (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recetas sugeridas'), findsOneWidget);
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+  });
 }

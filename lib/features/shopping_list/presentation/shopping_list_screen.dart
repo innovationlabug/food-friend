@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
@@ -205,6 +206,53 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
           duration: const Duration(seconds: 2),
         ),
       );
+    }
+  }
+
+  Future<void> _markItemAsBought(Ingredient item) async {
+    final result = await _shoppingListService.markAsBought(item.name);
+
+    if (mounted) {
+      setState(() {
+        _shoppingListItems = result.shoppingList;
+        _ingredients = result.availableIngredients;
+        // Make the bought ingredient immediately selected for recipe matching
+        final currentNames = result.availableIngredients.map((i) => i.name).toSet();
+        for (final available in result.availableIngredients) {
+          if (StringNormalizer.areEquivalent(available.name, item.name)) {
+            _selectedIngredientNames.add(available.name);
+          }
+        }
+        _selectedIngredientNames.retainWhere(currentNames.contains);
+      });
+
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('"${item.name}" movido a Mis ingredientes'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+    }
+  }
+
+  Future<void> _dismissShoppingItem(Ingredient item) async {
+    final updated = await _shoppingListService.dismissItem(item.name);
+
+    if (mounted) {
+      setState(() {
+        _shoppingListItems = updated;
+      });
+
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('"${item.name}" descartado de la lista de compras'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
     }
   }
 
@@ -665,43 +713,98 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: AppSvgIcon(
-                assetName: 'shopping_cart',
-                size: 18,
-                color: colorScheme.onSecondaryContainer,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    item.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  if (details.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      details.join(' • '),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                  child: AppSvgIcon(
+                    assetName: 'shopping_cart',
+                    size: 18,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (details.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          details.join(' • '),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Tooltip(
+                  message: 'Marcar como comprado',
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => _markItemAsBought(item),
+                    icon: AppSvgIcon(
+                      assetName: 'check',
+                      size: 16,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                    label: const Text('Comprado'),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
                     ),
-                  ],
-                ],
-              ),
+                  ),
+                ),
+                Tooltip(
+                  message: 'Descartar de la lista',
+                  child: OutlinedButton.icon(
+                    onPressed: () => _dismissShoppingItem(item),
+                    icon: AppSvgIcon(
+                      assetName: 'delete',
+                      size: 16,
+                      color: colorScheme.error,
+                    ),
+                    label: Text(
+                      'Descartar',
+                      style: TextStyle(color: colorScheme.error),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -163,17 +163,17 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-8.2: Shopping List Item Actions (`Comprado` & `Descartar`)
+### - [x] US-8.2: Shopping List Item Actions (`Comprado` & `Descartar`)
 **As a** user at the supermarket,  
 **I want** each item in my Shopping List to have `"Comprado"` and `"Descartar"` buttons,  
 **So that** bought items move directly into my available home ingredients while unneeded items are removed.
 
 #### Acceptance Criteria
-- [ ] In the **Lista de Compras** view, every shopping list item displays two explicit action buttons (using clean SVG icons and Spanish labels/tooltips):
+- [x] In the **Lista de Compras** view, every shopping list item displays two explicit action buttons (using clean SVG icons and Spanish labels/tooltips):
   - **`Comprado` (`Bought`):** Removes the item from the Shopping List and automatically adds it to the user's available **Mis Ingredientes** list (consolidating if already present).
   - **`Descartar` (`Dismiss`):** Removes the item from the Shopping List without adding it to the available ingredients list.
-- [ ] Brief Spanish feedback (SnackBar) confirms when an item is moved to **Mis Ingredientes** or dismissed.
-- [ ] Widget and integration tests verify that tapping `Comprado` transfers the ingredient to available ingredients and makes it immediately selectable for recipe generation, while `Descartar` removes it completely.
+- [x] Brief Spanish feedback (SnackBar) confirms when an item is moved to **Mis Ingredientes** or dismissed.
+- [x] Widget and integration tests verify that tapping `Comprado` transfers the ingredient to available ingredients and makes it immediately selectable for recipe generation, while `Descartar` removes it completely.
 
 ---
 

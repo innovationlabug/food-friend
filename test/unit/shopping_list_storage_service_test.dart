@@ -72,5 +72,54 @@ void main() {
       expect(await shopping.containsIngredient('Aguacate'), isFalse);
     });
   });
+
+  group('US-8.2: ShoppingListStorageService markAsBought & dismissItem', () {
+    test('markAsBought transfers item from shopping list to Mis Ingredientes and consolidates',
+        () async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+
+      await pantry.addIngredient(
+        const Ingredient(name: 'Tomate', amountValue: 2, amountUnit: AmountUnit.units),
+      );
+      await shopping.addIngredient(
+        const Ingredient(name: 'tomate', amountValue: 3, amountUnit: AmountUnit.units),
+      );
+      await shopping.addIngredient(const Ingredient(name: 'Aguacate'));
+
+      final result = await shopping.markAsBought('Tomate');
+
+      expect(result.shoppingList.map((e) => e.name), equals(['Aguacate']));
+      expect(result.availableIngredients.length, equals(1));
+      expect(result.availableIngredients[0].name, equals('Tomate'));
+      expect(result.availableIngredients[0].amountValue, equals(5.0));
+
+      // Verify persisted state
+      expect((await shopping.getIngredients()).map((e) => e.name), equals(['Aguacate']));
+      expect((await pantry.getIngredients()).first.amountValue, equals(5.0));
+    });
+
+    test('dismissItem removes item from shopping list without adding it to Mis Ingredientes',
+        () async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+
+      await shopping.addIngredient(const Ingredient(name: 'Chorizo'));
+      await shopping.addIngredient(const Ingredient(name: 'Cebolla blanca'));
+
+      final remaining = await shopping.dismissItem('chorizo');
+
+      expect(remaining.map((e) => e.name), equals(['Cebolla blanca']));
+      expect(await pantry.getIngredients(), isEmpty);
+    });
+  });
 }
 
