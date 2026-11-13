@@ -309,3 +309,56 @@ Work autonomously end-to-end for EACH user story in the sequence:
 Only stop when all specified User Stories are fully implemented, verified, and committed across their respective branches. Then, provide a comprehensive report of what was done and the test results for each story. Summarize by updating `GET_RECIPES.md`.
 
 After completing the entire batch, execute `[console]::beep(800, 800)` to notify me that the task is complete.
+
+
+
+---
+
+
+
+Execute the following User Stories from `USER_STORIES_2.md` sequentially: US-7.1 through US-7.4. These stories are related to recipe history.
+
+Adhere strictly to the rules in `AGENTS.md` and the requirements in `SPEC.md`.
+
+Work autonomously end-to-end for EACH user story in the sequence:
+
+1. **Branch Management:** When starting, check if a relevant Git branch exists and use it. If not, create one named appropriately for the task and switch to it. Ensure all subsequent stories related to that same feature or panel are committed to its corresponding branch.
+2. **Implementation & Tests:** Complete each step required by the current story's acceptance criteria without asking for intermediate approvals. In accordance with `AGENTS.md`, write or update the corresponding unit tests and end-to-end integration tests using `package:integration_test`.
+3. **Build & Static Verification:** Run `flutter analyze` and `flutter test` to verify there are zero lint issues, type errors, or failing unit tests. If you hit any errors, debug and resolve them independently.
+4. **End-to-End Testing:** Once static checks and unit tests pass, execute the automated integration test (e.g., `flutter test integration_test/<test_name>.dart`) to verify the app flow:
+    * Use the sample photos that were used for the demos to test the functionalities.
+    * Start with a clean session state.
+    * Navigate through the ingredient input flow, input the test ingredients, and verify they appear correctly in the list.
+    * Ensure there are no layout overflows (`RenderFlex` errors) or uncaught exceptions during execution.
+5. **Committing:** After the story is fully implemented, verified, and marked with `[x]` in `USER_STORIES_2.md`, stage and commit the changes using the Conventional Commits specification (e.g., `feat(ingredientes): ...`). Make exactly one commit per story.
+
+Only stop when all specified User Stories are fully implemented, verified, and committed across their respective branches. Then, provide a comprehensive report of what was done and the test results for each story. Summarize by updating `GET_RECIPES.md`.
+
+After completing the entire batch, execute `[console]::beep(800, 800)` to notify me that the task is complete.
+
+
+
+---
+
+
+Execute the following User Stories from `USER_STORIES_2.md` sequentially: US-8.1 through US-8.2. These stories are related to the shopping list feature.
+
+Adhere strictly to the rules in `AGENTS.md` and the requirements in `SPEC.md`.
+
+Work autonomously end-to-end for EACH user story in the sequence:
+
+1. **Branch Management:** When starting, check if a relevant Git branch exists and use it. If not, create one named appropriately for the task and switch to it. Ensure all subsequent stories related to that same feature or panel are committed to its corresponding branch.
+2. **Implementation & Tests:** Complete each step required by the current story's acceptance criteria without asking for intermediate approvals. In accordance with `AGENTS.md`, write or update the corresponding unit tests and end-to-end integration tests using `package:integration_test`.
+3. **Build & Static Verification:** Run `flutter analyze` and `flutter test` to verify there are zero lint issues, type errors, or failing unit tests. If you hit any errors, debug and resolve them independently.
+4. **End-to-End Testing:** Once static checks and unit tests pass, execute the automated integration test (e.g., `flutter test integration_test/<test_name>.dart`) to verify the app flow:
+    * Use the sample photos that were used for the demos to test the functionalities.
+    * Start with a clean session state.
+    * Navigate through the ingredient input flow, input the test ingredients, and verify they appear correctly in the list.
+    * Ensure there are no layout overflows (`RenderFlex` errors) or uncaught exceptions during execution.
+5. **Committing:** After the story is fully implemented, verified, and marked with `[x]` in `USER_STORIES_2.md`, stage and commit the changes using the Conventional Commits specification (e.g., `feat(ingredientes): ...`). Make exactly one commit per story.
+
+Only stop when all specified User Stories are fully implemented, verified, and committed across their respective branches. Then, provide a comprehensive report of what was done and the test results for each story. Summarize by updating `ADD_INGREDIENTS.md`.
+
+Then repeat the complete process for stories US-9.1 to US-9.2. Use the file `NUTRITION_TIPS.md` to document. Use a new branch for this functionality.
+
+After completing the entire two batches, execute `[console]::beep(800, 800)` to notify me that the task is complete.
