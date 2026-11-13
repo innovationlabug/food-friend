@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_friend/features/home/presentation/home_screen.dart';
 import 'package:food_friend/features/ingredients/presentation/add_ingredient_screen.dart';
+import 'package:food_friend/features/nutrition/presentation/nutrition_tips_screen.dart';
+import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
+import 'package:food_friend/features/recipes/domain/recipe.dart';
+import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_management_screen.dart';
 import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -133,6 +137,35 @@ void main() {
       // Verify on RecipeManagementScreen
       expect(find.byType(RecipeManagementScreen), findsOneWidget);
       expect(find.text('Gestión de Recetas'), findsOneWidget);
+    });
+
+    testWidgets('navigates to NutritionTipsScreen and displays active summary on HomeScreen',
+        (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final history = RecipeHistoryService(preferences: prefs);
+      await history.recordCooked(
+        const Recipe(
+          id: 'test_meal',
+          title: 'Arroz sencillo',
+          ingredients: [RecipeIngredient(name: 'Arroz blanco', displayAmount: '1 taza')],
+          instructions: ['Cocinar arroz'],
+        ),
+      );
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Consejos de Nutrición'), findsOneWidget);
+      expect(find.textContaining('consejos de nutrición activos'), findsOneWidget);
+
+      final nutritionBtn = find.text('Ver consejos de nutrición');
+      await tester.ensureVisible(nutritionBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(nutritionBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NutritionTipsScreen), findsOneWidget);
+      expect(find.text('Consejos de Nutrición'), findsOneWidget);
     });
   });
 }

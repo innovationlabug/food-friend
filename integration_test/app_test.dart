@@ -4,6 +4,9 @@ import 'package:integration_test/integration_test.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/amount_unit.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
+import 'package:food_friend/features/recipes/domain/recipe.dart';
+import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
 import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 import 'package:food_friend/main.dart' as app;
 
@@ -311,5 +314,87 @@ void main() {
     // Cleanup
     await pantry.clearIngredients();
     await shopping.clearIngredients();
+  });
+
+  testWidgets(
+      'E2E integration test US-9.2: displays nutrition tips from cooked history and adds recommended ingredient to Lista de compras',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    final history = RecipeHistoryService(ingredientStorageService: pantry);
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // Open Consejos de Nutrición with empty history
+    final tipsBtn = find.text('Ver consejos de nutrición');
+    await tester.ensureVisible(tipsBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(tipsBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Aún no has registrado recetas cocinadas'), findsOneWidget);
+    expect(find.text('Proteína completa combinando arroz y frijoles'), findsOneWidget);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    // Record cooked meals triggering health alert, protein pairing, and vitamin suggestions
+    await history.recordCooked(
+      const Recipe(
+        id: 'app_test_proc',
+        title: 'Chorizo con huevo',
+        ingredients: [
+          RecipeIngredient(name: 'Chorizo', displayAmount: '1 unidad'),
+          RecipeIngredient(name: 'Huevo', displayAmount: '2 unidades'),
+        ],
+        instructions: ['Cocinar'],
+      ),
+      cookedAt: DateTime.now().subtract(const Duration(days: 1)),
+    );
+    await history.recordCooked(
+      const Recipe(
+        id: 'app_test_rice',
+        title: 'Arroz blanco sencillo',
+        ingredients: [
+          RecipeIngredient(name: 'Arroz blanco', displayAmount: '1 taza'),
+        ],
+        instructions: ['Hervir'],
+      ),
+      cookedAt: DateTime.now(),
+    );
+
+    await tester.ensureVisible(tipsBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(tipsBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Modera el consumo de carnes procesadas'), findsOneWidget);
+    expect(
+      find.text('Combina granos y legumbres para lograr proteína completa'),
+      findsOneWidget,
+    );
+
+    final vitA = find.text('Refuerza tu aporte de Vitamina A');
+    await tester.scrollUntilVisible(vitA, 250);
+    await tester.pumpAndSettle();
+    expect(vitA, findsOneWidget);
+
+    final addCarrot = find.widgetWithText(OutlinedButton, 'Agregar Zanahoria').first;
+    await tester.ensureVisible(addCarrot);
+    await tester.pumpAndSettle();
+    await tester.tap(addCarrot);
+    await tester.pumpAndSettle();
+
+    expect(find.text('"Zanahoria" agregado a tu lista de compras'), findsOneWidget);
+    expect((await shopping.getIngredients()).map((i) => i.name), contains('Zanahoria'));
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
   });
 }

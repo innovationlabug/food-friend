@@ -3,24 +3,76 @@ import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/presentation/add_ingredient_screen.dart';
+import '../../nutrition/data/nutrition_service.dart';
+import '../../nutrition/domain/nutrition_tip.dart';
+import '../../nutrition/presentation/nutrition_tips_screen.dart';
 import '../../recipes/presentation/recipe_management_screen.dart';
 import '../../recipes/presentation/recipe_suggestions_screen.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 
 /// Main landing shell screen for Food Friend.
-/// Presents key navigation entry points in Spanish with a clean, responsive layout.
-class HomeScreen extends StatelessWidget {
+/// Presents key navigation entry points and nutrition summary in Spanish.
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final NutritionService _nutritionService = NutritionService();
+  NutritionReport? _nutritionReport;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNutritionSummary();
+  }
+
+  Future<void> _loadNutritionSummary() async {
+    final report = await _nutritionService.generateReport();
+    if (mounted) {
+      setState(() {
+        _nutritionReport = report;
+      });
+    }
+  }
 
   Future<void> _openRecipeSuggestions(BuildContext context) async {
     final storageService = IngredientStorageService();
     final ingredients = await storageService.getIngredients();
     if (!context.mounted) return;
 
-    RecipeSuggestionsScreen.navigate(
+    await RecipeSuggestionsScreen.navigate(
       context,
       selectedIngredientNames: ingredients.map((i) => i.name).toList(),
     );
+    if (mounted) {
+      await _loadNutritionSummary();
+    }
+  }
+
+  Future<void> _pushAndRefresh(Widget screen) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => screen),
+    );
+    if (mounted) {
+      await _loadNutritionSummary();
+    }
+  }
+
+  String _nutritionCardDescription() {
+    final report = _nutritionReport;
+    if (report == null || !report.hasCookingHistory) {
+      return 'Descubre consejos de nutrición personalizados según las recetas que cocinas.';
+    }
+    if (report.tips.isEmpty) {
+      return 'Tus comidas recientes están bien equilibradas. Revisa el detalle nutricional.';
+    }
+    final count = report.tips.length;
+    return count == 1
+        ? 'Tienes 1 consejo de nutrición activo según tus comidas recientes.'
+        : 'Tienes $count consejos de nutrición activos según tus comidas recientes.';
   }
 
   List<Widget> _buildCards(BuildContext context) {
@@ -32,13 +84,7 @@ class HomeScreen extends StatelessWidget {
         description:
             'Gestiona tus ingredientes disponibles en casa y selecciona qué usar para cocinar.',
         buttonLabel: 'Ir a ingredientes disponibles',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const ShoppingListScreen(initialTab: 0),
-            ),
-          );
-        },
+        onPressed: () => _pushAndRefresh(const ShoppingListScreen(initialTab: 0)),
         isPrimary: true,
       ),
       _buildFeatureCard(
@@ -48,13 +94,7 @@ class HomeScreen extends StatelessWidget {
         description:
             'Organiza los productos que necesitas comprar en el supermercado.',
         buttonLabel: 'Ir a lista de compras',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const ShoppingListScreen(initialTab: 1),
-            ),
-          );
-        },
+        onPressed: () => _pushAndRefresh(const ShoppingListScreen(initialTab: 1)),
       ),
       _buildFeatureCard(
         context: context,
@@ -63,13 +103,7 @@ class HomeScreen extends StatelessWidget {
         description:
             'Busca o explora ingredientes por categoría para añadirlos rápidamente a tu despensa.',
         buttonLabel: 'Añadir ingredientes',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const AddIngredientScreen(),
-            ),
-          );
-        },
+        onPressed: () => _pushAndRefresh(const AddIngredientScreen()),
       ),
       _buildFeatureCard(
         context: context,
@@ -87,13 +121,15 @@ class HomeScreen extends StatelessWidget {
         description:
             'Revisa tu historial de cocina, recetas favoritas y administra recetas ocultas.',
         buttonLabel: 'Gestionar recetas',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const RecipeManagementScreen(),
-            ),
-          );
-        },
+        onPressed: () => _pushAndRefresh(const RecipeManagementScreen()),
+      ),
+      _buildFeatureCard(
+        context: context,
+        iconName: 'nutrition',
+        title: 'Consejos de Nutrición',
+        description: _nutritionCardDescription(),
+        buttonLabel: 'Ver consejos de nutrición',
+        onPressed: () => _pushAndRefresh(const NutritionTipsScreen()),
       ),
     ];
   }

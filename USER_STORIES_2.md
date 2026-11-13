@@ -179,32 +179,32 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ## Phase 9: Nutrition Tips Based on Recipe History
 
-### - [ ] US-9.1: Nutritional Metadata & Deterministic Nutrition Heuristics Engine
+### - [x] US-9.1: Nutritional Metadata & Deterministic Nutrition Heuristics Engine
 **As a** user striving for a healthier diet,  
 **I want** the app to analyze my cooked recipe history locally and generate simple nutrition alerts and suggestions,  
 **So that** I learn about long-term dietary risks, missing vitamins, and complete protein pairings without needing complex calorie tracking or LLM calls.
 
 #### Acceptance Criteria
-- [ ] Ingredients in `IngredientCatalog` (or a dedicated nutrition mapping table) include lightweight nutritional tags:
+- [x] Ingredients in `IngredientCatalog` (or a dedicated nutrition mapping table) include lightweight nutritional tags:
   - **Processed / harmful-in-excess category:** Flags processed meats and high-sodium cured items (e.g., `Salchicha`, `Jamón`, `Chorizo`, `Longaniza`, `Tocino`, `Mortadela`, `Salami`).
   - **Vitamin contributions:** Maps fruits and vegetables to key vitamins/micronutrients (e.g., `Vitamina A`, `Vitamina C`, `Vitamina K / Folato`, `Hierro`, `Potasio`) along with recommended Spanish food sources from the catalog.
   - **Incomplete protein groups:** Distinguishes plant grain/cereal proteins (e.g., `Arroz blanco`, `Arroz integral`, `Masa de maíz`, `Tortillas de maíz`, `Avena`) from legume/seed proteins (e.g., `Frijoles negros`, `Frijoles rojos`, `Lentejas`, `Garbanzos`, `Maní`) to detect unpaired vs. paired plant proteins.
-- [ ] A deterministic `NutritionService` evaluates the user's logged cooking history (`RecipeHistoryService`) and outputs structured Spanish nutrition tips across three rules:
+- [x] A deterministic `NutritionService` evaluates the user's logged cooking history (`RecipeHistoryService`) and outputs structured Spanish nutrition tips across three rules:
   1. **Long-term health alert:** Triggers a warning if the user's recent cooked recipes frequently include processed meats (e.g., $\ge 2$ cooked meals with processed meats in the last 7 days or $\ge 30\%$ of recent logged meals).
   2. **Missing vitamin suggestion:** Checks which vitamins have been covered by fruits and vegetables in recent cooked recipes; for any untracked/missing vitamin, suggests specific fruits or vegetables from the catalog rich in that vitamin.
   3. **Incomplete protein pairing tip:** Detects when recent cooked recipes include grains (like rice or corn) or legumes (like beans or lentils) without a complementary protein source in the same meal, and provides a clear Spanish tip explaining how pairing them (e.g., `Arroz` + `Frijoles`) forms a complete protein with all essential amino acids.
-- [ ] Unit tests cover all three heuristic rules (processed meat alert threshold, missing vitamin detection, and incomplete protein pairing recommendation).
+- [x] Unit tests cover all three heuristic rules (processed meat alert threshold, missing vitamin detection, and incomplete protein pairing recommendation).
 
 ---
 
-### - [ ] US-9.2: Nutrition Tips Screen & Home Summary Card
+### - [x] US-9.2: Nutrition Tips Screen & Home Summary Card
 **As a** user,  
 **I want** to view my personalized nutrition tips on a dedicated screen and via a summary card on the Home Screen,  
 **So that** I can easily apply healthy adjustments to my next meals and grocery shopping.
 
 #### Acceptance Criteria
-- [ ] The **Home Screen** includes entry navigation and/or a summary card for **Consejos de Nutrición**, alongside clear navigation to **Mis Ingredientes**, **Lista de Compras**, and **Gestión de Recetas**.
-- [ ] The **Consejos de Nutrición** screen displays the active tips in Spanish using clean SVG icons (distinguishing health alerts, vitamin suggestions, and protein pairing tips) with zero emojis or technical pseudo-metadata badges.
-- [ ] When a vitamin suggestion recommends specific fruits or vegetables, the user can tap an action to add the suggested ingredient directly to their **Lista de Compras**.
-- [ ] If the user has not logged any cooked recipes yet, an encouraging Spanish empty-state message explains that logging meals with `"Lo cociné"` unlocks personalized nutrition tips, while showing foundational healthy eating tips (such as complete protein pairing with rice and beans).
-- [ ] Widget and integration tests verify rendering of all three tip categories, adding a recommended vitamin-rich ingredient to the Shopping List, and `flutter analyze` passing with zero issues.
+- [x] The **Home Screen** includes entry navigation and/or a summary card for **Consejos de Nutrición**, alongside clear navigation to **Mis Ingredientes**, **Lista de Compras**, and **Gestión de Recetas**.
+- [x] The **Consejos de Nutrición** screen displays the active tips in Spanish using clean SVG icons (distinguishing health alerts, vitamin suggestions, and protein pairing tips) with zero emojis or technical pseudo-metadata badges.
+- [x] When a vitamin suggestion recommends specific fruits or vegetables, the user can tap an action to add the suggested ingredient directly to their **Lista de Compras**.
+- [x] If the user has not logged any cooked recipes yet, an encouraging Spanish empty-state message explains that logging meals with `"Lo cociné"` unlocks personalized nutrition tips, while showing foundational healthy eating tips (such as complete protein pairing with rice and beans).
+- [x] Widget and integration tests verify rendering of all three tip categories, adding a recommended vitamin-rich ingredient to the Shopping List, and `flutter analyze` passing with zero issues.
