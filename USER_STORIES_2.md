@@ -197,14 +197,14 @@ This document breaks down the **Iteration 2** scope of **Food Friend** (based on
 
 ---
 
-### - [ ] US-9.2: Nutrition Tips Screen & Home Summary Card
+### - [x] US-9.2: Nutrition Tips Screen & Home Summary Card
 **As a** user,  
 **I want** to view my personalized nutrition tips on a dedicated screen and via a summary card on the Home Screen,  
 **So that** I can easily apply healthy adjustments to my next meals and grocery shopping.
 
 #### Acceptance Criteria
-- [ ] The **Home Screen** includes entry navigation and/or a summary card for **Consejos de Nutrición**, alongside clear navigation to **Mis Ingredientes**, **Lista de Compras**, and **Gestión de Recetas**.
-- [ ] The **Consejos de Nutrición** screen displays the active tips in Spanish using clean SVG icons (distinguishing health alerts, vitamin suggestions, and protein pairing tips) with zero emojis or technical pseudo-metadata badges.
-- [ ] When a vitamin suggestion recommends specific fruits or vegetables, the user can tap an action to add the suggested ingredient directly to their **Lista de Compras**.
-- [ ] If the user has not logged any cooked recipes yet, an encouraging Spanish empty-state message explains that logging meals with `"Lo cociné"` unlocks personalized nutrition tips, while showing foundational healthy eating tips (such as complete protein pairing with rice and beans).
-- [ ] Widget and integration tests verify rendering of all three tip categories, adding a recommended vitamin-rich ingredient to the Shopping List, and `flutter analyze` passing with zero issues.
+- [x] The **Home Screen** includes entry navigation and/or a summary card for **Consejos de Nutrición**, alongside clear navigation to **Mis Ingredientes**, **Lista de Compras**, and **Gestión de Recetas**.
+- [x] The **Consejos de Nutrición** screen displays the active tips in Spanish using clean SVG icons (distinguishing health alerts, vitamin suggestions, and protein pairing tips) with zero emojis or technical pseudo-metadata badges.
+- [x] When a vitamin suggestion recommends specific fruits or vegetables, the user can tap an action to add the suggested ingredient directly to their **Lista de Compras**.
+- [x] If the user has not logged any cooked recipes yet, an encouraging Spanish empty-state message explains that logging meals with `"Lo cociné"` unlocks personalized nutrition tips, while showing foundational healthy eating tips (such as complete protein pairing with rice and beans).
+- [x] Widget and integration tests verify rendering of all three tip categories, adding a recommended vitamin-rich ingredient to the Shopping List, and `flutter analyze` passing with zero issues.

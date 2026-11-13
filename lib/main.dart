@@ -5,6 +5,7 @@ import 'features/home/presentation/home_screen.dart';
 import 'features/ingredients/presentation/add_ingredient_screen.dart';
 import 'features/ingredients/presentation/fridge_scanner_screen.dart';
 import 'features/ingredients/presentation/receipt_scanner_screen.dart';
+import 'features/nutrition/presentation/nutrition_tips_screen.dart';
 import 'features/recipes/data/local_recipe_dataset.dart';
 import 'features/recipes/presentation/recipe_detail_screen.dart';
 import 'features/recipes/presentation/recipe_suggestions_screen.dart';
@@ -37,6 +38,8 @@ class FoodFriendApp extends StatelessWidget {
         return const RecipeSuggestionsScreen(selectedIngredientNames: ['Pollo', 'Tomate', 'Cebolla']);
       case 'detail':
         return RecipeDetailScreen(recipe: LocalRecipeDataset.instance.recipes.first);
+      case 'nutrition':
+        return const NutritionTipsScreen();
       default:
         return const HomeScreen();
     }
