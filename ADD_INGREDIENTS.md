@@ -147,4 +147,63 @@ This section summarizes the implementation, verification, and end-to-end testing
 ed0ccc4 feat(catalog): refine category taxonomy to natural guatemalan supermarket terminology
 ```
 
+---
+
+# Phase 8 Report: Dedicated Shopping List ("Lista de Compras" vs. "Mis Ingredientes")
+
+**Branch:** `feature/shopping-list`  
+**User Stories Covered:** `US-8.1`, `US-8.2`  
+**Date:** 2026-11-13  
+
+---
+
+## 1. Phase 8 Summary & Implemented Stories
+
+### US-8.1: Separate Shopping List Storage & Input via Text Search and Categories
+- **Independent Local Persistence:**
+  - Parameterized `IngredientStorageService` with an optional `_storageKey` and added `containsIngredient(String name)` in `lib/features/ingredients/data/ingredient_storage_service.dart`.
+  - Created `ShoppingListStorageService` in `lib/features/shopping_list/data/shopping_list_storage_service.dart` backed by its own `SharedPreferences` key (`food_friend_shopping_list`), completely separate from `Mis Ingredientes` (`food_friend_ingredients`).
+  - Duplicates added to the shopping list are consolidated case- and accent-insensitively without duplicate rows.
+- **Shopping List Input & Two-Tab Navigation:**
+  - Updated `AddIngredientScreen` (`lib/features/ingredients/presentation/add_ingredient_screen.dart`) with `isShoppingList` mode (displaying only `Buscar` and `Categorías` tabs, with `'Agregar a lista de compras'` title and shopping-list feedback).
+  - Updated `ShoppingListScreen` (`lib/features/shopping_list/presentation/shopping_list_screen.dart`) to host two independent tabs (`Mis ingredientes` and `Por comprar`), keeping `Lista de compras` completely excluded from recipe generation.
+  - Updated `HomeScreen` (`lib/features/home/presentation/home_screen.dart`) and `lib/main.dart` with distinct navigation entries for `Ingredientes disponibles` and `Lista de compras`.
+  - Added quick-add missing ingredient buttons (per-row and `'Agregar todos'`) directly inside `RecipeDetailScreen` (`lib/features/recipes/presentation/recipe_detail_screen.dart`).
+- **Commit:** `9905331` - `feat(shopping-list): implement separate shopping list storage and input flows`
+
+### US-8.2: Shopping List Item Actions (`Comprado` & `Descartar`)
+- **Transfer & Dismissal Service Logic:**
+  - Added `markAsBought(String name)` to `ShoppingListStorageService`, removing the matched item from `Lista de Compras` and consolidating it into `Mis Ingredientes` (`pantryStorageService`).
+  - Added `dismissItem(String name)` to `ShoppingListStorageService`, removing the item from `Lista de Compras` without touching `Mis Ingredientes`.
+- **Interactive UI Actions & Immediate Recipe Readiness:**
+  - Updated `_buildShoppingListItemCard` in `ShoppingListScreen` to display explicit `Comprado` (`check` SVG, tooltip `'Marcar como comprado'`) and `Descartar` (`delete` SVG, tooltip `'Descartar de la lista'`) buttons inside a responsive `Wrap` layout.
+  - Marking an item as `Comprado` transfers it to `Mis ingredientes`, pre-selects it immediately for `Buscar recetas`, and confirms the action with a clear Spanish `SnackBar`; `Descartar` removes it completely with Spanish `SnackBar` confirmation.
+- **Commit:** `aa9dc34` - `feat(shopping-list): add bought and dismiss actions to shopping list items`
+
+---
+
+## 2. Automated Test Verification (Phase 8)
+
+| Test Suite | Scope | Result |
+| :--- | :--- | :--- |
+| `test/unit/shopping_list_storage_service_test.dart` | US-8.1 & US-8.2 independent persistence, duplicate consolidation, `markAsBought`, `dismissItem` | **PASSED** (5 tests) |
+| `test/features/shopping_list_screen_test.dart` | `Por comprar` tab, adding via search/closest-match/categories, `Comprado` transfer, `Descartar` dismissal | **PASSED** (9 tests) |
+| `test/features/home_screen_test.dart` | Home screen navigation cards for `Ingredientes disponibles` and `Lista de compras` | **PASSED** |
+| `test/features/recipe_detail_screen_test.dart` | Quick-adding single and all missing recipe ingredients to `Lista de Compras` | **PASSED** |
+| `test/integration/shopping_list_flow_test.dart` | E2E UI flows for US-8.1 and US-8.2 (`Comprado` unlocking recipe generation vs. `Descartar`) | **PASSED** (2 tests) |
+| `integration_test/app_test.dart` (`-d flutter-tester`) | Full end-to-end integration tests across all phases including US-8.1 and US-8.2 | **PASSED** (7/7 tests) |
+| Entire Project Test Suite (`flutter test`) | All unit, feature, and integration tests across the codebase | **PASSED** (187/187 tests) |
+
+- **Static Analysis:** `flutter analyze` $\rightarrow$ `No issues found!` (0 warnings, 0 errors).
+- **Layout & Accessibility Verification:** Zero `RenderFlex` overflows, zero unhandled exceptions.
+
+---
+
+## 3. Git Commit History on Branch `feature/shopping-list`
+```
+aa9dc34 feat(shopping-list): add bought and dismiss actions to shopping list items
+9905331 feat(shopping-list): implement separate shopping list storage and input flows
+```
+
+
 
