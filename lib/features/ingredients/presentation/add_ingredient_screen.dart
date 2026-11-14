@@ -226,15 +226,18 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
         }
       },
       child: Scaffold(
-        endDrawer: AppNavigationDrawer(
+        drawer: AppNavigationDrawer(
           currentDestination:
               widget.isShoppingList ? null : AppDestination.addIngredients,
         ),
         appBar: AppBar(
+          leadingWidth: appBarLeadingWidth(context),
+          leading: const AppBarLeading(),
           title: Text(
             widget.isShoppingList
                 ? 'Agregar a lista de compras'
                 : 'Agregar ingrediente',
+            overflow: TextOverflow.ellipsis,
           ),
           actions: [
             TextButton.icon(
@@ -246,22 +249,21 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               ),
               label: const Text('Ver lista'),
             ),
-            const AppMenuButton(),
           ],
           bottom: TabBar(
             controller: _tabController,
             tabs: [
               const Tab(
-                icon: Icon(Icons.search),
+                icon: AppSvgIcon(assetName: 'search', size: 20),
                 text: 'Buscar',
               ),
               const Tab(
-                icon: Icon(Icons.category_outlined),
+                icon: AppSvgIcon(assetName: 'category', size: 20),
                 text: 'Categorías',
               ),
               if (!widget.isShoppingList)
                 const Tab(
-                  icon: Icon(Icons.photo_camera_outlined),
+                  icon: AppSvgIcon(assetName: 'camera', size: 20),
                   text: 'Foto',
                 ),
             ],
@@ -306,10 +308,21 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                   decoration: InputDecoration(
                     labelText: 'Nombre del ingrediente',
                     hintText: 'Ej. Pechuga de pollo, Tomate, Frijol',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: AppSvgIcon(
+                        assetName: 'search',
+                        size: 18,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: AppSvgIcon(
+                              assetName: 'close',
+                              size: 18,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                             onPressed: () {
                               _searchController.clear();
                             },
@@ -327,7 +340,11 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.check, size: 18),
+                    : AppSvgIcon(
+                        assetName: 'check',
+                        size: 18,
+                        color: colorScheme.onPrimary,
+                      ),
                 label: const Text('Guardar'),
               ),
             ],
@@ -345,8 +362,8 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.info_outline,
+                  AppSvgIcon(
+                    assetName: 'info',
                     size: 20,
                     color: colorScheme.onPrimaryContainer,
                   ),
@@ -361,7 +378,11 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 18),
+                    icon: AppSvgIcon(
+                      assetName: 'close',
+                      size: 18,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
                     tooltip: 'Cerrar consejo',
                     onPressed: () {
                       setState(() {
@@ -402,8 +423,9 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    trailing: Icon(
-                      Icons.add_circle_outline,
+                    trailing: AppSvgIcon(
+                      assetName: 'plus',
+                      size: 20,
                       color: colorScheme.primary,
                     ),
                     onTap: () => _selectAndAddIngredient(suggestion),
@@ -464,7 +486,11 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               ].map((name) {
                 return ActionChip(
                   label: Text(name),
-                  avatar: const Icon(Icons.add, size: 16),
+                  avatar: AppSvgIcon(
+                    assetName: 'plus',
+                    size: 14,
+                    color: colorScheme.primary,
+                  ),
                   onPressed: () => _selectAndAddIngredient(name),
                 );
               }).toList(),
@@ -491,7 +517,11 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               children: [
                 IconButton.filledTonal(
                   tooltip: 'Volver al nivel anterior',
-                  icon: const Icon(Icons.arrow_back, size: 20),
+                  icon: AppSvgIcon(
+                    assetName: 'arrow_back',
+                    size: 20,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
                   onPressed: () {
                     setState(() {
                       _categoryStack.removeLast();
@@ -539,8 +569,9 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  trailing: Icon(
-                    Icons.add_circle,
+                  trailing: AppSvgIcon(
+                    assetName: 'plus',
+                    size: 20,
                     color: colorScheme.primary,
                   ),
                   onTap: () => _selectAndAddIngredient(node.name),
@@ -554,7 +585,11 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: AppSvgIcon(
+                    assetName: 'chevron_right',
+                    size: 20,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   onTap: () {
                     setState(() {
                       _categoryStack.add(node);
@@ -570,143 +605,166 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
   }
 
   Widget _buildPhotoTab(ThemeData theme, ColorScheme colorScheme) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            elevation: 0,
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: colorScheme.outlineVariant),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.kitchen_outlined,
-                          color: colorScheme.onPrimaryContainer,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Escanear refrigerador',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Detecta automáticamente los alimentos y productos en tu refrigerador o despensa a partir de una foto.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () {
-                      FridgeScannerScreen.navigate(
-                        context,
-                        storageService: _storageService,
-                        visionService: widget.visionService,
-                      );
-                    },
-                    icon: const Icon(Icons.kitchen_outlined, size: 18),
-                    label: const Text('Escanear refrigerador'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            elevation: 0,
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: colorScheme.outlineVariant),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.receipt_long_outlined,
-                          color: colorScheme.onSecondaryContainer,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Escanear recibo',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Extrae alimentos comprados y montos en Quetzales desde una fotografía de tu ticket o factura de supermercado.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () {
-                      ReceiptScannerScreen.navigate(
-                        context,
-                        storageService: _storageService,
-                        parserService: widget.parserService,
-                      );
-                    },
-                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                    label: const Text('Escanear recibo'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+    final fridgeCard = Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
       ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: AppSvgIcon(
+                    assetName: 'fridge',
+                    color: colorScheme.onPrimaryContainer,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Escanear refrigerador',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Detecta automáticamente los alimentos y productos en tu refrigerador o despensa a partir de una foto.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () {
+                FridgeScannerScreen.navigate(
+                  context,
+                  storageService: _storageService,
+                  visionService: widget.visionService,
+                );
+              },
+              icon: AppSvgIcon(
+                assetName: 'fridge',
+                size: 18,
+                color: colorScheme.onPrimary,
+              ),
+              label: const Text('Escanear refrigerador'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final receiptCard = Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: AppSvgIcon(
+                    assetName: 'receipt',
+                    color: colorScheme.onSecondaryContainer,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Escanear recibo',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Extrae alimentos comprados y montos en Quetzales desde una fotografía de tu ticket o factura de supermercado.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () {
+                ReceiptScannerScreen.navigate(
+                  context,
+                  storageService: _storageService,
+                  parserService: widget.parserService,
+                );
+              },
+              icon: AppSvgIcon(
+                assetName: 'receipt',
+                size: 18,
+                color: colorScheme.onPrimary,
+              ),
+              label: const Text('Escanear recibo'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return SingleChildScrollView(
+      child: context.isDesktop
+          ? IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: fridgeCard),
+                  const SizedBox(width: 16),
+                  Expanded(child: receiptCard),
+                ],
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                fridgeCard,
+                const SizedBox(height: 16),
+                receiptCard,
+              ],
+            ),
     );
   }
 }

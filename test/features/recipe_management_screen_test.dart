@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:food_friend/core/widgets/app_svg_icon.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
@@ -42,7 +43,9 @@ void main() {
         ),
         findsNothing,
       );
-      final infoIcon = find.byIcon(Icons.info_outline);
+      final infoIcon = find.byWidgetPredicate(
+        (w) => w is AppSvgIcon && w.assetName == 'info',
+      );
       expect(infoIcon, findsOneWidget);
       await tester.tap(infoIcon);
       await tester.pumpAndSettle();
@@ -290,6 +293,46 @@ void main() {
       await tester.tap(find.textContaining('Todas ('));
       await tester.pumpAndSettle();
       expect(find.text('Pepián de Pollo Tradicional'), findsOneWidget);
+    });
+
+    testWidgets('filters recipes by search query and clears search',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final searchField = find.byType(TextField);
+      expect(searchField, findsOneWidget);
+
+      await tester.enterText(searchField, 'hilachas');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hilachas de Res Saludables'), findsOneWidget);
+      expect(find.text('Pepián de Pollo Tradicional'), findsNothing);
+
+      // Search with no results shows clear button
+      await tester.enterText(searchField, 'platillo_inexistente_xyz');
+      await tester.pumpAndSettle();
+      expect(find.text('Limpiar búsqueda'), findsOneWidget);
+
+      await tester.tap(find.text('Limpiar búsqueda'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pepián de Pollo Tradicional'), findsOneWidget);
+    });
+
+    testWidgets('renders recipe cards in two columns on desktop viewports',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final cards = find.byType(Card);
+      expect(cards, findsAtLeastNWidgets(2));
+      final firstRect = tester.getRect(cards.at(0));
+      final secondRect = tester.getRect(cards.at(1));
+      expect(secondRect.left, greaterThan(firstRect.left));
     });
   });
 }

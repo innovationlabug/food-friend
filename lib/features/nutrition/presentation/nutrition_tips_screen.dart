@@ -131,11 +131,16 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      endDrawer: const AppNavigationDrawer(
+      drawer: const AppNavigationDrawer(
         currentDestination: AppDestination.nutritionTips,
       ),
       appBar: AppBar(
-        title: const Text('Consejos de Nutrición'),
+        leadingWidth: appBarLeadingWidth(context),
+        leading: const AppBarLeading(),
+        title: const Text(
+          'Consejos de Nutrición',
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           IconButton(
             tooltip: 'Ver lista de compras',
@@ -146,7 +151,6 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
             ),
             onPressed: _openShoppingList,
           ),
-          const AppMenuButton(),
         ],
       ),
       body: SafeArea(
@@ -186,10 +190,28 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
           ],
           if (report.tips.isEmpty)
             _buildBalancedHistoryCard(context)
-          else
+          else if (!context.isDesktop)
             for (int i = 0; i < report.tips.length; i++) ...[
               _buildTipCard(context, report.tips[i]),
               if (i < report.tips.length - 1) const SizedBox(height: 12),
+            ]
+          else
+            for (int i = 0; i < report.tips.length; i += 2) ...[
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _buildTipCard(context, report.tips[i])),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: i + 1 < report.tips.length
+                          ? _buildTipCard(context, report.tips[i + 1])
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+              if (i + 2 < report.tips.length) const SizedBox(height: 12),
             ],
         ],
       ),

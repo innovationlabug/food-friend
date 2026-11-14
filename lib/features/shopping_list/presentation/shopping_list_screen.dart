@@ -283,6 +283,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
       context,
       selectedIngredientNames: _selectedIngredientNames.toList(),
       externalService: widget.externalRecipeService,
+      ingredientStorageService: _storageService,
       openedFromIngredientList: true,
     );
   }
@@ -293,14 +294,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     final isPantryTab = _activeTabIndex == 0;
 
     return Scaffold(
-      endDrawer: AppNavigationDrawer(
+      drawer: AppNavigationDrawer(
         currentDestination: isPantryTab
             ? AppDestination.availableIngredients
             : AppDestination.shoppingList,
       ),
       appBar: AppBar(
+        leadingWidth: appBarLeadingWidth(context),
+        leading: const AppBarLeading(),
         title: Text(
           isPantryTab ? 'Ingredientes disponibles' : 'Lista de compras',
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
@@ -314,7 +318,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
             ),
             onPressed: _confirmClearAllData,
           ),
-          const AppMenuButton(),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -509,61 +512,111 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8, top: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Ingredientes disponibles (${_ingredients.length})',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+        if (!context.isDesktop) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2, top: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Ingredientes disponibles (${_ingredients.length})',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              TextButton.icon(
-                onPressed: _openAddIngredientScreen,
-                icon: AppSvgIcon(
-                  assetName: 'plus',
-                  size: 16,
-                  color: colorScheme.primary,
+                TextButton.icon(
+                  onPressed: _openAddIngredientScreen,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  icon: AppSvgIcon(
+                    assetName: 'plus',
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
+                  label: const Text('Nuevo'),
                 ),
-                label: const Text('Nuevo'),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${_selectedIngredientNames.length} de ${_ingredients.length} seleccionados',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${_selectedIngredientNames.length} de ${_ingredients.length} seleccionados',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              TextButton(
-                onPressed: _toggleSelectAll,
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                TextButton(
+                  onPressed: _toggleSelectAll,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: Text(allSelected ? 'Deseleccionar todos' : 'Seleccionar todos'),
                 ),
-                child: Text(allSelected ? 'Deseleccionar todos' : 'Seleccionar todos'),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ] else
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10, top: 2),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    'Ingredientes disponibles (${_ingredients.length})',
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '• ${_selectedIngredientNames.length} de ${_ingredients.length} seleccionados',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: _toggleSelectAll,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                  child: Text(allSelected ? 'Deseleccionar todos' : 'Seleccionar todos'),
+                ),
+                const SizedBox(width: 4),
+                TextButton.icon(
+                  onPressed: _openAddIngredientScreen,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                  icon: AppSvgIcon(
+                    assetName: 'plus',
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
+                  label: const Text('Nuevo'),
+                ),
+              ],
+            ),
+          ),
         Expanded(
-          child: ListView.separated(
+          child: _buildPairedList(
+            context,
             itemCount: _ingredients.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final item = _ingredients[index];
-              return _buildIngredientCard(context, item);
-            },
+            itemBuilder: (context, index) =>
+                _buildIngredientCard(context, _ingredients[index]),
           ),
         ),
         if (_selectedIngredientNames.isNotEmpty) ...[
@@ -593,7 +646,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 12, top: 4),
+          padding: const EdgeInsets.only(bottom: 10, top: 2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -607,6 +660,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
               ),
               TextButton.icon(
                 onPressed: _openAddShoppingItemScreen,
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
                 icon: AppSvgIcon(
                   assetName: 'plus',
                   size: 16,
@@ -618,16 +675,52 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
           ),
         ),
         Expanded(
-          child: ListView.separated(
+          child: _buildPairedList(
+            context,
             itemCount: _shoppingListItems.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final item = _shoppingListItems[index];
-              return _buildShoppingListItemCard(context, item);
-            },
+            itemBuilder: (context, index) =>
+                _buildShoppingListItemCard(context, _shoppingListItems[index]),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPairedList(
+    BuildContext context, {
+    required int itemCount,
+    required Widget Function(BuildContext context, int index) itemBuilder,
+  }) {
+    if (!context.isDesktop) {
+      return ListView.separated(
+        itemCount: itemCount,
+        separatorBuilder: (_, _) => const SizedBox(height: 8),
+        itemBuilder: itemBuilder,
+      );
+    }
+
+    final rowCount = (itemCount + 1) ~/ 2;
+    return ListView.separated(
+      itemCount: rowCount,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, rowIndex) {
+        final firstIndex = rowIndex * 2;
+        final secondIndex = firstIndex + 1;
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: itemBuilder(context, firstIndex)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: secondIndex < itemCount
+                    ? itemBuilder(context, secondIndex)
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

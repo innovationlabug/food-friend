@@ -3,14 +3,17 @@ import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
 import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../data/local_recipe_dataset.dart';
 import '../data/recipe_history_service.dart';
+import '../data/recipe_search_service.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
+import 'widgets/recipe_preference_style.dart';
 
 /// Detailed view for a single recipe.
 /// Displays title, required ingredients (highlighting available vs. missing items),
@@ -24,6 +27,7 @@ class RecipeDetailScreen extends StatefulWidget {
     this.previousRecipeIds = const [],
     this.historyService,
     this.shoppingListService,
+    this.ingredientStorageService,
   });
 
   /// Factory constructor when navigating with a [RecipeSearchResult].
@@ -33,6 +37,7 @@ class RecipeDetailScreen extends StatefulWidget {
     List<String> previousRecipeIds = const [],
     RecipeHistoryService? historyService,
     ShoppingListStorageService? shoppingListService,
+    IngredientStorageService? ingredientStorageService,
   }) {
     return RecipeDetailScreen(
       key: key,
@@ -42,6 +47,7 @@ class RecipeDetailScreen extends StatefulWidget {
       previousRecipeIds: previousRecipeIds,
       historyService: historyService,
       shoppingListService: shoppingListService,
+      ingredientStorageService: ingredientStorageService,
     );
   }
 
@@ -52,6 +58,7 @@ class RecipeDetailScreen extends StatefulWidget {
   final List<String> previousRecipeIds;
   final RecipeHistoryService? historyService;
   final ShoppingListStorageService? shoppingListService;
+  final IngredientStorageService? ingredientStorageService;
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -60,19 +67,57 @@ class RecipeDetailScreen extends StatefulWidget {
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final RecipeHistoryService _historyService;
   late final ShoppingListStorageService _shoppingListService;
+  late final IngredientStorageService _ingredientStorageService;
   bool _isCookedToday = false;
   int _timesCooked = 0;
   RecipePreference _preference = RecipePreference.none;
   bool _isLoadingHistory = true;
   Set<String> _shoppingListNormalizedNames = {};
+  List<RecipeIngredient> _pantryMatched = const [];
+  List<RecipeIngredient> _pantryMissing = const [];
+  bool _resolvedFromPantry = false;
 
   @override
   void initState() {
     super.initState();
     _historyService = widget.historyService ?? RecipeHistoryService();
     _shoppingListService = widget.shoppingListService ?? ShoppingListStorageService();
+    _ingredientStorageService =
+        widget.ingredientStorageService ?? IngredientStorageService();
     _loadHistoryStatus();
     _loadShoppingListStatus();
+    if (widget.matchedIngredients.isEmpty && widget.missingIngredients.isEmpty) {
+      _resolveIngredientsFromPantry();
+    }
+  }
+
+  /// Resolves available vs. missing ingredients against the saved pantry when
+  /// opened from screens without precomputed search match results (such as
+  /// recipe management or direct navigation).
+  Future<void> _resolveIngredientsFromPantry() async {
+    final stored = await _ingredientStorageService.getIngredients();
+    if (!mounted) return;
+    final userInputsLower =
+        stored.map((item) => StringNormalizer.normalize(item.name)).toSet();
+
+    final matched = <RecipeIngredient>[];
+    final missing = <RecipeIngredient>[];
+    for (final ing in widget.recipe.ingredients) {
+      final hasMatch = userInputsLower.any(
+        (input) => RecipeSearchService.isIngredientMatch(input, ing.normalizedName),
+      );
+      if (hasMatch) {
+        matched.add(ing);
+      } else {
+        missing.add(ing);
+      }
+    }
+
+    setState(() {
+      _pantryMatched = matched;
+      _pantryMissing = missing;
+      _resolvedFromPantry = true;
+    });
   }
 
   Future<void> _loadShoppingListStatus() async {
@@ -226,20 +271,34 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final matchedIngredients = widget.matchedIngredients;
     final missingIngredients = widget.missingIngredients;
 
-    // Determine missing items if not explicitly provided
-    final matchedSet = matchedIngredients.map((i) => i.normalizedName).toSet();
-    final effectiveMatched = matchedIngredients.isNotEmpty
-        ? matchedIngredients
-        : recipe.ingredients.where((i) => matchedSet.contains(i.normalizedName)).toList();
-    final effectiveMissing = missingIngredients.isNotEmpty
-        ? missingIngredients
-        : recipe.ingredients.where((i) => !matchedSet.contains(i.normalizedName)).toList();
+    late final List<RecipeIngredient> effectiveMatched;
+    late final List<RecipeIngredient> effectiveMissing;
+    if (matchedIngredients.isEmpty && missingIngredients.isEmpty) {
+      effectiveMatched = _resolvedFromPantry ? _pantryMatched : const [];
+      effectiveMissing =
+          _resolvedFromPantry ? _pantryMissing : recipe.ingredients;
+    } else {
+      final matchedSet = matchedIngredients.map((i) => i.normalizedName).toSet();
+      effectiveMatched = matchedIngredients.isNotEmpty
+          ? matchedIngredients
+          : recipe.ingredients
+              .where((i) => matchedSet.contains(i.normalizedName))
+              .toList();
+      effectiveMissing = missingIngredients.isNotEmpty
+          ? missingIngredients
+          : recipe.ingredients
+              .where((i) => !matchedSet.contains(i.normalizedName))
+              .toList();
+    }
+
+    final isDesktop = context.isDesktop;
 
     return Scaffold(
-      endDrawer: const AppNavigationDrawer(),
+      drawer: const AppNavigationDrawer(),
       appBar: AppBar(
-        title: Text(recipe.title),
-        actions: const [AppMenuButton()],
+        leadingWidth: appBarLeadingWidth(context),
+        leading: const AppBarLeading(),
+        title: Text(recipe.title, overflow: TextOverflow.ellipsis),
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -254,13 +313,34 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const SizedBox(height: 16),
                 _buildActionButtons(context),
                 const SizedBox(height: 24),
-                _buildIngredientsSection(
-                  context,
-                  matched: effectiveMatched,
-                  missing: effectiveMissing,
-                ),
-                const SizedBox(height: 24),
-                _buildInstructionsSection(context),
+                if (isDesktop)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 5,
+                        child: _buildIngredientsSection(
+                          context,
+                          matched: effectiveMatched,
+                          missing: effectiveMissing,
+                        ),
+                      ),
+                      const SizedBox(width: 28),
+                      Expanded(
+                        flex: 6,
+                        child: _buildInstructionsSection(context),
+                      ),
+                    ],
+                  )
+                else ...[
+                  _buildIngredientsSection(
+                    context,
+                    matched: effectiveMatched,
+                    missing: effectiveMissing,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildInstructionsSection(context),
+                ],
                 const SizedBox(height: 32),
               ],
             ),
@@ -309,7 +389,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     if (recipe.totalTimeMinutes != null) {
       items.add(_buildMetaItem(
         context,
-        icon: Icons.timer_outlined,
+        iconName: 'timer',
         label: '${recipe.totalTimeMinutes} min',
       ));
     }
@@ -317,7 +397,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     if (recipe.servings != null) {
       items.add(_buildMetaItem(
         context,
-        icon: Icons.people_outline,
+        iconName: 'people',
         label: '${recipe.servings} porciones',
       ));
     }
@@ -325,7 +405,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     if (recipe.category != null) {
       items.add(_buildMetaItem(
         context,
-        icon: Icons.restaurant_menu,
+        iconName: 'restaurant',
         label: recipe.category!,
       ));
     }
@@ -333,7 +413,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     if (recipe.difficulty != null) {
       items.add(_buildMetaItem(
         context,
-        icon: Icons.bar_chart,
+        iconName: 'difficulty',
         label: recipe.difficulty!,
       ));
     }
@@ -354,7 +434,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Widget _buildMetaItem(
     BuildContext context, {
-    required IconData icon,
+    required String iconName,
     required String label,
   }) {
     final theme = Theme.of(context);
@@ -363,7 +443,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: colorScheme.primary),
+        AppSvgIcon(assetName: iconName, size: 18, color: colorScheme.primary),
         const SizedBox(width: 6),
         Text(
           label,
@@ -409,34 +489,22 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         spacing: 8,
         runSpacing: 8,
         children: [
-          _buildPreferenceChip(
-            context,
-            preference: RecipePreference.favorite,
-            iconName: 'heart',
-            label: 'Favorita',
-            activeColor: Colors.red.shade600,
-          ),
-          _buildPreferenceChip(
-            context,
-            preference: RecipePreference.liked,
-            iconName: 'thumb_up',
-            label: 'Me gustó',
-            activeColor: Colors.green.shade700,
-          ),
-          _buildPreferenceChip(
-            context,
-            preference: RecipePreference.disliked,
-            iconName: 'thumb_down',
-            label: 'No me gustó',
-            activeColor: Colors.orange.shade800,
-          ),
-          _buildPreferenceChip(
-            context,
-            preference: RecipePreference.never,
-            iconName: 'block',
-            label: _preference == RecipePreference.never ? 'Oculta' : 'Ocultar',
-            activeColor: colorScheme.error,
-          ),
+          for (final pref in [
+            RecipePreference.favorite,
+            RecipePreference.liked,
+            RecipePreference.disliked,
+            RecipePreference.never,
+          ])
+            _buildPreferenceChip(
+              context,
+              preference: pref,
+              iconName: RecipePreferenceStyle.iconFor(pref),
+              label: RecipePreferenceStyle.labelFor(
+                pref,
+                isSelected: _preference == pref,
+              ),
+              activeColor: RecipePreferenceStyle.colorFor(context, pref),
+            ),
         ],
       ),
     );
@@ -563,7 +631,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final colorScheme = theme.colorScheme;
     final dataset = LocalRecipeDataset.instance;
     final recipe = widget.recipe;
-    final matchedIngredients = widget.matchedIngredients;
     final previousRecipeIds = widget.previousRecipeIds;
 
     showModalBottomSheet<void>(
@@ -662,11 +729,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                             settings: RouteSettings(name: 'recipe_${linkedRecipe.id}'),
                                             builder: (_) => RecipeDetailScreen(
                                               recipe: linkedRecipe,
-                                              matchedIngredients: matchedIngredients,
-                                              missingIngredients: const [],
                                               previousRecipeIds: previousRecipeIds,
                                               historyService: _historyService,
                                               shoppingListService: _shoppingListService,
+                                              ingredientStorageService: _ingredientStorageService,
                                             ),
                                           ),
                                         );
@@ -678,11 +744,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                             settings: RouteSettings(name: 'recipe_${linkedRecipe.id}'),
                                             builder: (_) => RecipeDetailScreen(
                                               recipe: linkedRecipe,
-                                              matchedIngredients: matchedIngredients,
-                                              missingIngredients: const [],
                                               previousRecipeIds: [recipe.id],
                                               historyService: _historyService,
                                               shoppingListService: _shoppingListService,
+                                              ingredientStorageService: _ingredientStorageService,
                                             ),
                                           ),
                                         );
@@ -705,8 +770,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                           ),
                                         ),
                                       ),
-                                      Icon(
-                                        Icons.chevron_right,
+                                      AppSvgIcon(
+                                        assetName: 'chevron_right',
+                                        size: 20,
                                         color: colorScheme.primary,
                                       ),
                                     ],
@@ -777,12 +843,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Ingredientes requeridos',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+            Flexible(
+              child: Text(
+                'Ingredientes requeridos',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
@@ -805,7 +874,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             context,
             title: 'Tienes en casa (${matched.length})',
             color: colorScheme.primary,
-            icon: Icons.check_circle_outline,
+            iconName: 'check_circle',
           ),
           const SizedBox(height: 8),
           ...matched.map((ing) => _buildIngredientRow(context, ing, isAvailable: true)),
@@ -819,7 +888,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   context,
                   title: 'Ingredientes adicionales necesarios (${missing.length})',
                   color: colorScheme.error,
-                  icon: Icons.add_shopping_cart,
+                  iconName: 'shopping_cart',
                 ),
               ),
               if (missing.any(
@@ -855,7 +924,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.thumb_up_alt_outlined, color: colorScheme.primary, size: 20),
+                AppSvgIcon(assetName: 'thumb_up', color: colorScheme.primary, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -878,13 +947,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     BuildContext context, {
     required String title,
     required Color color,
-    required IconData icon,
+    required String iconName,
   }) {
     final theme = Theme.of(context);
 
     return Row(
       children: [
-        Icon(icon, size: 18, color: color),
+        AppSvgIcon(assetName: iconName, size: 18, color: color),
         const SizedBox(width: 8),
         Flexible(
           child: Text(
@@ -926,8 +995,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ),
         child: Row(
           children: [
-            Icon(
-              isAvailable ? Icons.check_circle : Icons.radio_button_unchecked,
+            AppSvgIcon(
+              assetName: isAvailable ? 'check_circle' : 'circle',
               size: 18,
               color: isAvailable ? colorScheme.primary : colorScheme.outline,
             ),

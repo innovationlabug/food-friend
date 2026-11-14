@@ -22,12 +22,14 @@ void main() {
     required List<String> selectedIngredients,
     RecipeSearchService? searchService,
     ExternalRecipeService? externalService,
+    IngredientStorageService? ingredientStorageService,
   }) {
     return MaterialApp(
       home: RecipeSuggestionsScreen(
         selectedIngredientNames: selectedIngredients,
         searchService: searchService,
         externalService: externalService,
+        ingredientStorageService: ingredientStorageService,
       ),
     );
   }
@@ -150,7 +152,8 @@ void main() {
       expect(find.text('Instrucciones de preparación'), findsOneWidget);
     });
 
-    testWidgets('shows clean empty state when no matching recipes are found and allows viewing all',
+    testWidgets(
+        'when no ingredients are selected and pantry is empty, prioritizes Ir a mis ingredientes with M3 hierarchy',
         (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget(
         selectedIngredients: [],
@@ -158,9 +161,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('No se encontraron recetas con los ingredientes seleccionados'),
+        find.text('Selecciona ingredientes para ver recetas'),
         findsOneWidget,
       );
+
+      final goIngredientsFinder =
+          find.widgetWithText(FilledButton, 'Ir a mis ingredientes');
+      final selectAllFinder =
+          find.widgetWithText(OutlinedButton, 'Seleccionar todos mis ingredientes');
+
+      expect(goIngredientsFinder, findsOneWidget);
+      expect(selectAllFinder, findsOneWidget);
+      expect(tester.widget<OutlinedButton>(selectAllFinder).onPressed, isNull);
       expect(find.text('Ver todas las recetas'), findsOneWidget);
 
       // Tap button to view all local recipes
@@ -170,6 +182,57 @@ void main() {
       // Verify catalog list is loaded
       expect(find.textContaining('Catálogo de recetas'), findsOneWidget);
       expect(find.text('Arroz con Pollo y Verduras Casero'), findsOneWidget);
+    });
+
+    testWidgets(
+        'when no ingredients are selected and pantry has items, prioritizes Seleccionar todos mis ingredientes and auto-refreshes on tap',
+        (WidgetTester tester) async {
+      final storage = IngredientStorageService();
+      await storage.saveIngredients([
+        const Ingredient(name: 'Tomate'),
+        const Ingredient(name: 'Aguacate'),
+        const Ingredient(name: 'Pepino'),
+      ]);
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: [],
+        ingredientStorageService: storage,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Selecciona ingredientes para ver recetas'),
+        findsOneWidget,
+      );
+
+      final selectAllBtn =
+          find.widgetWithText(FilledButton, 'Seleccionar todos mis ingredientes');
+      final goIngredientsBtn =
+          find.widgetWithText(OutlinedButton, 'Ir a mis ingredientes');
+
+      expect(selectAllBtn, findsOneWidget);
+      expect(goIngredientsBtn, findsOneWidget);
+      expect(tester.widget<FilledButton>(selectAllBtn).onPressed, isNotNull);
+
+      await tester.tap(selectAllBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
+      expect(find.text('Con base en 3 ingredientes seleccionados'), findsOneWidget);
+    });
+
+    testWidgets(
+        'when no ingredients are selected and pantry is empty, Ir a mis ingredientes navigates to ShoppingListScreen',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: [],
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Ir a mis ingredientes'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ShoppingListScreen), findsOneWidget);
     });
 
     testWidgets('ShoppingListScreen allows selecting/deselecting ingredients and searching recipes',
@@ -532,6 +595,24 @@ void main() {
       // Verify original results are still intact and app did not crash
       expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
       expect(find.text('Generar más recetas con IA'), findsOneWidget);
+    });
+
+    testWidgets('renders recipe cards in two columns on desktop viewports',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Pechuga de pollo', 'Tomate', 'Arroz blanco'],
+      ));
+      await tester.pumpAndSettle();
+
+      final cards = find.byType(Card);
+      expect(cards, findsAtLeastNWidgets(2));
+      final firstRect = tester.getRect(cards.at(0));
+      final secondRect = tester.getRect(cards.at(1));
+      expect(secondRect.left, greaterThan(firstRect.left));
     });
   });
 }

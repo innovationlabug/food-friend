@@ -116,6 +116,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         currentDestination: AppDestination.home,
       ),
       appBar: AppBar(
+        leading: const AppMenuButton(),
         title: Row(
           children: [
             AppSvgIcon(
@@ -141,8 +142,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 tooltip: isDark
                     ? 'Cambiar a modo claro'
                     : 'Cambiar a modo oscuro',
-                icon: Icon(
-                  isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                icon: AppSvgIcon(
+                  assetName: isDark ? 'sun' : 'moon',
+                  size: 20,
+                  color: colorScheme.onSurface,
                 ),
                 onPressed: () => ThemeController.instance.toggleTheme(),
               );
@@ -442,8 +445,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                             color: iconColor,
                           ),
                         ),
-                        Icon(
-                          Icons.arrow_forward,
+                        AppSvgIcon(
+                          assetName: 'arrow_forward',
                           size: 18,
                           color: isPrimary
                               ? colorScheme.primary

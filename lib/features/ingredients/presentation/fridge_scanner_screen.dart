@@ -213,10 +213,14 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
     final selectedCount = _items.where((it) => it.isSelected).length;
 
     return Scaffold(
-      endDrawer: const AppNavigationDrawer(),
+      drawer: const AppNavigationDrawer(),
       appBar: AppBar(
-        title: const Text('Escanear refrigerador'),
-        actions: const [AppMenuButton()],
+        leadingWidth: appBarLeadingWidth(context),
+        leading: const AppBarLeading(),
+        title: const Text(
+          'Escanear refrigerador',
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -277,8 +281,8 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
+              AppSvgIcon(
+                assetName: 'alert',
                 size: 64,
                 color: colorScheme.error,
               ),
@@ -314,14 +318,22 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
                         });
                       }
                     },
-                    icon: const Icon(Icons.refresh),
+                    icon: AppSvgIcon(
+                      assetName: 'refresh',
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
                     label: const Text('Reintentar'),
                   ),
                   FilledButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    icon: const Icon(Icons.edit),
+                    icon: AppSvgIcon(
+                      assetName: 'edit',
+                      size: 18,
+                      color: colorScheme.onPrimary,
+                    ),
                     label: const Text('Ingresar manualmente'),
                   ),
                 ],
@@ -348,8 +360,8 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.kitchen,
+                  AppSvgIcon(
+                    assetName: 'fridge',
                     size: 56,
                     color: colorScheme.primary,
                   ),
@@ -376,7 +388,11 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: () => _pickImage(ImageSource.camera),
-            icon: const Icon(Icons.camera_alt),
+            icon: AppSvgIcon(
+              assetName: 'camera',
+              size: 18,
+              color: colorScheme.onPrimary,
+            ),
             label: const Text('Tomar foto con la cámara'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -385,7 +401,11 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => _pickImage(ImageSource.gallery),
-            icon: const Icon(Icons.photo_library),
+            icon: AppSvgIcon(
+              assetName: 'image',
+              size: 18,
+              color: colorScheme.primary,
+            ),
             label: const Text('Elegir foto de la galería / archivo'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -403,19 +423,35 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
           ),
           const SizedBox(height: 12),
           ListTile(
-            leading: const Icon(Icons.image),
+            leading: AppSvgIcon(
+              assetName: 'image',
+              size: 22,
+              color: colorScheme.onSurfaceVariant,
+            ),
             title: const Text('Refrigerador completo'),
             subtitle: const Text('Alimentos, salsas Ducal/Campero, lácteos y bebidas'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: AppSvgIcon(
+              assetName: 'chevron_right',
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
+            ),
             onTap: () => _loadSamplePhoto(
               'assets/samples/fridge/sample03_refrigerator.jpeg',
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.ac_unit),
+            leading: AppSvgIcon(
+              assetName: 'snowflake',
+              size: 22,
+              color: colorScheme.onSurfaceVariant,
+            ),
             title: const Text('Congelador'),
             subtitle: const Text('Carnes y productos congelados'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: AppSvgIcon(
+              assetName: 'chevron_right',
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
+            ),
             onTap: () => _loadSamplePhoto(
               'assets/samples/fridge/sample01_freezer.jpeg',
             ),
@@ -477,17 +513,18 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
     FridgeDetectedItem item,
     int index,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
     Color confidenceColor;
     switch (item.confidence) {
       case 'high':
-        confidenceColor = Colors.green.shade700;
+        confidenceColor = isDark ? Colors.green.shade300 : Colors.green.shade700;
         break;
       case 'low':
-        confidenceColor = Colors.grey.shade600;
+        confidenceColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
         break;
       case 'medium':
       default:
-        confidenceColor = Colors.amber.shade800;
+        confidenceColor = isDark ? Colors.amber.shade300 : Colors.amber.shade800;
     }
 
     return Card(

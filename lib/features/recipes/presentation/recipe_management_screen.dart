@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../data/recipe_history_service.dart';
@@ -7,6 +8,7 @@ import '../domain/recipe.dart';
 import '../domain/recipe_history_record.dart';
 import '../domain/recipe_preference.dart';
 import 'recipe_detail_screen.dart';
+import 'widgets/recipe_preference_style.dart';
 
 /// Screen allowing users to view, manage, and filter all recipes,
 /// review cooking history frequency, and modify preference marks (including unhiding 'Nunca' recipes).
@@ -47,6 +49,8 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
   _CookedFilter _activeCookedFilter = _CookedFilter.todas;
   RecipePreference? _activePreferenceFilter;
   String? _selectedCategory;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   static const List<({RecipePreference pref, String label})> _preferenceFilterOptions = [
     (pref: RecipePreference.favorite, label: 'Favoritas'),
@@ -104,11 +108,28 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
     return record.preference == pref;
   }
 
+  bool _matchesSearch(Recipe recipe) {
+    if (_searchQuery.isEmpty) return true;
+    final normalizedTitle = StringNormalizer.normalize(recipe.title);
+    if (normalizedTitle.contains(_searchQuery)) return true;
+    final cat = recipe.category;
+    if (cat != null && StringNormalizer.normalize(cat).contains(_searchQuery)) {
+      return true;
+    }
+    return false;
+  }
+
   @override
   void initState() {
     super.initState();
     _historyService = widget.historyService ?? RecipeHistoryService();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -131,6 +152,7 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
     return _allRecipes
         .where(
           (recipe) =>
+              _matchesSearch(recipe) &&
               _matchesCookedFilter(recipe, _activeCookedFilter) &&
               _matchesPreferenceFilter(recipe, _activePreferenceFilter) &&
               _matchesCategory(recipe, _selectedCategory),
@@ -140,11 +162,12 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
 
   int _countForCookedFilter(_CookedFilter filter) {
     if (filter == _CookedFilter.todas) {
-      return _allRecipes.length;
+      return _allRecipes.where(_matchesSearch).length;
     }
     return _allRecipes
         .where(
           (recipe) =>
+              _matchesSearch(recipe) &&
               _matchesCookedFilter(recipe, filter) &&
               _matchesPreferenceFilter(recipe, _activePreferenceFilter) &&
               _matchesCategory(recipe, _selectedCategory),
@@ -156,6 +179,7 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
     return _allRecipes
         .where(
           (recipe) =>
+              _matchesSearch(recipe) &&
               _matchesCookedFilter(recipe, _activeCookedFilter) &&
               _matchesPreferenceFilter(recipe, pref) &&
               _matchesCategory(recipe, _selectedCategory),
@@ -167,6 +191,7 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
     return _allRecipes
         .where(
           (recipe) =>
+              _matchesSearch(recipe) &&
               _matchesCookedFilter(recipe, _activeCookedFilter) &&
               _matchesPreferenceFilter(recipe, _activePreferenceFilter) &&
               _matchesCategory(recipe, category),
@@ -214,29 +239,35 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      endDrawer: const AppNavigationDrawer(
+      drawer: const AppNavigationDrawer(
         currentDestination: AppDestination.recipeManagement,
       ),
       appBar: AppBar(
-        title: const Text('Gestión de Recetas'),
-        actions: const [AppMenuButton()],
+        leadingWidth: appBarLeadingWidth(context),
+        leading: const AppBarLeading(),
+        title: const Text(
+          'Gestión de Recetas',
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
       body: SafeArea(
         child: ResponsiveContainer(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildHeader(context),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
+                    _buildSearchField(context),
+                    const SizedBox(height: 10),
                     _buildCookedFilterRow(context),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     _buildPreferenceFilterRow(context),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     _buildCategoryFilterRow(context),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Expanded(
                       child: _buildRecipeList(context),
                     ),
@@ -244,6 +275,52 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
                 ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return TextField(
+      controller: _searchController,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'Buscar receta por nombre o categoría...',
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.all(10),
+          child: AppSvgIcon(
+            assetName: 'search',
+            size: 18,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+                tooltip: 'Limpiar búsqueda',
+                icon: AppSvgIcon(
+                  assetName: 'close',
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {
+                    _searchQuery = '';
+                  });
+                },
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = StringNormalizer.normalize(value);
+        });
+      },
     );
   }
 
@@ -268,8 +345,8 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
           triggerMode: TooltipTriggerMode.tap,
           preferBelow: true,
           margin: const EdgeInsets.symmetric(horizontal: 20),
-          child: Icon(
-            Icons.info_outline,
+          child: AppSvgIcon(
+            assetName: 'info',
             size: 20,
             color: colorScheme.onSurfaceVariant,
           ),
@@ -451,8 +528,53 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
                       _selectedCategory = null;
                     });
                   },
-                  icon: const Icon(Icons.clear, size: 18),
+                  icon: AppSvgIcon(
+                    assetName: 'close',
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
                   label: const Text('Mostrar todas las categorías'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      if (_searchQuery.isNotEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppSvgIcon(
+                  assetName: 'search',
+                  size: 40,
+                  color: colorScheme.outline,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No se encontraron recetas que coincidan con "${_searchController.text.trim()}".',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = '';
+                    });
+                  },
+                  icon: AppSvgIcon(
+                    assetName: 'close',
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
+                  label: const Text('Limpiar búsqueda'),
                 ),
               ],
             ),
@@ -485,13 +607,52 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
       );
     }
 
+    if (!context.isDesktop) {
+      return ListView.separated(
+        itemCount: recipes.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final recipe = recipes[index];
+          final record =
+              _history[recipe.id] ?? RecipeHistoryRecord(recipeId: recipe.id);
+          return _buildRecipeCard(context, recipe, record);
+        },
+      );
+    }
+
+    final rowCount = (recipes.length + 1) ~/ 2;
     return ListView.separated(
-      itemCount: recipes.length,
+      itemCount: rowCount,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final recipe = recipes[index];
-        final record = _history[recipe.id] ?? RecipeHistoryRecord(recipeId: recipe.id);
-        return _buildRecipeCard(context, recipe, record);
+      itemBuilder: (context, rowIndex) {
+        final firstIndex = rowIndex * 2;
+        final secondIndex = firstIndex + 1;
+        final firstRecipe = recipes[firstIndex];
+        final firstRecord = _history[firstRecipe.id] ??
+            RecipeHistoryRecord(recipeId: firstRecipe.id);
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildRecipeCard(context, firstRecipe, firstRecord),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: secondIndex < recipes.length
+                    ? _buildRecipeCard(
+                        context,
+                        recipes[secondIndex],
+                        _history[recipes[secondIndex].id] ??
+                            RecipeHistoryRecord(
+                              recipeId: recipes[secondIndex].id,
+                            ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -584,44 +745,24 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  _buildSmallPreferenceChip(
-                    context,
-                    recipe: recipe,
-                    preference: RecipePreference.favorite,
-                    iconName: 'heart',
-                    label: 'Favorita',
-                    isSelected: record.preference == RecipePreference.favorite,
-                    activeColor: Colors.red.shade600,
-                  ),
-                  _buildSmallPreferenceChip(
-                    context,
-                    recipe: recipe,
-                    preference: RecipePreference.liked,
-                    iconName: 'thumb_up',
-                    label: 'Me gustó',
-                    isSelected: record.preference == RecipePreference.liked,
-                    activeColor: Colors.green.shade700,
-                  ),
-                  _buildSmallPreferenceChip(
-                    context,
-                    recipe: recipe,
-                    preference: RecipePreference.disliked,
-                    iconName: 'thumb_down',
-                    label: 'No me gustó',
-                    isSelected: record.preference == RecipePreference.disliked,
-                    activeColor: Colors.orange.shade800,
-                  ),
-                  _buildSmallPreferenceChip(
-                    context,
-                    recipe: recipe,
-                    preference: RecipePreference.never,
-                    iconName: 'block',
-                    label: record.preference == RecipePreference.never
-                        ? 'Oculta'
-                        : 'Ocultar',
-                    isSelected: record.preference == RecipePreference.never,
-                    activeColor: colorScheme.error,
-                  ),
+                  for (final pref in [
+                    RecipePreference.favorite,
+                    RecipePreference.liked,
+                    RecipePreference.disliked,
+                    RecipePreference.never,
+                  ])
+                    _buildSmallPreferenceChip(
+                      context,
+                      recipe: recipe,
+                      preference: pref,
+                      iconName: RecipePreferenceStyle.iconFor(pref),
+                      label: RecipePreferenceStyle.labelFor(
+                        pref,
+                        isSelected: record.preference == pref,
+                      ),
+                      isSelected: record.preference == pref,
+                      activeColor: RecipePreferenceStyle.colorFor(context, pref),
+                    ),
                 ],
               ),
             ],

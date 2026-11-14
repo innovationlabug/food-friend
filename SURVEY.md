@@ -47,7 +47,26 @@ Al escribir nombres de ingredientes con faltas de ortografía o abreviaciones (p
 
 ---
 
-## 4. Sugerencias y Mejoras Generales
+## 4. Seguimiento de Marcas y Cantidades
+
+### **Pregunta 4.1**
+Al gestionar tus ingredientes disponibles y tu lista de compras, **¿te gustaría poder registrar o editar las marcas específicas de los productos (por ejemplo, marca de leche, arroz o salsa)?**
+- [ ] Sí, es muy importante para mí poder elegir y guardar la marca.
+- [ ] Sería útil en algunos productos, pero no indispensable.
+- [ ] No, prefiero mantener la lista simple sin especificar marcas.
+
+### **Pregunta 4.2**
+**¿Te gustaría poder registrar y modificar cantidades y unidades específicas directamente en tus ingredientes disponibles y lista de compras (por ejemplo, `500 g`, `2 unidades`, `1 litro`)?**
+- [ ] Sí, necesito llevar el control exacto de cantidades y unidades.
+- [ ] Solo en la lista de compras, no necesariamente en mi despensa.
+- [ ] No, con saber si tengo o me falta el ingrediente es suficiente.
+
+#### Comentarios sobre marcas y cantidades:
+> *(Indica qué datos te resultarían más útiles o si preferirías editarlos rápido desde cada tarjeta)*
+
+---
+
+## 5. Sugerencias y Mejoras Generales
 
 > ¿Tienes alguna sugerencia para mejorar la experiencia de uso al planificar tus compras y cocinar en Guatemala?
 

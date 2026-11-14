@@ -22,26 +22,68 @@ enum AppDestination {
   nutritionTips,
 }
 
-/// AppBar action button that opens the [Scaffold]'s [endDrawer] burger menu.
+/// Width reserved for [AppBar.leading] when displaying both [BackButton] and
+/// [AppMenuButton] side-by-side on the left edge of pushed screens.
+const double kAppBarLeadingWidthWithBack = 96.0;
+
+/// Returns the appropriate [AppBar.leadingWidth] for [AppBarLeading] based on
+/// whether the current route can pop.
+double? appBarLeadingWidth(BuildContext context) {
+  return Navigator.of(context).canPop() ? kAppBarLeadingWidthWithBack : null;
+}
+
+/// AppBar button that opens the left navigation [Scaffold.drawer] burger menu.
 class AppMenuButton extends StatelessWidget {
-  const AppMenuButton({super.key});
+  const AppMenuButton({
+    super.key,
+    this.compact = false,
+  });
+
+  /// Uses slightly tighter horizontal padding when paired next to [BackButton].
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Builder(
       builder: (context) => IconButton(
-        icon: const Icon(Icons.menu),
+        icon: const AppSvgIcon(assetName: 'menu', size: 22),
         tooltip: 'Menú de navegación',
+        padding: compact ? const EdgeInsets.all(6) : null,
+        constraints: compact
+            ? const BoxConstraints(minWidth: 40, minHeight: 44)
+            : null,
         onPressed: () {
           final scaffold = Scaffold.maybeOf(context);
           if (scaffold == null) return;
-          if (scaffold.hasEndDrawer) {
-            scaffold.openEndDrawer();
-          } else if (scaffold.hasDrawer) {
+          if (scaffold.hasDrawer) {
             scaffold.openDrawer();
+          } else if (scaffold.hasEndDrawer) {
+            scaffold.openEndDrawer();
           }
         },
       ),
+    );
+  }
+}
+
+/// Standardized left-aligned AppBar leading widget.
+/// Renders [BackButton] + left [AppMenuButton] when the route can pop, or
+/// only [AppMenuButton] on root screens so the burger menu is always on the left.
+class AppBarLeading extends StatelessWidget {
+  const AppBarLeading({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final canPop = Navigator.of(context).canPop();
+    if (!canPop) {
+      return const AppMenuButton();
+    }
+    return const Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        BackButton(),
+        AppMenuButton(compact: true),
+      ],
     );
   }
 }
@@ -170,8 +212,16 @@ class AppNavigationDrawer extends StatelessWidget {
         const Divider(indent: 24, endIndent: 24),
         const SizedBox(height: 4),
         NavigationDrawerDestination(
-          icon: const Icon(Icons.home_outlined),
-          selectedIcon: const Icon(Icons.home),
+          icon: AppSvgIcon(
+            assetName: 'home',
+            size: 20,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            assetName: 'home',
+            size: 20,
+            color: colorScheme.onSecondaryContainer,
+          ),
           label: _drawerLabel('Inicio'),
         ),
         NavigationDrawerDestination(
@@ -214,13 +264,29 @@ class AppNavigationDrawer extends StatelessWidget {
           label: _drawerLabel('Agregar ingredientes'),
         ),
         NavigationDrawerDestination(
-          icon: const Icon(Icons.auto_awesome_outlined),
-          selectedIcon: const Icon(Icons.auto_awesome),
+          icon: AppSvgIcon(
+            assetName: 'sparkles',
+            size: 20,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            assetName: 'sparkles',
+            size: 20,
+            color: colorScheme.onSecondaryContainer,
+          ),
           label: _drawerLabel('¿Qué cocino hoy?'),
         ),
         NavigationDrawerDestination(
-          icon: const Icon(Icons.menu_book_outlined),
-          selectedIcon: const Icon(Icons.menu_book),
+          icon: AppSvgIcon(
+            assetName: 'book',
+            size: 20,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            assetName: 'book',
+            size: 20,
+            color: colorScheme.onSecondaryContainer,
+          ),
           label: _drawerLabel('Gestión de recetas'),
         ),
         NavigationDrawerDestination(
@@ -259,12 +325,12 @@ class AppNavigationDrawer extends StatelessWidget {
                     segments: const [
                       ButtonSegment<ThemeMode>(
                         value: ThemeMode.light,
-                        icon: Icon(Icons.light_mode_outlined, size: 18),
+                        icon: AppSvgIcon(assetName: 'sun', size: 16),
                         label: Text('Claro'),
                       ),
                       ButtonSegment<ThemeMode>(
                         value: ThemeMode.dark,
-                        icon: Icon(Icons.dark_mode_outlined, size: 18),
+                        icon: AppSvgIcon(assetName: 'moon', size: 16),
                         label: Text('Oscuro'),
                       ),
                     ],

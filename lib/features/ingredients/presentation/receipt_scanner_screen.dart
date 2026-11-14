@@ -222,10 +222,14 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
     final selectedCount = _items.where((it) => it.isSelected).length;
 
     return Scaffold(
-      endDrawer: const AppNavigationDrawer(),
+      drawer: const AppNavigationDrawer(),
       appBar: AppBar(
-        title: const Text('Escanear recibo'),
-        actions: const [AppMenuButton()],
+        leadingWidth: appBarLeadingWidth(context),
+        leading: const AppBarLeading(),
+        title: const Text(
+          'Escanear recibo',
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -286,8 +290,8 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.receipt_long,
+              AppSvgIcon(
+                assetName: 'receipt',
                 size: 64,
                 color: colorScheme.error,
               ),
@@ -323,14 +327,22 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
                         });
                       }
                     },
-                    icon: const Icon(Icons.refresh),
+                    icon: AppSvgIcon(
+                      assetName: 'refresh',
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
                     label: const Text('Reintentar'),
                   ),
                   FilledButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    icon: const Icon(Icons.edit),
+                    icon: AppSvgIcon(
+                      assetName: 'edit',
+                      size: 18,
+                      color: colorScheme.onPrimary,
+                    ),
                     label: const Text('Ingresar manualmente'),
                   ),
                 ],
@@ -357,8 +369,8 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
+                  AppSvgIcon(
+                    assetName: 'receipt',
                     size: 56,
                     color: colorScheme.primary,
                   ),
@@ -385,7 +397,11 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: () => _pickImage(ImageSource.camera),
-            icon: const Icon(Icons.camera_alt),
+            icon: AppSvgIcon(
+              assetName: 'camera',
+              size: 18,
+              color: colorScheme.onPrimary,
+            ),
             label: const Text('Tomar foto del recibo'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -394,7 +410,11 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => _pickImage(ImageSource.gallery),
-            icon: const Icon(Icons.photo_library),
+            icon: AppSvgIcon(
+              assetName: 'image',
+              size: 18,
+              color: colorScheme.primary,
+            ),
             label: const Text('Elegir foto del recibo de la galería'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -412,19 +432,35 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
           ),
           const SizedBox(height: 12),
           ListTile(
-            leading: const Icon(Icons.receipt),
+            leading: AppSvgIcon(
+              assetName: 'receipt',
+              size: 22,
+              color: colorScheme.onSurfaceVariant,
+            ),
             title: const Text('Recibo Despensa / Multiproducto'),
             subtitle: const Text('Arroz, frijol, fideos, embutidos y artículos del hogar'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: AppSvgIcon(
+              assetName: 'chevron_right',
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
+            ),
             onTap: () => _loadSamplePhoto(
               'assets/samples/receipt/sample02.jpg',
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.receipt),
+            leading: AppSvgIcon(
+              assetName: 'receipt',
+              size: 22,
+              color: colorScheme.onSurfaceVariant,
+            ),
             title: const Text('Recibo Walmart'),
             subtitle: const Text('Productos naturales y semillas'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: AppSvgIcon(
+              assetName: 'chevron_right',
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
+            ),
             onTap: () => _loadSamplePhoto(
               'assets/samples/receipt/sample01.jpg',
             ),
@@ -454,8 +490,8 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.storefront,
+                  AppSvgIcon(
+                    assetName: 'store',
                     color: colorScheme.primary,
                     size: 28,
                   ),
@@ -529,17 +565,18 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
     ReceiptFoodItem item,
     int index,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
     Color confidenceColor;
     switch (item.confidence) {
       case 'high':
-        confidenceColor = Colors.green.shade700;
+        confidenceColor = isDark ? Colors.green.shade300 : Colors.green.shade700;
         break;
       case 'low':
-        confidenceColor = Colors.grey.shade600;
+        confidenceColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
         break;
       case 'medium':
       default:
-        confidenceColor = Colors.amber.shade800;
+        confidenceColor = isDark ? Colors.amber.shade300 : Colors.amber.shade800;
     }
 
     return Card(

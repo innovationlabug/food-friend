@@ -312,8 +312,20 @@ void main() {
       expect(find.byType(ShoppingListScreen), findsOneWidget);
       expect(find.text('Tu lista de compras está vacía'), findsOneWidget);
 
-      // From ShoppingListScreen, open burger menu via AppMenuButton and jump to ¿Qué cocino hoy?
-      await tester.tap(find.byTooltip('Menú de navegación'));
+      // From ShoppingListScreen, open left burger menu via AppMenuButton and jump to ¿Qué cocino hoy?
+      final menuFinder = find.byTooltip('Menú de navegación');
+      expect(menuFinder, findsOneWidget);
+      final menuRect = tester.getRect(menuFinder);
+      final backRect = tester.getRect(find.byType(BackButton));
+      // Menu button is consistently on the left half beside BackButton (never right actions)
+      expect(menuRect.left, greaterThanOrEqualTo(backRect.right - 8));
+      expect(menuRect.right, lessThan(200));
+
+      final subScaffold = tester.state<ScaffoldState>(find.byType(Scaffold));
+      expect(subScaffold.hasDrawer, isTrue);
+      expect(subScaffold.hasEndDrawer, isFalse);
+
+      await tester.tap(menuFinder);
       await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
@@ -323,6 +335,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
+      final suggestionsScaffold =
+          tester.state<ScaffoldState>(find.byType(Scaffold));
+      expect(suggestionsScaffold.hasDrawer, isTrue);
+      expect(suggestionsScaffold.hasEndDrawer, isFalse);
     });
   });
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
+import 'package:food_friend/features/ingredients/domain/ingredient.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
@@ -9,6 +11,7 @@ import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
 import 'package:food_friend/features/recipes/domain/recipe_search_result.dart';
 import 'package:food_friend/features/recipes/domain/recipe_variation.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
+import 'package:food_friend/features/recipes/presentation/widgets/recipe_preference_style.dart';
 import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 
 void main() {
@@ -388,6 +391,102 @@ void main() {
       saved = await shoppingService.getIngredients();
       expect(saved.map((e) => e.name), equals(['Güisquil', 'Zanahoria']));
       expect(find.text('Agregar todos'), findsNothing);
+    });
+  });
+
+  group('UI/UX Refinements: Pantry resolution, dark mode, and desktop columns', () {
+    testWidgets(
+        'resolves available and missing ingredients from pantry when opened without search result',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      await pantry.saveIngredients([
+        const Ingredient(name: 'Pechuga de pollo'),
+        const Ingredient(name: 'Papa'),
+      ]);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen(
+            recipe: sampleRecipe,
+            ingredientStorageService: pantry,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tienes en casa (2)'), findsOneWidget);
+      expect(find.text('Ingredientes adicionales necesarios (2)'), findsOneWidget);
+      expect(find.text('2/4 listos'), findsOneWidget);
+    });
+
+    testWidgets('adapts preference colors for dark theme',
+        (WidgetTester tester) async {
+      late Color darkFavorite;
+      late Color lightFavorite;
+      late Color darkLiked;
+      late Color lightLiked;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          key: const ValueKey('dark'),
+          theme: ThemeData.dark(),
+          home: Builder(
+            builder: (context) {
+              darkFavorite =
+                  RecipePreferenceStyle.colorFor(context, RecipePreference.favorite);
+              darkLiked =
+                  RecipePreferenceStyle.colorFor(context, RecipePreference.liked);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          key: const ValueKey('light'),
+          theme: ThemeData.light(),
+          home: Builder(
+            builder: (context) {
+              lightFavorite =
+                  RecipePreferenceStyle.colorFor(context, RecipePreference.favorite);
+              lightLiked =
+                  RecipePreferenceStyle.colorFor(context, RecipePreference.liked);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(darkFavorite, equals(Colors.red.shade300));
+      expect(lightFavorite, equals(Colors.red.shade600));
+      expect(darkLiked, equals(Colors.green.shade300));
+      expect(lightLiked, equals(Colors.green.shade700));
+    });
+
+    testWidgets(
+        'places ingredients and instructions side-by-side on desktop viewports',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final result = RecipeSearchResult(
+        recipe: sampleRecipe,
+        matchedIngredients: sampleRecipe.ingredients,
+        missingIngredients: const [],
+      );
+
+      await tester.pumpWidget(createTestWidget(result: result));
+      await tester.pumpAndSettle();
+
+      final ingRect = tester.getRect(find.text('Ingredientes requeridos'));
+      final instrRect =
+          tester.getRect(find.text('Instrucciones de preparación'));
+      expect(instrRect.left, greaterThan(ingRect.left));
     });
   });
 }
