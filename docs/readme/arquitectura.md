@@ -7,91 +7,91 @@ Este documento describe la arquitectura técnica, las capas de diseño y los com
 ## 1. Perfil del Sistema
 
 - **Tipo de Arquitectura:** Cliente híbrido multiplataforma (*Flutter Web & Android*) conectado a un *gateway* de seguridad *serverless* (*Vercel Serverless Functions* en *Node.js / TypeScript*) y servicios externos de inteligencia artificial (*Google Gemini 3.8 Flash*).
-- **Patrón de Diseño:** Arquitectura por capas (*Clean / Layered Architecture*):
-  - **Capa de Presentación (*UI & Controllers*):** *Widgets* reactivos de *Flutter Material 3*, componentes responsivos y gestión de estado con flujos síncronos y asíncronos.
-  - **Capa de Dominio (*Domain Models & Business Rules*):** Entidades inmutables, árboles taxonómicos y algoritmos de coincidencia culinaria.
-  - **Capa de Datos (*Data Access & Repositories*):** Persistencia local sin conexión (*offline-first*) vía `shared_preferences`, catálogo taxonómico en memoria, *dataset* local de recetas y servicios de comunicación HTTP.
-  - **Capa de *Backend Proxy* (*API Gateway*):** Funciones *serverless* seguras para protección de claves de API (*API keys*), saneamiento de entradas, procesamiento multimodal de imágenes y orquestación de *fallbacks*.
-- **Almacenamiento Local:** Persistencia en disco del dispositivo del usuario mediante clave-valor serializado en JSON (`shared_preferences`), garantizando privacidad y disponibilidad sin conexión.
+- **Patrón de Diseño:** Arquitectura limpia por capas (*Layered Architecture*):
+  - **Capa de Presentación (*UI & Controllers*):** *Widgets* reactivos de *Flutter Material 3*, diseño responsivo fluido (`ResponsiveContainer`, *breakpoints* móvil/escritorio), menú de navegación global (`AppNavigationDrawer`) y controladores de personalización (`ThemeController`, `SettingsController`).
+  - **Capa de Dominio (*Domain Models & Business Rules*):** Entidades inmutables para ingredientes, taxonomía de supermercado, recetas, variaciones culinarias, historial de cocción, preferencias y perfiles nutricionales.
+  - **Capa de Datos y Servicios (*Data Access & Repositories*):** Persistencia local sin conexión (*Offline-First*) vía `shared_preferences` para despensa (`IngredientStorageService`), lista de compras (`ShoppingListStorageService`), historial de recetas (`RecipeHistoryService`), motor determinista de nutrición (`NutritionService`) y clientes HTTP hacia el *proxy*.
+  - **Capa de *Backend Proxy* (*API Gateway*):** Funciones *serverless* en `api/*` encargadas de proteger claves secretas (`GEMINI_API_KEY`), validar entradas, ejecutar inferencia multimodal y orquestar niveles de respaldo (*fallbacks*).
+- **Almacenamiento Local:** Persistencia en el dispositivo del usuario mediante clave-valor serializado en JSON (`shared_preferences`), garantizando privacidad total sin necesidad de cuentas ni servidores de base de datos externos.
 
 ---
 
-## 2. Diagrama de Contexto del Sistema (C4 Context)
+## 2. Diagrama de Contexto del Sistema (*C4 Context*)
 
-El siguiente diagrama muestra los límites del sistema, el usuario final y los sistemas externos con los que interactúa.
+El siguiente diagrama muestra los límites del sistema, el usuario final y los servicios externos con los que interactúa:
 
 ```mermaid
 flowchart TD
-    User["Usuario / Cocinero del Hogar<br/>Gestiona despensa y busca recetas"]
+    User["Usuario / Cocinero del Hogar<br/>Gestiona despensa, lista de compras, recetas y nutricion"]
 
     subgraph Boundary ["Limite del Sistema Food Friend"]
-        App["Aplicacion Food Friend (Flutter Web y Android)<br/>Interfaz intuitiva, gestion local y escaneo"]
-        Proxy["Backend Proxy Serverless (Vercel Functions)<br/>API Gateway, inyeccion de secretos y sanitizacion"]
+        App["Aplicacion Cliente Food Friend (Flutter Web y Android)<br/>Interfaz Material 3, motor Offline-First y nutricion determinista"]
+        Proxy["Backend Proxy Serverless (Vercel Functions)<br/>API Gateway, proteccion de secretos y sanitizacion"]
     end
 
-    Gemini["Google Gemini API (Gemini 3.8 Flash)<br/>Generacion de recetas y vision multimodal"]
+    Gemini["Google Gemini API (Gemini 3.8 Flash)<br/>Generacion de recetas bajo demanda y vision multimodal"]
     MealDB["TheMealDB API (Servicio REST Tradicional)<br/>Respaldo secundario de recetas"]
 
-    User -->|Interactua, agrega ingredientes y selecciona recetas| App
-    App -->|Envia solicitudes HTTP seguras| Proxy
-    Proxy -->|Infiere recetas e interpreta fotos| Gemini
-    Proxy -->|Consulta recetas tradicionales si LLM no esta disponible| MealDB
+    User -->|Gestiona ingredientes, cocina recetas y revisa consejos| App
+    App -->|Solicitudes HTTPS en JSON y Base64| Proxy
+    Proxy -->|Infiere recetas e interpreta fotos y recibos| Gemini
+    Proxy -->|Consulta respaldo si el LLM no responde| MealDB
 ```
 
 ---
 
-## 3. Diagrama de Contenedores (C4 Container)
+## 3. Diagrama de Contenedores (*C4 Container*)
 
-Detalle de los contenedores que conforman la solución, sus protocolos de comunicación y sus responsabilidades específicas.
+Detalle de los contenedores que conforman la solución, sus protocolos de comunicación y sus responsabilidades específicas:
 
 ```mermaid
 flowchart TB
     User["Usuario"]
 
-    subgraph ClientContainer ["Contenedor Cliente (Frontend Flutter)"]
-        UI["Capa de Presentacion<br/>Pantallas, Widgets responsivos, Tema M3"]
-        Domain["Capa de Dominio<br/>Modelos: Ingredient, Recipe, Taxonomy"]
-        Data["Capa de Datos y Servicios<br/>IngredientCatalog, RecipeSearch, LocalDataset"]
-        LocalStorage[("Almacenamiento Local<br/>SharedPreferences en JSON")]
+    subgraph ClientContainer ["Contenedor Cliente (Frontend Flutter Web y Android)"]
+        UI["Capa de Presentacion<br/>Home, Despensa, Compras, Recetas, Gestion, Nutricion, Configuracion"]
+        Domain["Capa de Dominio<br/>Ingredient, CategoryNode, Recipe, RecipeVariation, NutritionTip"]
+        Services["Capa de Datos y Servicios Locales<br/>Catalogo (195+ items), Recetario (23 recetas), Historial y Nutricion"]
+        LocalStorage[("Almacenamiento Local (SharedPreferences)<br/>Despensa, Lista Por Comprar, Historial y Ajustes")]
 
         UI --> Domain
-        UI --> Data
-        Data --> Domain
-        Data --> LocalStorage
+        UI --> Services
+        Services --> Domain
+        Services --> LocalStorage
     end
 
-    subgraph ServerlessContainer ["Contenedor Backend (Vercel Serverless Gateway)"]
-        RouteRecipes["Endpoint /api/recipes<br/>Orquestador de recetas LLM y fallback"]
-        RouteFridge["Endpoint /api/detect-fridge<br/>Vision computacional para refrigeradores"]
-        RouteReceipt["Endpoint /api/parse-receipt<br/>Extraccion de compras en facturas"]
-        RouteHealth["Endpoint /api/health<br/>Monitoreo de estado del servicio"]
+    subgraph ServerlessContainer ["Contenedor Backend (Vercel Serverless Functions)"]
+        RouteRecipes["POST /api/recipes<br/>Orquestador de recetas IA y respaldo TheMealDB"]
+        RouteFridge["POST /api/detect-fridge<br/>Deteccion de alimentos en refrigerador"]
+        RouteReceipt["POST /api/parse-receipt<br/>Extraccion de alimentos y montos GTQ en facturas"]
+        RouteHealth["GET /api/health<br/>Monitoreo de salud del proxy"]
     end
 
     subgraph ExternalServices ["Servicios Externos"]
-        GeminiFlash["Google AI Studio / Gemini 3.8 Flash<br/>SDK @google/genai"]
-        MealDBAPI["TheMealDB REST API<br/>Fallback tradicional"]
+        GeminiFlash["Google AI Studio / Gemini 3.8 Flash<br/>SDK oficial @google/genai"]
+        MealDBAPI["TheMealDB REST API<br/>Respaldo tradicional"]
     end
 
-    User -->|Eventos tactiles y navegacion| UI
-    Data -->|Peticiones HTTPS en formato JSON| RouteRecipes
-    Data -->|Envio de imagen en Base64| RouteFridge
-    Data -->|Envio de imagen en Base64| RouteReceipt
+    User -->|Interaccion tactil / teclado| UI
+    Services -->|POST JSON| RouteRecipes
+    Services -->|POST Imagen Base64| RouteFridge
+    Services -->|POST Imagen Base64| RouteReceipt
 
-    RouteRecipes -->|Consulta con API Key segura| GeminiFlash
-    RouteRecipes -->|Consulta HTTP GET tradicional| MealDBAPI
-    RouteFridge -->|Vision Multimodal JSON| GeminiFlash
-    RouteReceipt -->|Vision Multimodal JSON| GeminiFlash
+    RouteRecipes -->|Prompt estructurado JSON| GeminiFlash
+    RouteRecipes -->|Fallback HTTP GET| MealDBAPI
+    RouteFridge -->|Vision Multimodal| GeminiFlash
+    RouteReceipt -->|Vision Multimodal GTQ| GeminiFlash
 ```
 
 ---
 
 ## 4. Grafo de Dependencias entre Módulos
 
-Estructura modular del código en Dart (*Frontend*) y TypeScript (*Backend*), evidenciando la separación de responsabilidades y la ausencia de dependencias circulares:
+Estructura modular del código en Dart (*Frontend*), evidenciando la separación de responsabilidades entre las seis áreas funcionales (`home`, `ingredients`, `shopping_list`, `recipes`, `nutrition`, `settings`) y el núcleo compartido (`core`):
 
 ```mermaid
 graph TD
-    subgraph UI_Layer ["Capa de Presentacion (lib/features/...)"]
+    subgraph UI_Layer ["Capa de Presentacion (lib/features/*/presentation)"]
         HomeView["home_screen.dart"]
         ShoppingListView["shopping_list_screen.dart"]
         AddIngredientView["add_ingredient_screen.dart"]
@@ -99,70 +99,107 @@ graph TD
         ReceiptScannerView["receipt_scanner_screen.dart"]
         RecipeSuggestionsView["recipe_suggestions_screen.dart"]
         RecipeDetailView["recipe_detail_screen.dart"]
+        RecipeManagementView["recipe_management_screen.dart"]
+        NutritionTipsView["nutrition_tips_screen.dart"]
+        SettingsView["settings_screen.dart"]
     end
 
-    subgraph Service_Layer ["Capa de Servicios y Datos"]
-        StorageService["ingredient_storage_service.dart"]
+    subgraph Service_Layer ["Capa de Servicios y Datos (lib/features/*/data)"]
+        PantryStorage["ingredient_storage_service.dart"]
+        ShoppingStorage["shopping_list_storage_service.dart"]
         CatalogData["ingredient_catalog.dart"]
         LocalRecipes["local_recipe_dataset.dart"]
         RecipeSearch["recipe_search_service.dart"]
+        RecipeHistory["recipe_history_service.dart"]
         ExternalRecipes["external_recipe_service.dart"]
-        FridgeService["fridge_detection_service.dart"]
+        FridgeService["fridge_vision_service.dart"]
         ReceiptService["receipt_parser_service.dart"]
+        NutritionSvc["nutrition_service.dart"]
+        NutritionCat["nutrition_catalog.dart"]
     end
 
-    subgraph Domain_Layer ["Capa de Dominio"]
-        ModelIngredient["ingredient.dart"]
-        ModelCategory["category_node.dart"]
-        ModelRecipe["recipe.dart"]
-        ModelSearchResult["recipe_search_result.dart"]
-        ModelFridge["fridge_detection_result.dart"]
-        ModelReceipt["receipt_food_item.dart"]
-    end
-
-    subgraph Core_Layer ["Nucleo y Utilerias (lib/core/...)"]
-        ThemeCore["app_theme.dart"]
+    subgraph Core_Layer ["Nucleo Compartido (lib/core/*)"]
+        NavDrawer["app_navigation_drawer.dart"]
+        SettingsCtrl["settings_controller.dart"]
+        ThemeCtrl["theme_controller.dart"]
         ResponsiveCore["responsive_layout.dart"]
         NormalizerCore["string_normalizer.dart"]
-        SvgCore["app_svg_icon.dart"]
     end
 
-    %% UI to Services
-    HomeView --> StorageService
-    HomeView --> RecipeSearch
-    ShoppingListView --> StorageService
+    HomeView --> PantryStorage
+    HomeView --> NutritionSvc
+    HomeView --> SettingsCtrl
+    ShoppingListView --> PantryStorage
+    ShoppingListView --> ShoppingStorage
     AddIngredientView --> CatalogData
-    AddIngredientView --> StorageService
+    AddIngredientView --> PantryStorage
+    AddIngredientView --> SettingsCtrl
     FridgeScannerView --> FridgeService
-    FridgeScannerView --> StorageService
+    FridgeScannerView --> PantryStorage
     ReceiptScannerView --> ReceiptService
-    ReceiptScannerView --> StorageService
+    ReceiptScannerView --> PantryStorage
     RecipeSuggestionsView --> RecipeSearch
-    RecipeSuggestionsView --> StorageService
-    RecipeDetailView --> ModelRecipe
+    RecipeSuggestionsView --> RecipeHistory
+    RecipeDetailView --> RecipeHistory
+    RecipeDetailView --> ShoppingStorage
+    RecipeManagementView --> RecipeHistory
+    NutritionTipsView --> NutritionSvc
+    NutritionTipsView --> ShoppingStorage
+    SettingsView --> SettingsCtrl
+    SettingsView --> ThemeCtrl
 
-    %% Services to Domain
-    StorageService --> ModelIngredient
-    CatalogData --> ModelCategory
-    LocalRecipes --> ModelRecipe
+    ShoppingStorage --> PantryStorage
     RecipeSearch --> LocalRecipes
     RecipeSearch --> ExternalRecipes
-    RecipeSearch --> ModelSearchResult
-    FridgeService --> ModelFridge
-    ReceiptService --> ModelReceipt
-
-    %% Core dependencies
+    RecipeSearch --> RecipeHistory
+    RecipeHistory --> PantryStorage
+    RecipeHistory --> LocalRecipes
+    NutritionSvc --> RecipeHistory
+    NutritionSvc --> NutritionCat
     CatalogData --> NormalizerCore
-    StorageService --> NormalizerCore
+    UI_Layer --> NavDrawer
     UI_Layer --> ResponsiveCore
-    UI_Layer --> ThemeCore
-    UI_Layer --> SvgCore
 ```
 
 ---
 
-## 5. Principios de Seguridad y Privacidad
+## 5. Flujo de Interacción Entre Historial Culinario, Nutrición y Compras
 
-1. **Aislamiento de Secretos:** La aplicación cliente jamás almacena ni expone credenciales de *Google AI Studio* ni de ningún servicio de pago. Todas las peticiones se centralizan a través del *backend proxy* en `/api/*`, el cual inyecta la variable de entorno `GEMINI_API_KEY` en tiempo de ejecución.
-2. **Privacidad del Usuario (*Local-First*):** Los ingredientes, listas de compras e imágenes capturadas por la cámara se procesan localmente o se envían efímeramente al servidor para su análisis puntual; ninguna información personal ni de geolocalización es almacenada en bases de datos externas.
-3. **Resiliencia ante Fallos de Red:** La aplicación implementa arquitectura en capas con respaldo desconectado (*offline-first*): si el servidor o la conexión a Internet fallan, el motor culinario recurre de inmediato al catálogo local de 16 recetas auténticas y 171 ingredientes precargados.
+El siguiente diagrama de secuencia muestra cómo las acciones cotidianas del usuario (registrar `"Lo cociné"` en una receta) alimentan de forma determinista el motor nutricional y se conectan con la lista de compras:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Usuario
+    participant Detail as RecipeDetailScreen
+    participant History as RecipeHistoryService
+    participant Pantry as IngredientStorageService
+    participant Nutrition as NutritionService
+    participant TipsUI as NutritionTipsScreen
+    participant ShopList as ShoppingListStorageService
+
+    User->>Detail: Presiona "Lo cocine" en una receta
+    Detail->>History: recordCooked(recipeId, recipe)
+    History->>History: Verifica idempotencia diaria y guarda fecha
+    History->>Pantry: Incrementa timesUsed y lastUsed de ingredientes usados
+    Detail-->>User: Muestra estado "Cocinada hoy"
+
+    User->>TipsUI: Abre "Consejos de Nutricion"
+    TipsUI->>Nutrition: generateReport()
+    Nutrition->>History: getHistory() y getAllKnownRecipes()
+    Nutrition->>Nutrition: Evalua 3 reglas (embutidos, vitaminas, proteina completa)
+    Nutrition-->>TipsUI: NutritionReport con consejos y alimentos sugeridos
+    TipsUI-->>User: Muestra alertas y recomendaciones
+
+    User->>TipsUI: Toca "+ Agregar sugeridos a lista de compras"
+    TipsUI->>ShopList: addIngredients(suggestedIngredients)
+    ShopList-->>User: Ingredientes listos en pestaña "Por comprar"
+```
+
+---
+
+## 6. Principios de Seguridad, Privacidad y Resiliencia
+
+1. **Aislamiento de Secretos:** La aplicación cliente jamás almacena ni expone credenciales de *Google AI Studio*. Todas las peticiones a la IA se enrutan a través del *backend proxy* en `/api/*`, que inyecta `process.env.GEMINI_API_KEY` en el servidor.
+2. **Privacidad *Local-First*:** El inventario de despensa, la lista de compras, el historial de recetas cocinadas, las marcas de preferencia y la evaluación nutricional viven íntegramente en el almacenamiento local del dispositivo del usuario.
+3. **Resiliencia *Offline-First*:** Si el dispositivo pierde conectividad o el servicio de IA no está disponible, el usuario conserva acceso total al catálogo de 195+ ingredientes, las 23 recetas locales con sus variaciones, el historial culinario, la lista de compras y el motor de consejos nutricionales.

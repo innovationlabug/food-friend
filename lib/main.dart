@@ -11,7 +11,9 @@ import 'features/ingredients/presentation/receipt_scanner_screen.dart';
 import 'features/nutrition/presentation/nutrition_tips_screen.dart';
 import 'features/recipes/data/local_recipe_dataset.dart';
 import 'features/recipes/presentation/recipe_detail_screen.dart';
+import 'features/recipes/presentation/recipe_management_screen.dart';
 import 'features/recipes/presentation/recipe_suggestions_screen.dart';
+import 'features/settings/presentation/settings_screen.dart';
 import 'features/shopping_list/presentation/shopping_list_screen.dart';
 
 void main() {
@@ -55,8 +57,12 @@ class _FoodFriendAppState extends State<FoodFriendApp> {
         return const RecipeSuggestionsScreen(selectedIngredientNames: ['Pollo', 'Tomate', 'Cebolla']);
       case 'detail':
         return RecipeDetailScreen(recipe: LocalRecipeDataset.instance.recipes.first);
+      case 'recipe_management':
+        return const RecipeManagementScreen();
       case 'nutrition':
         return const NutritionTipsScreen();
+      case 'settings':
+        return const SettingsScreen();
       default:
         return const HomeScreen();
     }

@@ -114,10 +114,9 @@ In the first iterations, while we validate user interest in the project we will 
   - At this time, the recipes are ranked only by the amount of ingredients that match.
     - Next iterations: User can like or dislike a recipe. The app will track how ofter the recipes are used to provide varied suggestions.
 
-### Next week plan
+## Week 2 Progress
 
-- Validate features with real users.
-- Test the app in real Android phones.
+### Implemented
 
 - Recipe suggestions.
   - Increase the amount of local recipes.
@@ -145,3 +144,27 @@ In the first iterations, while we validate user interest in the project we will 
   - Use the recipe history to provide nutrition tips to the user.
     - Alert about ingredients that might be harmful long term. For example, excesive consumption of processed meats.
     - Suggest which ingredients might be used to obtain health benefits. For example, track fruits and vegetables and suggest the ones that include a vitamin that the user is not consuming enough.
+
+- Deployed to Vercel.
+
+## Next week plan
+
+- Validate features with real users.
+- Test the app in real Android phones.
+
+- Provide more tips to help user's nutrition.
+
+- Improve shopping list functionality.
+    - Give suggestions according to the history.
+    - Give suggestions according to nutrition tips.
+
+- Suggest relevant and useful ingredient substitutions according to user's health goals.
+
+- Improve ingredient list and shopping list to track slowly consumed ingredients amount and expiration date.
+
+- Validate if feasible: Notification on ingredients' sales.
+  - Can we reliable get information from local supermarket webpages to implement this feature?
+
+- Validtae if feasible: Notify the user when they are near some market or supermarket and they have pending items on their shopping list.
+  - Can we get GPS info and send these notifications from Flutter?
+

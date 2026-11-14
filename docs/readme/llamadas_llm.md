@@ -1,122 +1,93 @@
-# Integración de Modelos de Lenguaje (LLM) y Estrategia de Respaldo - Food Friend
+# Integración de Modelos de Lenguaje (*LLM*) y Estrategia de Respaldo - Food Friend
 
-Este documento describe la integración de modelos de lenguaje e inteligencia artificial multimodal en **Food Friend**, los principios de seguridad aplicados, el diseño de *prompts* y la arquitectura de tolerancia a fallos (*fallbacks*).
+Este documento describe la integración de modelos de lenguaje e inteligencia artificial multimodal en **Food Friend**, los principios de seguridad aplicados, el diseño de *prompts*, los algoritmos deterministas que evitan llamadas innecesarias a la IA y la arquitectura de tolerancia a fallos (*fallbacks*).
 
 ---
 
 ## 1. Filosofía de Uso y Principios de Seguridad
 
 De acuerdo con las reglas de arquitectura del proyecto:
-1. **Uso Justificado y Mínimo:** La inteligencia artificial solo se utiliza en aquellos escenarios donde las herramientas tradicionales y los algoritmos deterministas son insuficientes (por ejemplo, visión computacional sobre fotos de refrigeradores, extracción de texto semiestructurado en recibos físicos arrugados, o generación de recetas para combinaciones inusuales sin coincidencias locales).
-2. **Seguridad y Cero Exposición de Credenciales:** La aplicación cliente en *Flutter* jamás contiene claves de API (*API keys*). Todas las comunicaciones se canalizan a través del *backend proxy serverless* en `/api/*`, el cual inyecta de forma segura `process.env.GEMINI_API_KEY` en el entorno del servidor y valida cada solicitud.
-3. **Resiliencia Multinivel (*Graceful Degradation*):** Cada llamada a la inteligencia artificial cuenta con múltiples niveles de respaldo automáticos. Si el servicio de LLM no responde, se agotan las cuotas o el usuario carece de conexión a Internet, la aplicación continúa funcionando fluidamente mediante APIs tradicionales o *datasets* locales.
+1. **Uso Justificado y Mínimo (*Traditional First*):** La inteligencia artificial solo se invoca cuando los algoritmos deterministas y catálogos locales no pueden resolver el problema por sí solos:
+   - **Resuelto sin IA (100% Determinista):** Búsqueda de ingredientes y resolución de errores tipográficos (distancia de *Levenshtein*), emparejamiento y *ranking* de recetas por preferencias/historial, variaciones de recetas para *meal prep* y el motor completo de **Consejos de Nutrición** (`NutritionService`).
+   - **Resuelto con IA Multimodal / Generativa:** Visión computacional sobre fotos de refrigeradores abiertos, extracción de alimentos y precios en facturas arrugadas de supermercados guatemaltecos, y generación de recetas para combinaciones inusuales o bajo demanda explícita del usuario (`"Generar más recetas con IA"`).
+2. **Seguridad y Cero Exposición de Credenciales:** La aplicación cliente en *Flutter* jamás contiene claves de API (*API keys*). Todas las llamadas pasan por las *Vercel Serverless Functions* en `/api/*`, que inyectan `process.env.GEMINI_API_KEY` en el servidor y sanean las entradas.
+3. **Resiliencia Multinivel (*Graceful Degradation*):** Cada llamada a la IA cuenta con niveles de respaldo automáticos en el servidor y en el cliente para garantizar operación continua incluso sin conexión (*Offline-First*).
 
 ---
 
-## 2. Endpoints Implementados con Gemini 3.8 Flash
+## 2. *Endpoints* Implementados con Gemini 3.8 Flash
 
-Se seleccionó **Gemini 3.8 Flash** (`gemini-3.8-flash`) mediante el SDK oficial `@google/genai` por su sobresaliente velocidad de inferencia, capacidad multimodal nativa y bajo consumo de recursos.
+Se utiliza **Gemini 3.8 Flash** (`gemini-3.8-flash`) mediante el *SDK* oficial `@google/genai` en el *backend proxy*:
 
-### 2.1. Generación de Recetas Culinarias (`POST /api/recipes`)
-- **Propósito:** Generar recetas personalizadas y auténticas en español cuando el usuario busca platillos con combinaciones sin recetas locales precargadas (ej. `berenjena` + `yuca`).
+### 2.1. Generación de Recetas Culinarias ([`POST /api/recipes`](file:///c:/Users/luisr/food-friend/api/recipes.ts))
+- **Cuándo se invoca:**
+  1. Automáticamente cuando los ingredientes seleccionados por el usuario no producen ninguna coincidencia en el recetario local de 23 recetas.
+  2. Bajo demanda cuando el usuario pulsa el botón **`"Generar más recetas con IA"`** al final de `RecipeSuggestionsScreen`.
 - **Entrada:**
   ```json
   {
     "ingredients": ["berenjena", "yuca"]
   }
   ```
-- **Diseño de Prompt e Instrucción del Sistema:**
+- **Diseño del *Prompt*:**
   - Rol de *Chef* profesional experto en cocina guatemalteca y latinoamericana.
-  - Generación 100% en español con ingredientes de fácil acceso en Guatemala.
-  - Tiempos de preparación, cocción, porciones, dificultad y pasos claros y detallados.
-  - Esquema estricto con `response_mime_type: "application/json"`.
-- **Salida:**
-  ```json
-  {
-    "source": "gemini",
-    "recipes": [
-      {
-        "id": "gemini-salteado-yuca-berenjena",
-        "title": "Salteado Rústico de Yuca y Berenjena al Ajillo",
-        "description": "Una combinación deliciosa y reconfortante...",
-        "mealType": "Almuerzo",
-        "difficulty": "Fácil",
-        "prepTimeMinutes": 15,
-        "cookTimeMinutes": 20,
-        "servings": 4,
-        "ingredients": [ ... ],
-        "instructions": [ ... ],
-        "nutritionalInfo": { ... }
-      }
-    ]
-  }
-  ```
+  - Salida 100% en español con ingredientes cotidianos en Guatemala y esquema JSON estricto (`response_mime_type: "application/json"`).
 
-### 2.2. Detección en Refrigerador y Congelador (`POST /api/detect-fridge`)
-- **Propósito:** Identificar ingredientes alimenticios presentes en fotografías de refrigeradores abiertos, repisas, cajones o congeladores.
-- **Entrada:** Imagen codificada en *Base64* acompañada de su tipo *MIME* (`image/jpeg`, `image/png`, etc.).
-- **Procesamiento y Filtro de Confianza:**
-  - Clasifica cada alimento con un índice de certeza (*confidence score* entre `0.0` y `1.0`).
-  - Asigna la categoría taxonómica sugerida del catálogo de Food Friend.
-  - En la interfaz de usuario, los ingredientes se presentan ordenados dando prioridad absoluta a los de alta certeza ($\ge 0.8$), permitiendo al usuario seleccionarlos con una casilla de verificación antes de sumarlos a la despensa.
+### 2.2. Detección en Refrigerador y Congelador ([`POST /api/detect-fridge`](file:///c:/Users/luisr/food-friend/api/detect-fridge.ts))
+- **Propósito:** Identificar alimentos visibles en fotografías de refrigeradores, alacenas o congeladores.
+- **Entrada:** Imagen codificada en *Base64* y su tipo *MIME* (`image/jpeg`, `image/png`, `image/webp`).
+- **Procesamiento:** Asigna un índice de certeza (*confidence score* de `0.0` a `1.0`) y mapea cada alimento a las categorías del catálogo de Food Friend. La interfaz prioriza en la parte superior los elementos con certeza $\ge 0.8$.
 
-### 2.3. Procesamiento de Facturas de Supermercado (`POST /api/parse-receipt`)
-- **Propósito:** Extraer automáticamente los productos alimenticios a partir de tickets o facturas emitidas por cadenas guatemaltecas (ej. *La Torre*, *Walmart*, *Paiz*, *Maxi Despensa*).
-- **Moneda:** Todos los precios y montos totales se calculan y presentan en **Quetzales guatemaltecos (GTQ / Q)**.
+### 2.3. Procesamiento de Facturas de Supermercado ([`POST /api/parse-receipt`](file:///c:/Users/luisr/food-friend/api/parse-receipt.ts))
+- **Propósito:** Extraer productos alimenticios a partir de fotografías de facturas o tickets de supermercados guatemaltecos (*La Torre*, *Walmart*, *Paiz*, *Despensa Familiar*, *Maxi Despensa*).
 - **Procesamiento:**
-  - Extrae el nombre del supermercado y el total facturado.
-  - Filtra artículos no comestibles (bolsas plásticas, productos de limpieza, etc.).
-  - Mapea el texto del recibo con el ingrediente canónico del catálogo en español.
+  - Decodifica abreviaturas *POS* locales y devuelve todos los precios en **Quetzales guatemaltecos (`GTQ` / `Q`)**.
+  - Filtra y descarta artículos no comestibles (detergentes, bolsas, servilletas).
 
 ---
 
 ## 3. Diagrama de Secuencia y Arquitectura de Respaldo (*Fallbacks*)
-
-El siguiente diagrama ilustra el flujo de ejecución y la degradación elegante ante fallos:
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as Usuario
     participant Flutter as App Flutter (Cliente)
+    participant Local as LocalRecipeDataset (23 Recetas)
     participant Proxy as Backend Proxy (/api/recipes)
     participant Gemini as Gemini 3.8 Flash
     participant MealDB as TheMealDB (REST)
-    participant Local as Dataset Local (Offline)
 
-    User->>Flutter: Selecciona ingredientes y presiona "Buscar recetas"
-    Flutter->>Proxy: POST /api/recipes { ingredients: [...] }
-
-    alt Tier 1: Generación con Gemini 3.8 Flash
-        Proxy->>Gemini: Solicitud con system prompt culinario en español
-        alt Respuesta exitosa
-            Gemini-->>Proxy: JSON con recetas estructuradas en español
+    User->>Flutter: Busca recetas o pulsa "Generar mas recetas con IA"
+    Flutter->>Local: Evalua coincidencias locales y aplica filtros de preferencia
+    alt Solicitud IA bajo demanda o 0 coincidencias locales
+        Flutter->>Proxy: POST /api/recipes { ingredients: [...] }
+        alt Nivel 1: Gemini 3.8 Flash disponible
+            Proxy->>Gemini: Solicitud con esquema JSON en espanol
+            Gemini-->>Proxy: Recetas generadas en espanol
             Proxy-->>Flutter: 200 OK { source: "gemini", recipes: [...] }
-        else Error de red, cuota excedida o timeout
-            Gemini--xProxy: Error 429 / 503 / Timeout
-            Note over Proxy,MealDB: Tier 2: Respaldo secundario con API tradicional
-            Proxy->>MealDB: Consulta recetas por ingredientes
-            alt Respuesta TheMealDB
-                MealDB-->>Proxy: Recetas tradicionales
-                Proxy-->>Flutter: 200 OK { source: "mealdb", recipes: [...] }
-            else Fallo TheMealDB
-                MealDB--xProxy: Error
-                Proxy-->>Flutter: 502 / Fallo de servicios externos
-            end
+        else Error de cuota, timeout o red en Gemini
+            Gemini--xProxy: Error / Timeout
+            Note over Proxy,MealDB: Nivel 2: Respaldo tradicional TheMealDB
+            Proxy->>MealDB: Consulta por ingrediente traducido
+            MealDB-->>Proxy: Recetas de respaldo
+            Proxy-->>Flutter: 200 OK { source: "mealdb", recipes: [...] }
         end
-    else Sin conexión en el cliente (Offline)
-        Note over Flutter,Local: Tier 3: Respaldo local sin conexión
-        Flutter->>Local: Búsqueda en LocalRecipeDataset (16 recetas precargadas)
-        Local-->>Flutter: Recetas locales ordenadas por mayor porcentaje de coincidencia
+    else Sin conexion a Internet (Offline)
+        Note over Flutter,Local: Nivel 3: Operacion Offline-First
+        Local-->>Flutter: Conserva resultados locales y muestra aviso amigable
     end
-
-    Flutter-->>User: Muestra recetas disponibles con porcentaje de coincidencia
+    Flutter-->>User: Renderiza recetas ordenadas por preferencia y coincidencia
 ```
 
 ---
 
-## 4. Pruebas de Resiliencia Realizadas
+## 4. Resumen de Estrategias de Respaldo por Funcionalidad
 
-1. **Prueba de Red Caída:** Al desconectar la red o apagar el servidor proxy, `recipe_search_service.dart` captura la excepción `SocketException` de forma transparente y retorna las recetas coincidentes del catálogo local, informando al usuario sin interrupciones.
-2. **Prueba de Combinaciones Cero-Locales:** Ante combinaciones como `berenjena` + `yuca`, el sistema contacta con éxito a Gemini 3.8 Flash, devolviendo recetas como *"Salteado Rústico de Yuca y Berenjena al Ajillo"* y *"Tortitas Doradas de Yuca con Relleno de Berenjena"* en español nativo con 100% de coherencia cultural.
-
+| Funcionalidad | Motor Principal | Respaldo Nivel 1 | Respaldo Nivel 2 (*Offline*) |
+| :--- | :--- | :--- | :--- |
+| **Búsqueda de Recetas** | `LocalRecipeDataset` (23 recetas locales + variaciones) | `POST /api/recipes` con **Gemini 3.8 Flash** | *TheMealDB API* y coincidencias parciales locales |
+| **Generación con IA Bajo Demanda** | `POST /api/recipes` (**Gemini 3.8 Flash**) | *TheMealDB API* vía *proxy* | *SnackBar* informativo en español conservando las recetas locales en pantalla |
+| **Escaneo de Refrigerador** | `POST /api/detect-fridge` (**Gemini 3.8 Flash Vision**) | Manejo de error estructurado en *proxy* | Ingreso manual rápido por búsqueda predictiva o categorías |
+| **Escaneo de Facturas (`GTQ`)** | `POST /api/parse-receipt` (**Gemini 3.8 Flash Vision**) | Manejo de error estructurado en *proxy* | Ingreso manual rápido en pestaña *Buscar* o *Categorías* |
+| **Consejos de Nutrición** | `NutritionService` (100% local y determinista) | No requiere red ni *LLM* | Siempre disponible sin conexión |
