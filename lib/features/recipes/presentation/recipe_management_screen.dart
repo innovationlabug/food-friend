@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../data/recipe_history_service.dart';
 import '../domain/recipe.dart';
@@ -213,8 +214,12 @@ class _RecipeManagementScreenState extends State<RecipeManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      endDrawer: const AppNavigationDrawer(
+        currentDestination: AppDestination.recipeManagement,
+      ),
       appBar: AppBar(
         title: const Text('Gestión de Recetas'),
+        actions: const [AppMenuButton()],
       ),
       body: SafeArea(
         child: ResponsiveContainer(

@@ -198,8 +198,8 @@ void main() {
 
       expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
 
-      // Tap primary navigation button
-      final shoppingNavBtn = find.text('Ir a ingredientes disponibles');
+      // Tap primary navigation panel
+      final shoppingNavBtn = find.text('Ingredientes disponibles');
       expect(shoppingNavBtn, findsAtLeastNWidgets(1));
       await tester.tap(shoppingNavBtn.first);
       await tester.pumpAndSettle();
@@ -313,14 +313,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify both Comprado and Descartar buttons with tooltips are shown
-      expect(find.text('Comprado'), findsNWidgets(2));
-      expect(find.text('Descartar'), findsNWidgets(2));
+      // Verify both Comprado and Descartar action buttons with tooltips are shown
       expect(find.byTooltip('Marcar como comprado'), findsNWidgets(2));
       expect(find.byTooltip('Descartar de la lista'), findsNWidgets(2));
 
       // Tap Comprado on Tomate (first card)
-      await tester.tap(find.text('Comprado').first);
+      await tester.tap(find.byTooltip('Marcar como comprado').first);
       await tester.pumpAndSettle();
 
       // SnackBar confirmation and shopping list updated
@@ -329,7 +327,7 @@ void main() {
       expect(find.text('Cilantro'), findsOneWidget);
 
       // Tap Descartar on Cilantro
-      await tester.tap(find.text('Descartar').first);
+      await tester.tap(find.byTooltip('Descartar de la lista').first);
       await tester.pumpAndSettle();
 
       expect(find.text('"Cilantro" descartado de la lista de compras'), findsOneWidget);
@@ -339,12 +337,43 @@ void main() {
       expect((await pantry.getIngredients()).map((e) => e.name), equals(['Tomate']));
       expect(await shopping.getIngredients(), isEmpty);
 
-      // Switch to Mis ingredientes tab: Tomate is selected and ready for Buscar recetas
+      // Switch to Mis ingredientes tab: Tomate is selected and ready for Buscar recetas (no count)
       await tester.tap(find.text('Mis ingredientes'));
       await tester.pumpAndSettle();
       expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);
       expect(find.text('Tomate'), findsOneWidget);
-      expect(find.text('Buscar recetas (1)'), findsOneWidget);
+      expect(find.text('Buscar recetas'), findsOneWidget);
+      expect(find.textContaining('Buscar recetas ('), findsNothing);
+    });
+
+    testWidgets('shopping list item cards match the height of ingredient list cards',
+        (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+
+      await pantry.addIngredient(const Ingredient(name: 'Tomate'));
+      await shopping.addIngredient(const Ingredient(name: 'Cebolla'));
+
+      await tester.pumpWidget(
+        createTestWidget(
+          storageService: pantry,
+          shoppingListService: shopping,
+          initialTab: 0,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final ingredientCardHeight = tester.getSize(find.byType(Card).first).height;
+
+      await tester.tap(find.text('Por comprar'));
+      await tester.pumpAndSettle();
+
+      final shoppingCardHeight = tester.getSize(find.byType(Card).first).height;
+      expect(shoppingCardHeight, equals(ingredientCardHeight));
     });
   });
 }

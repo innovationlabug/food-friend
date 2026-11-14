@@ -64,7 +64,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Navigate to Available Ingredients screen
-    final navButton = find.text('Ir a ingredientes disponibles').first;
+    final navButton = find.text('Ingredientes disponibles').first;
     await tester.tap(navButton);
     await tester.pumpAndSettle();
 
@@ -123,14 +123,14 @@ void main() {
     await tester.pumpAndSettle();
 
     // Navigate to Available Ingredients screen
-    await tester.tap(find.text('Ir a ingredientes disponibles').first);
+    await tester.tap(find.text('Ingredientes disponibles').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Ingredientes disponibles (3)'), findsOneWidget);
-    expect(find.text('Buscar recetas (3)'), findsOneWidget);
+    expect(find.text('Buscar recetas'), findsOneWidget);
 
     // Tap Buscar recetas
-    await tester.tap(find.text('Buscar recetas (3)'));
+    await tester.tap(find.text('Buscar recetas'));
     await tester.pumpAndSettle();
 
     // Verify suggestions screen
@@ -161,7 +161,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Navigate to Add Ingredients screen
-    final addIngredientsBtn = find.text('Añadir ingredientes').first;
+    final addIngredientsBtn = find.text('Agregar ingredientes').first;
     await tester.ensureVisible(addIngredientsBtn);
     await tester.pumpAndSettle();
     await tester.tap(addIngredientsBtn);
@@ -218,7 +218,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Navigate to Lista de compras
-    final buyListBtn = find.text('Ir a lista de compras').first;
+    final buyListBtn = find.text('Lista de compras').first;
     await tester.ensureVisible(buyListBtn);
     await tester.pumpAndSettle();
     await tester.tap(buyListBtn);
@@ -262,7 +262,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Navigate to Lista de compras and add Tomate and Salchicha via UI
-    final buyListBtn = find.text('Ir a lista de compras').first;
+    final buyListBtn = find.text('Lista de compras').first;
     await tester.ensureVisible(buyListBtn);
     await tester.pumpAndSettle();
     await tester.tap(buyListBtn);
@@ -288,12 +288,12 @@ void main() {
     expect(find.text('Por comprar (2)'), findsOneWidget);
 
     // Mark Tomate as Comprado
-    await tester.tap(find.text('Comprado').first);
+    await tester.tap(find.byTooltip('Marcar como comprado').first);
     await tester.pumpAndSettle();
     expect(find.text('"Tomate" movido a Mis ingredientes'), findsOneWidget);
 
     // Dismiss Salchicha
-    await tester.tap(find.text('Descartar').first);
+    await tester.tap(find.byTooltip('Descartar de la lista').first);
     await tester.pumpAndSettle();
     expect(find.text('"Salchicha" descartado de la lista de compras'), findsOneWidget);
     expect(find.text('Tu lista de compras está vacía'), findsOneWidget);
@@ -303,11 +303,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Ingredientes disponibles (1)'), findsOneWidget);
     expect(find.text('Tomate'), findsOneWidget);
-    expect(find.text('Buscar recetas (1)'), findsOneWidget);
+    expect(find.text('Buscar recetas'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Buscar recetas (1)'));
+    await tester.tap(find.text('Buscar recetas'));
     await tester.pumpAndSettle();
     expect(find.text('Recetas sugeridas'), findsOneWidget);
 
@@ -330,7 +330,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Open Consejos de Nutrición with empty history
-    final tipsBtn = find.text('Ver consejos de nutrición');
+    final tipsBtn = find.text('Consejos de Nutrición');
     await tester.ensureVisible(tipsBtn);
     await tester.pumpAndSettle();
     await tester.tap(tipsBtn);

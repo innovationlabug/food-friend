@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/utils/string_normalizer.dart';
+import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
@@ -292,6 +293,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     final isPantryTab = _activeTabIndex == 0;
 
     return Scaffold(
+      endDrawer: AppNavigationDrawer(
+        currentDestination: isPantryTab
+            ? AppDestination.availableIngredients
+            : AppDestination.shoppingList,
+      ),
       appBar: AppBar(
         title: Text(
           isPantryTab ? 'Ingredientes disponibles' : 'Lista de compras',
@@ -308,6 +314,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
             ),
             onPressed: _confirmClearAllData,
           ),
+          const AppMenuButton(),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -570,7 +577,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
                 size: 20,
                 color: colorScheme.onPrimary,
               ),
-              label: Text('Buscar recetas (${_selectedIngredientNames.length})'),
+              label: const Text('Buscar recetas'),
             ),
           ),
         ],
@@ -712,99 +719,67 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: AppSvgIcon(
-                    assetName: 'shopping_cart',
-                    size: 18,
-                    color: colorScheme.onSecondaryContainer,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        item.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (details.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          details.join(' • '),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: AppSvgIcon(
+                assetName: 'shopping_cart',
+                size: 18,
+                color: colorScheme.onSecondaryContainer,
+              ),
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Tooltip(
-                  message: 'Marcar como comprado',
-                  child: FilledButton.tonalIcon(
-                    onPressed: () => _markItemAsBought(item),
-                    icon: AppSvgIcon(
-                      assetName: 'check',
-                      size: 16,
-                      color: colorScheme.onSecondaryContainer,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                    label: const Text('Comprado'),
-                    style: FilledButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Tooltip(
-                  message: 'Descartar de la lista',
-                  child: OutlinedButton.icon(
-                    onPressed: () => _dismissShoppingItem(item),
-                    icon: AppSvgIcon(
-                      assetName: 'delete',
-                      size: 16,
-                      color: colorScheme.error,
-                    ),
-                    label: Text(
-                      'Descartar',
-                      style: TextStyle(color: colorScheme.error),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                  if (details.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      details.join(' • '),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                ],
+              ),
+            ),
+            IconButton.filledTonal(
+              tooltip: 'Marcar como comprado',
+              onPressed: () => _markItemAsBought(item),
+              icon: AppSvgIcon(
+                assetName: 'check',
+                size: 18,
+                color: colorScheme.onSecondaryContainer,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Descartar de la lista',
+              onPressed: () => _dismissShoppingItem(item),
+              icon: AppSvgIcon(
+                assetName: 'delete',
+                size: 20,
+                color: colorScheme.error,
+              ),
             ),
           ],
         ),

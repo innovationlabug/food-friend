@@ -20,7 +20,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 1. Navigate to Lista de compras from HomeScreen
-    final buyListBtn = find.text('Ir a lista de compras').first;
+    final buyListBtn = find.text('Lista de compras').first;
     await tester.ensureVisible(buyListBtn);
     await tester.pumpAndSettle();
     await tester.tap(buyListBtn);
@@ -95,7 +95,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 1. Navigate to Lista de compras
-    final buyListBtn = find.text('Ir a lista de compras').first;
+    final buyListBtn = find.text('Lista de compras').first;
     await tester.ensureVisible(buyListBtn);
     await tester.pumpAndSettle();
     await tester.tap(buyListBtn);
@@ -106,13 +106,13 @@ void main() {
     expect(find.text('Mortadela'), findsOneWidget);
 
     // 2. Tap Comprado on Aguacate
-    await tester.tap(find.text('Comprado').first);
+    await tester.tap(find.byTooltip('Marcar como comprado').first);
     await tester.pumpAndSettle();
     expect(find.text('"Aguacate" movido a Mis ingredientes'), findsOneWidget);
     expect(find.text('Por comprar (1)'), findsOneWidget);
 
     // 3. Tap Descartar on Mortadela
-    await tester.tap(find.text('Descartar').first);
+    await tester.tap(find.byTooltip('Descartar de la lista').first);
     await tester.pumpAndSettle();
     expect(find.text('"Mortadela" descartado de la lista de compras'), findsOneWidget);
     expect(find.text('Tu lista de compras está vacía'), findsOneWidget);
@@ -123,12 +123,12 @@ void main() {
     expect(find.text('Ingredientes disponibles (2)'), findsOneWidget);
     expect(find.text('Aguacate'), findsOneWidget);
     expect(find.text('Mortadela'), findsNothing);
-    expect(find.text('Buscar recetas (2)'), findsOneWidget);
+    expect(find.text('Buscar recetas'), findsOneWidget);
 
     // 5. Generate recipes using Tomate + newly bought Aguacate
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Buscar recetas (2)'));
+    await tester.tap(find.text('Buscar recetas'));
     await tester.pumpAndSettle();
     expect(find.text('Recetas sugeridas'), findsOneWidget);
   });

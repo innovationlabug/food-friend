@@ -42,16 +42,43 @@ void main() {
 
       // Verify title & banner
       expect(find.text('Recetas sugeridas'), findsOneWidget);
-      expect(find.textContaining('receta(s) disponible(s)'), findsOneWidget);
-      expect(find.text('Con base en 3 ingrediente(s) seleccionado(s)'), findsOneWidget);
-      expect(
-        find.text('Cambiar ingredientes para nuevas sugerencias'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('recetas disponibles'), findsOneWidget);
+      expect(find.text('Con base en 3 ingredientes seleccionados'), findsOneWidget);
+      expect(find.text('Cambiar ingredientes'), findsOneWidget);
 
       // Verify recipe cards are displayed
       expect(find.text('Caldo de Pollo con Verduras Frescas'), findsOneWidget);
       expect(find.textContaining('Tienes 3 de 8 ingredientes'), findsOneWidget);
+    });
+
+    testWidgets(
+        'uses singular Spanish wording when only 1 recipe and 1 ingredient are present and places Cambiar ingredientes beside the summary',
+        (WidgetTester tester) async {
+      final mockClient = MockClient((_) async {
+        return http.Response(
+          '{"success": true, "count": 1, "recipes": ['
+          '{"id": "ext_solo", "title": "Sopa de Berenjena", "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "1 unidad"}], "instructions": ["Cocinar."]}]}',
+          200,
+        );
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['berenjena'],
+        externalService: externalService,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 receta en línea'), findsOneWidget);
+      expect(find.text('Con base en 1 ingrediente seleccionado'), findsOneWidget);
+
+      final titleRect = tester.getRect(find.text('1 receta en línea'));
+      final buttonRect = tester.getRect(find.text('Cambiar ingredientes'));
+      expect(buttonRect.left, greaterThan(titleRect.left));
     });
 
     testWidgets(
@@ -71,11 +98,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Buscar recetas (3)'));
+      await tester.tap(find.text('Buscar recetas'));
       await tester.pumpAndSettle();
 
       expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
-      final changeBtn = find.text('Cambiar ingredientes para nuevas sugerencias');
+      final changeBtn = find.text('Cambiar ingredientes');
       expect(changeBtn, findsOneWidget);
 
       await tester.tap(changeBtn);
@@ -94,7 +121,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      final changeBtn = find.text('Cambiar ingredientes para nuevas sugerencias');
+      final changeBtn = find.text('Cambiar ingredientes');
       expect(changeBtn, findsOneWidget);
 
       await tester.tap(changeBtn);
@@ -167,15 +194,15 @@ void main() {
       expect(find.text('Aguacate'), findsOneWidget);
       expect(find.text('Pepino'), findsOneWidget);
 
-      // Verify search recipes button
-      expect(find.text('Buscar recetas (3)'), findsOneWidget);
+      // Verify search recipes button without confusing count
+      expect(find.text('Buscar recetas'), findsOneWidget);
 
       // Quick action: tap "Deseleccionar todos"
       await tester.tap(find.text('Deseleccionar todos'));
       await tester.pumpAndSettle();
 
       // Button should disappear when 0 items selected
-      expect(find.text('Buscar recetas (3)'), findsNothing);
+      expect(find.text('Buscar recetas'), findsNothing);
       expect(find.text('Seleccionar todos'), findsOneWidget);
 
       // Tap single checkbox to re-select Tomate
@@ -185,10 +212,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Now 1 item is selected
-      expect(find.text('Buscar recetas (1)'), findsOneWidget);
+      expect(find.text('Buscar recetas'), findsOneWidget);
 
-      // Tap "Buscar recetas (1)" to navigate to suggestions
-      await tester.tap(find.text('Buscar recetas (1)'));
+      // Tap "Buscar recetas" to navigate to suggestions
+      await tester.tap(find.text('Buscar recetas'));
       await tester.pumpAndSettle();
 
       // Verify navigation to RecipeSuggestionsScreen
@@ -217,7 +244,7 @@ void main() {
 
       // Verify fallback message notice is displayed
       expect(find.textContaining('recetario externo o te encuentras sin conexión'), findsOneWidget);
-      expect(find.textContaining('receta(s) sugerida(s)'), findsOneWidget);
+      expect(find.textContaining('recetas sugeridas'), findsOneWidget);
 
       // Verify partial local matches are shown
       expect(find.byType(Card), findsWidgets);
@@ -245,7 +272,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Guiso Internacional de Pollo'), findsOneWidget);
-      expect(find.textContaining('receta(s) en línea'), findsOneWidget);
+      expect(find.text('1 receta en línea'), findsOneWidget);
     });
 
     testWidgets('displays external recipe results for berenjena + yuca with matching highlights',
@@ -272,8 +299,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Banner shows 2 online recipes
-      expect(find.text('2 receta(s) en línea'), findsOneWidget);
-      expect(find.text('Con base en 2 ingrediente(s) seleccionado(s)'), findsOneWidget);
+      expect(find.text('2 recetas en línea'), findsOneWidget);
+      expect(find.text('Con base en 2 ingredientes seleccionados'), findsOneWidget);
 
       // Recipe cards
       expect(find.text('Berenjena a la plancha con hummus'), findsOneWidget);
@@ -470,7 +497,7 @@ void main() {
       // Verify original local recipe is preserved AND new AI recipe is appended
       expect(find.text('Sopa Nutritiva de Lentejas y Espinaca'), findsOneWidget);
       expect(find.text('Guiso Especial de Lentejas con IA'), findsOneWidget);
-      expect(find.text('1 receta(s) generada(s) con éxito con IA.'), findsOneWidget);
+      expect(find.text('1 receta generada con éxito con IA.'), findsOneWidget);
     });
 
     testWidgets('displays friendly error message when AI proxy fails and preserves existing results',

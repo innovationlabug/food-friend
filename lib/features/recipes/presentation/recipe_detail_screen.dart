@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/utils/string_normalizer.dart';
+import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/domain/ingredient.dart';
 import '../../shopping_list/data/shopping_list_storage_service.dart';
@@ -235,8 +236,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         : recipe.ingredients.where((i) => !matchedSet.contains(i.normalizedName)).toList();
 
     return Scaffold(
+      endDrawer: const AppNavigationDrawer(),
       appBar: AppBar(
         title: Text(recipe.title),
+        actions: const [AppMenuButton()],
       ),
       body: SafeArea(
         child: ResponsiveContainer(

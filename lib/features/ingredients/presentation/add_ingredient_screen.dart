@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 import '../data/ingredient_catalog.dart';
@@ -225,6 +226,10 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
         }
       },
       child: Scaffold(
+        endDrawer: AppNavigationDrawer(
+          currentDestination:
+              widget.isShoppingList ? null : AppDestination.addIngredients,
+        ),
         appBar: AppBar(
           title: Text(
             widget.isShoppingList
@@ -241,6 +246,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               ),
               label: const Text('Ver lista'),
             ),
+            const AppMenuButton(),
           ],
           bottom: TabBar(
             controller: _tabController,

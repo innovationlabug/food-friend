@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'core/navigation/app_route_observer.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'features/home/presentation/home_screen.dart';
 import 'features/ingredients/presentation/add_ingredient_screen.dart';
 import 'features/ingredients/presentation/fridge_scanner_screen.dart';
@@ -18,8 +20,21 @@ void main() {
 
 /// Food Friend root application widget.
 /// Configures Material 3 theming, Spanish localization, and the main home shell.
-class FoodFriendApp extends StatelessWidget {
+class FoodFriendApp extends StatefulWidget {
   const FoodFriendApp({super.key});
+
+  @override
+  State<FoodFriendApp> createState() => _FoodFriendAppState();
+}
+
+class _FoodFriendAppState extends State<FoodFriendApp> {
+  final ThemeController _themeController = ThemeController.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeController.load();
+  }
 
   Widget _getInitialScreen() {
     final route = Uri.base.queryParameters['route'];
@@ -47,23 +62,29 @@ class FoodFriendApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Food Friend',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      locale: const Locale('es', 'GT'),
-      supportedLocales: const [
-        Locale('es', 'GT'),
-        Locale('es'),
-      ],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      home: _getInitialScreen(),
+    return ListenableBuilder(
+      listenable: _themeController,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Food Friend',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: _themeController.themeMode,
+          navigatorObservers: [appRouteObserver],
+          locale: const Locale('es', 'GT'),
+          supportedLocales: const [
+            Locale('es', 'GT'),
+            Locale('es'),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: _getInitialScreen(),
+        );
+      },
     );
   }
 }

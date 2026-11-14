@@ -25,10 +25,10 @@ void main() {
 
     // Verify home screen is rendered in Spanish
     expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
-    expect(find.text('Ir a ingredientes disponibles'), findsAtLeastNWidgets(1));
+    expect(find.text('Ingredientes disponibles'), findsAtLeastNWidgets(1));
 
     // 2. Navigate to Shopping List screen
-    await tester.tap(find.text('Ir a ingredientes disponibles').first);
+    await tester.tap(find.text('Ingredientes disponibles').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Ingredientes disponibles'), findsOneWidget);
@@ -96,20 +96,20 @@ void main() {
     expect(find.text('Güisquil'), findsOneWidget);
 
     // 5. Test ingredient selection & quick actions
-    expect(find.text('Buscar recetas (3)'), findsOneWidget);
+    expect(find.text('Buscar recetas'), findsOneWidget);
 
     // Deselect all
     await tester.tap(find.text('Deseleccionar todos'));
     await tester.pumpAndSettle();
-    expect(find.text('Buscar recetas (3)'), findsNothing);
+    expect(find.text('Buscar recetas'), findsNothing);
 
     // Select all again
     await tester.tap(find.text('Seleccionar todos'));
     await tester.pumpAndSettle();
-    expect(find.text('Buscar recetas (3)'), findsOneWidget);
+    expect(find.text('Buscar recetas'), findsOneWidget);
 
-    // 6. Tap "Buscar recetas (3)" to search/generate recipes
-    final searchRecipesBtn = find.widgetWithText(FilledButton, 'Buscar recetas (3)');
+    // 6. Tap "Buscar recetas" to search/generate recipes
+    final searchRecipesBtn = find.widgetWithText(FilledButton, 'Buscar recetas');
     expect(searchRecipesBtn, findsOneWidget);
     await tester.tap(searchRecipesBtn);
     await tester.pumpAndSettle();
@@ -117,7 +117,7 @@ void main() {
     // 7. Verify RecipeSuggestionsScreen
     expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
     expect(find.text('Recetas sugeridas'), findsOneWidget);
-    expect(find.textContaining('receta(s) disponible(s)'), findsOneWidget);
+    expect(find.textContaining('recetas disponibles'), findsOneWidget);
 
     // Find and verify "Caldo de Pollo con Verduras Frescas" card
     final caldoCard = find.text('Caldo de Pollo con Verduras Frescas');
@@ -210,16 +210,16 @@ void main() {
     expect(find.text('Berenjena'), findsOneWidget);
     expect(find.text('Yuca'), findsOneWidget);
 
-    // 4. Tap "Buscar recetas (2)"
-    final searchBtn = find.widgetWithText(FilledButton, 'Buscar recetas (2)');
+    // 4. Tap "Buscar recetas"
+    final searchBtn = find.widgetWithText(FilledButton, 'Buscar recetas');
     expect(searchBtn, findsOneWidget);
     await tester.tap(searchBtn);
     await tester.pumpAndSettle();
 
     // 5. Verify RecipeSuggestionsScreen displays online recipes
     expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
-    expect(find.text('2 receta(s) en línea'), findsOneWidget);
-    expect(find.text('Con base en 2 ingrediente(s) seleccionado(s)'), findsOneWidget);
+    expect(find.text('2 recetas en línea'), findsOneWidget);
+    expect(find.text('Con base en 2 ingredientes seleccionados'), findsOneWidget);
 
     // Both recipes rendered with matching ingredient indicators
     expect(find.text('Berenjena a la plancha con hummus'), findsOneWidget);
@@ -254,7 +254,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 2. Navigate to Gestión de recetas from HomeScreen
-    final manageBtn = find.text('Gestionar recetas');
+    final manageBtn = find.text('Gestión de recetas');
     expect(manageBtn, findsOneWidget);
     await tester.ensureVisible(manageBtn);
     await tester.pumpAndSettle();

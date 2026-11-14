@@ -21,7 +21,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 1. Open Consejos de Nutrición from HomeScreen when cooking history is empty
-    final openTipsBtn = find.text('Ver consejos de nutrición');
+    final openTipsBtn = find.text('Consejos de Nutrición');
     await tester.ensureVisible(openTipsBtn);
     await tester.pumpAndSettle();
     await tester.tap(openTipsBtn);

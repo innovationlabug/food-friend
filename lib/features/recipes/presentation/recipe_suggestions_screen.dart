@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 import '../data/external_recipe_service.dart';
@@ -230,9 +231,12 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
           }
         });
 
+        final generatedLabel = newRecipes.length == 1
+            ? '1 receta generada con éxito con IA.'
+            : '${newRecipes.length} recetas generadas con éxito con IA.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${newRecipes.length} receta(s) generada(s) con éxito con IA.'),
+            content: Text(generatedLabel),
           ),
         );
       }
@@ -257,8 +261,12 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      endDrawer: const AppNavigationDrawer(
+        currentDestination: AppDestination.recipeSuggestions,
+      ),
       appBar: AppBar(
         title: const Text('Recetas sugeridas'),
+        actions: const [AppMenuButton()],
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -519,95 +527,117 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     final count = displayedCount ?? _results.length;
     final totalCount = _results.length;
     final ingredientCount = widget.selectedIngredientNames.length;
+    final isSingleRecipe = count == 1;
+    final isSingleIngredient = ingredientCount == 1;
 
-    String bannerTitle = '$count receta(s) disponible(s)';
+    String bannerTitle = isSingleRecipe
+        ? '1 receta disponible'
+        : '$count recetas disponibles';
     if (_showingAllRecipes) {
       bannerTitle = 'Catálogo de recetas ($count)';
     } else if (_discoveryResponse?.isExternal == true) {
-      bannerTitle = '$count receta(s) en línea';
+      bannerTitle = isSingleRecipe
+          ? '1 receta en línea'
+          : '$count recetas en línea';
     } else if (_discoveryResponse?.isFallback == true) {
-      bannerTitle = '$count receta(s) sugerida(s)';
+      bannerTitle = isSingleRecipe
+          ? '1 receta sugerida'
+          : '$count recetas sugeridas';
     }
 
     if (_selectedCategory != 'Todos' && count != totalCount) {
       bannerTitle = '$bannerTitle ($_selectedCategory)';
     }
 
+    final ingredientSummary = isSingleIngredient
+        ? 'Con base en 1 ingrediente seleccionado'
+        : 'Con base en $ingredientCount ingredientes seleccionados';
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: AppSvgIcon(
+              assetName: 'restaurant',
+              size: 18,
+              color: colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  bannerTitle,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                child: AppSvgIcon(
-                  assetName: 'restaurant',
-                  size: 20,
-                  color: colorScheme.onPrimaryContainer,
+                const SizedBox(height: 1),
+                Text(
+                  ingredientSummary,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: 'Cambiar ingredientes para nuevas sugerencias',
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: context.isMobile ? 124 : 210,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              child: OutlinedButton(
+                onPressed: _navigateToIngredientList,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  side: BorderSide(
+                    color: colorScheme.primary.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      bannerTitle,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    AppSvgIcon(
+                      assetName: 'shopping_cart',
+                      size: 14,
+                      color: colorScheme.primary,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Con base en $ingredientCount ingrediente(s) seleccionado(s)',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Cambiar ingredientes',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.primary,
+                          height: 1.15,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton(
-            onPressed: _navigateToIngredientList,
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              visualDensity: VisualDensity.compact,
-              side: BorderSide(
-                color: colorScheme.primary.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppSvgIcon(
-                  assetName: 'shopping_cart',
-                  size: 16,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Cambiar ingredientes para nuevas sugerencias',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         ],

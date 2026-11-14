@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/utils/string_normalizer.dart';
+import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/domain/ingredient.dart';
 import '../../recipes/data/recipe_history_service.dart';
@@ -130,6 +131,9 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      endDrawer: const AppNavigationDrawer(
+        currentDestination: AppDestination.nutritionTips,
+      ),
       appBar: AppBar(
         title: const Text('Consejos de Nutrición'),
         actions: [
@@ -142,6 +146,7 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
             ),
             onPressed: _openShoppingList,
           ),
+          const AppMenuButton(),
         ],
       ),
       body: SafeArea(

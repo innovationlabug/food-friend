@@ -18,10 +18,10 @@ void main() {
 
     // Verify home screen is rendered in Spanish
     expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
-    expect(find.text('Ir a ingredientes disponibles'), findsAtLeastNWidgets(1));
+    expect(find.text('Ingredientes disponibles'), findsAtLeastNWidgets(1));
 
     // 2. Navigate to Shopping List screen
-    await tester.tap(find.text('Ir a ingredientes disponibles').first);
+    await tester.tap(find.text('Ingredientes disponibles').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Ingredientes disponibles'), findsOneWidget);
@@ -125,7 +125,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Navigate to Ingredientes disponibles
-    await tester.tap(find.text('Ir a ingredientes disponibles').first);
+    await tester.tap(find.text('Ingredientes disponibles').first);
     await tester.pumpAndSettle();
 
     // Clean session state
