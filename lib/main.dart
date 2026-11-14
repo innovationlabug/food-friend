@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/navigation/app_route_observer.dart';
+import 'core/settings/settings_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/home/presentation/home_screen.dart';
@@ -34,6 +35,7 @@ class _FoodFriendAppState extends State<FoodFriendApp> {
   void initState() {
     super.initState();
     _themeController.load();
+    SettingsController.instance.load();
   }
 
   Widget _getInitialScreen() {

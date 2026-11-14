@@ -5,7 +5,9 @@ import '../../features/ingredients/presentation/add_ingredient_screen.dart';
 import '../../features/nutrition/presentation/nutrition_tips_screen.dart';
 import '../../features/recipes/presentation/recipe_management_screen.dart';
 import '../../features/recipes/presentation/recipe_suggestions_screen.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/shopping_list/presentation/shopping_list_screen.dart';
+import '../settings/settings_controller.dart';
 import '../theme/theme_controller.dart';
 import 'app_svg_icon.dart';
 
@@ -26,10 +28,21 @@ enum AppDestination {
 /// [AppMenuButton] side-by-side on the left edge of pushed screens.
 const double kAppBarLeadingWidthWithBack = 96.0;
 
+/// Returns whether the current route is stacked above a previous route.
+/// Using [ModalRoute.isFirst] keeps the leading width and buttons aligned
+/// throughout pop transitions instead of shrinking mid-animation.
+bool _canPopRoute(BuildContext context) {
+  final route = ModalRoute.of(context);
+  if (route != null) {
+    return !route.isFirst;
+  }
+  return Navigator.of(context).canPop();
+}
+
 /// Returns the appropriate [AppBar.leadingWidth] for [AppBarLeading] based on
 /// whether the current route can pop.
 double? appBarLeadingWidth(BuildContext context) {
-  return Navigator.of(context).canPop() ? kAppBarLeadingWidthWithBack : null;
+  return _canPopRoute(context) ? kAppBarLeadingWidthWithBack : null;
 }
 
 /// AppBar button that opens the left navigation [Scaffold.drawer] burger menu.
@@ -74,7 +87,7 @@ class AppBarLeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canPop = Navigator.of(context).canPop();
+    final canPop = _canPopRoute(context);
     if (!canPop) {
       return const AppMenuButton();
     }
@@ -94,12 +107,45 @@ class AppNavigationDrawer extends StatelessWidget {
   const AppNavigationDrawer({
     super.key,
     this.currentDestination,
+    this.settingsSection,
+    this.isSettingsScreen = false,
   });
 
   /// Currently active logical destination, or `null` when inside a sub-screen.
   final AppDestination? currentDestination;
 
+  /// Optional override indicating which settings section is most relevant to
+  /// the current screen. Inferred from [currentDestination] when omitted.
+  final SettingsSection? settingsSection;
+
+  /// Whether the drawer is currently displayed on [SettingsScreen].
+  final bool isSettingsScreen;
+
   int? get _selectedIndex => currentDestination?.index;
+
+  SettingsSection get _effectiveSettingsSection {
+    if (settingsSection != null) return settingsSection!;
+    return switch (currentDestination) {
+      AppDestination.availableIngredients ||
+      AppDestination.shoppingList ||
+      AppDestination.addIngredients =>
+        SettingsSection.ingredients,
+      _ => SettingsSection.home,
+    };
+  }
+
+  Future<void> _openSettings(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    if (isSettingsScreen) return;
+    await navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsScreen(
+          initialSection: _effectiveSettingsSection,
+        ),
+      ),
+    );
+  }
 
   Future<void> _navigateTo(BuildContext context, int index) async {
     final destination = AppDestination.values[index];
@@ -171,18 +217,18 @@ class AppNavigationDrawer extends StatelessWidget {
       onDestinationSelected: (index) => _navigateTo(context, index),
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 16, 12),
+          padding: const EdgeInsets.fromLTRB(24, 12, 16, 8),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: AppSvgIcon(
                   assetName: 'restaurant',
-                  size: 22,
+                  size: 20,
                   color: colorScheme.onPrimaryContainer,
                 ),
               ),
@@ -209,8 +255,7 @@ class AppNavigationDrawer extends StatelessWidget {
             ],
           ),
         ),
-        const Divider(indent: 24, endIndent: 24),
-        const SizedBox(height: 4),
+        const Divider(height: 1, indent: 24, endIndent: 24),
         NavigationDrawerDestination(
           icon: AppSvgIcon(
             assetName: 'home',
@@ -302,9 +347,37 @@ class AppNavigationDrawer extends StatelessWidget {
           ),
           label: _drawerLabel('Consejos de Nutrición'),
         ),
-        const Divider(indent: 24, endIndent: 24),
+        const Divider(height: 1, indent: 24, endIndent: 24),
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          child: ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
+            selected: isSettingsScreen,
+            leading: AppSvgIcon(
+              assetName: 'settings',
+              size: 20,
+              color: isSettingsScreen
+                  ? colorScheme.onSecondaryContainer
+                  : colorScheme.onSurfaceVariant,
+            ),
+            title: _drawerLabel('Configuración'),
+            trailing: AppSvgIcon(
+              assetName: 'chevron_right',
+              size: 18,
+              color: isSettingsScreen
+                  ? colorScheme.onSecondaryContainer
+                  : colorScheme.onSurfaceVariant,
+            ),
+            onTap: () => _openSettings(context),
+          ),
+        ),
+        const Divider(height: 1, indent: 24, endIndent: 24),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
           child: ListenableBuilder(
             listenable: ThemeController.instance,
             builder: (context, _) {
@@ -319,7 +392,7 @@ class AppNavigationDrawer extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   SegmentedButton<ThemeMode>(
                     showSelectedIcon: false,
                     segments: const [

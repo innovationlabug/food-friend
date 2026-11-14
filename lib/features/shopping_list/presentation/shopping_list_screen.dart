@@ -328,7 +328,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
                 children: [
                   AppSvgIcon(assetName: 'restaurant', size: 18),
                   SizedBox(width: 8),
-                  Text('Mis ingredientes'),
+                  Flexible(
+                    child: Text(
+                      'Mis ingredientes',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -338,7 +343,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
                 children: [
                   AppSvgIcon(assetName: 'shopping_cart', size: 18),
                   SizedBox(width: 8),
-                  Text('Por comprar'),
+                  Flexible(
+                    child: Text(
+                      'Por comprar',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -547,12 +557,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${_selectedIngredientNames.length} de ${_ingredients.length} seleccionados',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                Expanded(
+                  child: Text(
+                    '${_selectedIngredientNames.length} de ${_ingredients.length} seleccionados',
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 TextButton(
                   onPressed: _toggleSelectAll,
                   style: TextButton.styleFrom(

@@ -362,3 +362,32 @@ Only stop when all specified User Stories are fully implemented, verified, and c
 Then repeat the complete process for stories US-9.1 to US-9.2. Use the file `NUTRITION_TIPS.md` to document. Use a new branch for this functionality.
 
 After completing the entire two batches, execute `[console]::beep(800, 800)` to notify me that the task is complete.
+
+
+
+---
+
+
+
+Update the `README.md` for this project.
+
+The `README.md` must contain only the most important information:
+- What the app is is.
+- Screenshots from the main views. New views have been added since last documentation.
+- A very brief description of key functionalities.
+- A quick start guide on how to install, run and deploy.
+- An architecture diagram, generated using the `diagram` skill.
+- A simple comparative table with the info from `COMPETITIVE_ANALYSIS.md`. Mark clearly which functionality we have already implemented, and which are pending.
+
+You can create as many additional documentation files, in the `docs\readme` folder. Some of them may be:
+- `ADD_INGREDIENTS.md`, `GET_RECIPES.md` and `NUTRITION_TIPS.md`: the complete documentation on how those features were implemented.
+- A complete description of the project architecture. It may include additional diagrams that are not included on the main `README.md`.
+- Description of important data models used.
+- Description of LLM calls implemented, and their fallbacks.
+- Complete guide to install, run and deploy the project.
+- Information on unit, integration and e2e testing.
+- Any other information you consider deserves its own file.
+
+Notice that many of these were created in the last documentation and might only need to be updated.
+
+Write the documentation in spanish. If there is some term without a suitable translation, put the term in english, italicized.

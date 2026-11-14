@@ -4,32 +4,15 @@ Esta encuesta recopila retroalimentación sobre la usabilidad, fluidez y patrone
 
 ---
 
-## 1. Pregunta Clave de UX: Flujo de Entrada de Ingredientes
+## 1. Facilidad de Búsqueda y Sugerencias en Tiempo Real
 
 ### **Pregunta 1.1**
-Al agregar un ingrediente (ya sea mediante búsqueda de texto o navegando por categorías), **¿prefieres que la aplicación permanezca en la pantalla de "Agregar ingrediente" para continuar añadiendo más productos, o que regrese automáticamente a la lista de compras después de cada adición?**
-
-- [ ] **A) Permanecer en la pantalla de "Agregar ingrediente" (Comportamiento actual):**
-  * *Razón:* Permite ingresar múltiples ingredientes de forma rápida y consecutiva sin tener que volver a abrir la pantalla cada vez, accediendo a la lista con el botón "Ver lista" o regresando con la flecha atrás.
-- [ ] **B) Regresar automáticamente a la lista de compras:**
-  * *Razón:* Prefiero ver de inmediato la lista de compras actualizada y confirmar visualmente el ingrediente añadido antes de decidir agregar otro.
-- [ ] **C) Configurable / Modo múltiple opcional:**
-  * *Razón:* Me gustaría tener un interruptor o casilla (ej. "Modo agregar varios") para elegir según la ocasión.
-
-#### Comentarios adicionales sobre este flujo:
-> *(Escribe aquí si encontraste el botón "Ver lista" o la navegación intuitiva)*
-
----
-
-## 2. Facilidad de Búsqueda y Sugerencias en Tiempo Real
-
-### **Pregunta 2.1**
 ¿Qué tan claro y útil te pareció el consejo que aparece la primera vez indicando que al presionar **Enter** se auto-agrega el primer ingrediente sugerido?
 - [ ] Muy útil y claro (me ahorró tiempo)
 - [ ] Útil, pero preferiría que no aparezca
 - [ ] Poco claro o innecesario
 
-### **Pregunta 2.2**
+### **Pregunta 1.2**
 Al escribir nombres de ingredientes con faltas de ortografía o abreviaciones (por ejemplo, `tomte` o `pech`), ¿la aplicación seleccionó la opción correcta que esperabas?
 - [ ] Sí, las sugerencias y la corrección automática fueron acertadas.
 - [ ] En la mayoría de los casos, pero falló en algunos específicos.
@@ -37,9 +20,9 @@ Al escribir nombres de ingredientes con faltas de ortografía o abreviaciones (p
 
 ---
 
-## 3. Navegación por Categorías
+## 2. Navegación por Categorías
 
-### **Pregunta 3.1**
+### **Pregunta 2.1**
 ¿Fue fácil encontrar los ingredientes navegando a través de las categorías de alimentos (ej. *Proteínas y Carnes* &rarr; *Pollo* &rarr; *Pechuga de pollo*)?
 - [ ] Muy fácil (tomó 3 pasos o menos)
 - [ ] Aceptable
@@ -47,26 +30,18 @@ Al escribir nombres de ingredientes con faltas de ortografía o abreviaciones (p
 
 ---
 
-## 4. Seguimiento de Marcas y Cantidades
+## 3. Seguimiento de Marcas y Cantidades
 
-### **Pregunta 4.1**
+### **Pregunta 3.1**
 Al gestionar tus ingredientes disponibles y tu lista de compras, **¿te gustaría poder registrar o editar las marcas específicas de los productos (por ejemplo, marca de leche, arroz o salsa)?**
 - [ ] Sí, es muy importante para mí poder elegir y guardar la marca.
 - [ ] Sería útil en algunos productos, pero no indispensable.
 - [ ] No, prefiero mantener la lista simple sin especificar marcas.
 
-### **Pregunta 4.2**
+### **Pregunta 3.2**
 **¿Te gustaría poder registrar y modificar cantidades y unidades específicas directamente en tus ingredientes disponibles y lista de compras (por ejemplo, `500 g`, `2 unidades`, `1 litro`)?**
 - [ ] Sí, necesito llevar el control exacto de cantidades y unidades.
 - [ ] Solo en la lista de compras, no necesariamente en mi despensa.
 - [ ] No, con saber si tengo o me falta el ingrediente es suficiente.
 
-#### Comentarios sobre marcas y cantidades:
-> *(Indica qué datos te resultarían más útiles o si preferirías editarlos rápido desde cada tarjeta)*
-
 ---
-
-## 5. Sugerencias y Mejoras Generales
-
-> ¿Tienes alguna sugerencia para mejorar la experiencia de uso al planificar tus compras y cocinar en Guatemala?
-

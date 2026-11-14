@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
@@ -81,7 +81,6 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
 
   List<String> _suggestions = [];
   bool _isSaving = false;
-  bool _hasSeenEnterTip = false;
   bool _showEnterTip = false;
 
   // Category navigation stack for US-2.3
@@ -98,14 +97,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       initialIndex: widget.initialTab.clamp(0, tabCount - 1),
     );
     _searchController.addListener(_onSearchChanged);
-    _loadTipPreference();
-  }
-
-  Future<void> _loadTipPreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      _hasSeenEnterTip = prefs.getBool('has_seen_enter_tip') ?? false;
-    }
+    SettingsController.instance.load();
   }
 
   @override
@@ -128,12 +120,9 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
     }
 
     // Trigger enter tip on the user's first text input
-    if (!_hasSeenEnterTip && !_showEnterTip) {
+    if (!SettingsController.instance.hasSeenEnterTip && !_showEnterTip) {
       _showEnterTip = true;
-      _hasSeenEnterTip = true;
-      SharedPreferences.getInstance().then((prefs) {
-        prefs.setBool('has_seen_enter_tip', true);
-      });
+      SettingsController.instance.markEnterTipSeen();
     }
 
     final results = IngredientCatalog.instance.searchSuggestions(query);
@@ -150,6 +139,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
 
     final newIngredient = Ingredient(name: ingredientName.trim());
     await _storageService.addIngredient(newIngredient);
+    await SettingsController.instance.load();
 
     if (mounted) {
       _searchController.clear();
@@ -169,7 +159,10 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
           duration: const Duration(seconds: 2),
         ),
       );
-      // Stay on the Add Ingredient section as requested
+
+      if (SettingsController.instance.autoReturnAfterAddingIngredient) {
+        _goToIngredientList();
+      }
     }
   }
 
@@ -229,6 +222,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
         drawer: AppNavigationDrawer(
           currentDestination:
               widget.isShoppingList ? null : AppDestination.addIngredients,
+          settingsSection: SettingsSection.ingredients,
         ),
         appBar: AppBar(
           leadingWidth: appBarLeadingWidth(context),

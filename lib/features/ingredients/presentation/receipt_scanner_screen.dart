@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../data/ingredient_storage_service.dart';
@@ -222,7 +223,9 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
     final selectedCount = _items.where((it) => it.isSelected).length;
 
     return Scaffold(
-      drawer: const AppNavigationDrawer(),
+      drawer: const AppNavigationDrawer(
+        settingsSection: SettingsSection.ingredients,
+      ),
       appBar: AppBar(
         leadingWidth: appBarLeadingWidth(context),
         leading: const AppBarLeading(),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:food_friend/core/settings/settings_controller.dart';
 import 'package:food_friend/core/theme/theme_controller.dart';
 import 'package:food_friend/core/widgets/app_navigation_drawer.dart';
 import 'package:food_friend/features/home/presentation/home_screen.dart';
@@ -21,6 +22,7 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    SettingsController.instance.resetToDefaults();
     ThemeController.instance.resetToLight();
   });
 

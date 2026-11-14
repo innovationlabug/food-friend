@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/navigation/app_route_observer.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
@@ -61,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     final results = await Future.wait([
       _nutritionService.generateReport(),
       _ingredientStorageService.getIngredients(),
+      SettingsController.instance.load(),
     ]);
     if (!mounted) return;
     setState(() {
@@ -154,47 +156,52 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         ],
       ),
       body: SafeArea(
-        child: ResponsiveContainer(
-          padding: EdgeInsets.symmetric(
-            horizontal: context.isMobile ? 14 : 24,
-            vertical: context.isMobile ? 12 : 18,
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final canFitInViewport = constraints.maxHeight >= 480;
-              if (canFitInViewport) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeroHeader(context),
-                    SizedBox(height: context.isMobile ? 12 : 18),
-                    Expanded(
-                      child: _buildDynamicPanelGrid(
-                        context,
-                        hasIngredients: hasIngredients,
-                        useExpandedRows: true,
-                      ),
-                    ),
-                  ],
-                );
-              }
+        child: ListenableBuilder(
+          listenable: SettingsController.instance,
+          builder: (context, _) {
+            return ResponsiveContainer(
+              padding: EdgeInsets.symmetric(
+                horizontal: context.isMobile ? 14 : 24,
+                vertical: context.isMobile ? 12 : 18,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final canFitInViewport = constraints.maxHeight >= 480;
+                  if (canFitInViewport) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeroHeader(context),
+                        SizedBox(height: context.isMobile ? 12 : 18),
+                        Expanded(
+                          child: _buildDynamicPanelGrid(
+                            context,
+                            hasIngredients: hasIngredients,
+                            useExpandedRows: true,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
 
-              return SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeroHeader(context),
-                    const SizedBox(height: 12),
-                    _buildDynamicPanelGrid(
-                      context,
-                      hasIngredients: hasIngredients,
-                      useExpandedRows: false,
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeroHeader(context),
+                        const SizedBox(height: 12),
+                        _buildDynamicPanelGrid(
+                          context,
+                          hasIngredients: hasIngredients,
+                          useExpandedRows: false,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  );
+                },
+              ),
+            );
+          },
         ),
       ),
     );
@@ -236,6 +243,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     required bool useExpandedRows,
   }) {
     final gap = context.isMobile ? 10.0 : 16.0;
+    final settings = SettingsController.instance;
+    final hideRecipeManagement = settings.hideRecipeManagementPanel;
+    final hideNutritionTips = settings.hideNutritionTipsPanel;
 
     // Dynamic vertical proportions:
     // - No ingredients: emphasize Ingredients & Shopping List.
@@ -252,17 +262,19 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       required double fallbackHeight,
       required Widget left,
       required int leftFlex,
-      required Widget right,
+      Widget? right,
       required int rightFlex,
     }) {
-      final rowContent = Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(flex: leftFlex, child: left),
-          SizedBox(width: gap),
-          Expanded(flex: rightFlex, child: right),
-        ],
-      );
+      final Widget rowContent = right == null
+          ? left
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(flex: leftFlex, child: left),
+                SizedBox(width: gap),
+                Expanded(flex: rightFlex, child: right),
+              ],
+            );
 
       if (useExpandedRows) {
         return Expanded(flex: rowFlex, child: rowContent);
@@ -314,14 +326,16 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             onTap: () => _openRecipeSuggestions(context),
             isPrimary: hasIngredients,
           ),
-          right: _buildActionPanel(
-            context: context,
-            iconName: 'heart',
-            title: 'Gestión de recetas',
-            description: 'Historial y favoritas.',
-            onTap: () => _pushAndRefresh(const RecipeManagementScreen()),
-            isCompact: true,
-          ),
+          right: hideRecipeManagement
+              ? null
+              : _buildActionPanel(
+                  context: context,
+                  iconName: 'heart',
+                  title: 'Gestión de recetas',
+                  description: 'Historial y favoritas.',
+                  onTap: () => _pushAndRefresh(const RecipeManagementScreen()),
+                  isCompact: true,
+                ),
         ),
         SizedBox(height: gap),
         buildRow(
@@ -338,16 +352,18 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               const ShoppingListScreen(initialTab: 1),
             ),
             isSecondaryHighlight: !hasIngredients,
-            isCompact: hasIngredients,
+            isCompact: !hideNutritionTips && hasIngredients,
           ),
-          right: _buildActionPanel(
-            context: context,
-            iconName: 'nutrition',
-            title: 'Consejos de Nutrición',
-            description: _nutritionCardDescription(),
-            onTap: () => _pushAndRefresh(const NutritionTipsScreen()),
-            isCompact: !hasIngredients,
-          ),
+          right: hideNutritionTips
+              ? null
+              : _buildActionPanel(
+                  context: context,
+                  iconName: 'nutrition',
+                  title: 'Consejos de Nutrición',
+                  description: _nutritionCardDescription(),
+                  onTap: () => _pushAndRefresh(const NutritionTipsScreen()),
+                  isCompact: !hasIngredients,
+                ),
         ),
       ],
     );
