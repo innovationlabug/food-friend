@@ -4,7 +4,7 @@ Esta encuesta recopila retroalimentación sobre la usabilidad, fluidez y patrone
 
 ---
 
-## 1. Facilidad de Búsqueda y Sugerencias en Tiempo Real
+## 1. Facilidad de Búsqueda y Sugerencias
 
 ### **Pregunta 1.1**
 ¿Qué tan claro y útil te pareció el consejo que aparece la primera vez indicando que al presionar **Enter** se auto-agrega el primer ingrediente sugerido?

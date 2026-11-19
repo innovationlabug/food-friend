@@ -394,7 +394,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  'Sugerencias en tiempo real:',
+                  'Sugerencias:',
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.bold,

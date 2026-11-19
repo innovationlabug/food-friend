@@ -45,7 +45,7 @@ void main() {
       await tester.enterText(input, 'pech');
       await tester.pumpAndSettle();
 
-      expect(find.text('Sugerencias en tiempo real:'), findsOneWidget);
+      expect(find.text('Sugerencias:'), findsOneWidget);
       expect(find.text('Pechuga de pollo'), findsOneWidget);
 
       // Type 'guis' matching 'Güisquil'
