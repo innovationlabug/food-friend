@@ -6,9 +6,14 @@ import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
 import '../../ingredients/presentation/add_ingredient_screen.dart';
+import '../../nutrition/data/health_goal_storage_service.dart';
 import '../../recipes/data/external_recipe_service.dart';
+import '../../recipes/data/recipe_history_service.dart';
 import '../../recipes/presentation/recipe_suggestions_screen.dart';
 import '../data/shopping_list_storage_service.dart';
+import '../data/shopping_suggestion_service.dart';
+import '../domain/shopping_suggestion.dart';
+import 'widgets/smart_shopping_suggestions_section.dart';
 
 /// Screen presenting the user's available home ingredients ("Mis ingredientes")
 /// and dedicated shopping list ("Lista de compras") in two independent tabs.
@@ -18,6 +23,9 @@ class ShoppingListScreen extends StatefulWidget {
     this.storageService,
     this.shoppingListService,
     this.externalRecipeService,
+    this.historyService,
+    this.healthGoalStorageService,
+    this.suggestionService,
     this.initialTab = 0,
   });
 
@@ -29,6 +37,15 @@ class ShoppingListScreen extends StatefulWidget {
 
   /// Optional external recipe service for testing or custom proxy routing.
   final ExternalRecipeService? externalRecipeService;
+
+  /// Optional recipe history service for computing smart shopping suggestions.
+  final RecipeHistoryService? historyService;
+
+  /// Optional health-goal storage service for computing goal-aligned suggestions.
+  final HealthGoalStorageService? healthGoalStorageService;
+
+  /// Optional smart shopping suggestion engine for testing.
+  final ShoppingSuggestionService? suggestionService;
 
   /// Initial tab index: 0 = Mis ingredientes, 1 = Por comprar.
   final int initialTab;
@@ -42,9 +59,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
   late final TabController _tabController;
   late final IngredientStorageService _storageService;
   late final ShoppingListStorageService _shoppingListService;
+  late final RecipeHistoryService _historyService;
+  late final HealthGoalStorageService _healthGoalStorageService;
+  late final ShoppingSuggestionService _suggestionService;
 
   List<Ingredient> _ingredients = [];
   List<Ingredient> _shoppingListItems = [];
+  List<ShoppingSuggestion> _suggestions = [];
+  ShoppingSuggestionsContext? _suggestionsContext;
   final Set<String> _selectedIngredientNames = {};
   bool _isLoading = true;
   int _activeTabIndex = 0;
@@ -55,6 +77,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     _storageService = widget.storageService ?? IngredientStorageService();
     _shoppingListService = widget.shoppingListService ??
         ShoppingListStorageService(pantryStorageService: _storageService);
+    _historyService = widget.historyService ??
+        RecipeHistoryService(ingredientStorageService: _storageService);
+    _healthGoalStorageService =
+        widget.healthGoalStorageService ?? HealthGoalStorageService();
+    _suggestionService = widget.suggestionService ??
+        ShoppingSuggestionService(
+          ingredientStorageService: _storageService,
+          shoppingListService: _shoppingListService,
+          historyService: _historyService,
+          healthGoalStorageService: _healthGoalStorageService,
+        );
     _activeTabIndex = widget.initialTab.clamp(0, 1);
     _tabController = TabController(
       length: 2,
@@ -85,13 +118,22 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
       _isLoading = true;
     });
 
-    final items = await _storageService.getIngredients();
-    final toBuy = await _shoppingListService.getIngredients();
+    final results = await Future.wait<dynamic>([
+      _storageService.getIngredients(),
+      _shoppingListService.getIngredients(),
+      _suggestionService.loadContext(),
+    ]);
+
+    final items = results[0] as List<Ingredient>;
+    final toBuy = results[1] as List<Ingredient>;
+    final contextSnapshot = results[2] as ShoppingSuggestionsContext;
 
     if (mounted) {
       setState(() {
         _ingredients = items;
         _shoppingListItems = toBuy;
+        _suggestionsContext = contextSnapshot;
+        _suggestions = _computeSuggestions(items, toBuy, contextSnapshot);
         // Default newly loaded available ingredients to selected
         for (final item in items) {
           _selectedIngredientNames.add(item.name);
@@ -102,6 +144,32 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
         _isLoading = false;
       });
     }
+  }
+
+  List<ShoppingSuggestion> _computeSuggestions(
+    List<Ingredient> pantry,
+    List<Ingredient> shoppingList,
+    ShoppingSuggestionsContext? contextSnapshot,
+  ) {
+    if (contextSnapshot == null) {
+      return const <ShoppingSuggestion>[];
+    }
+    return _suggestionService.generateSuggestions(
+      pantryIngredients: pantry,
+      shoppingListIngredients: shoppingList,
+      recipes: contextSnapshot.recipes,
+      history: contextSnapshot.history,
+      activeHealthGoals: contextSnapshot.activeHealthGoals,
+      nutritionReport: contextSnapshot.nutritionReport,
+    );
+  }
+
+  void _recomputeSuggestions() {
+    _suggestions = _computeSuggestions(
+      _ingredients,
+      _shoppingListItems,
+      _suggestionsContext,
+    );
   }
 
   Future<void> _openAddIngredientScreen() async {
@@ -199,6 +267,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
       setState(() {
         _ingredients = updated;
         _selectedIngredientNames.remove(name);
+        _recomputeSuggestions();
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -225,6 +294,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
           }
         }
         _selectedIngredientNames.retainWhere(currentNames.contains);
+        _recomputeSuggestions();
       });
 
       ScaffoldMessenger.of(context)
@@ -244,6 +314,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     if (mounted) {
       setState(() {
         _shoppingListItems = updated;
+        _recomputeSuggestions();
       });
 
       ScaffoldMessenger.of(context)
@@ -251,6 +322,28 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
         ..showSnackBar(
           SnackBar(
             content: Text('"${item.name}" descartado de la lista de compras'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+    }
+  }
+
+  Future<void> _addSuggestedIngredient(String ingredientName) async {
+    final updatedShoppingList = await _shoppingListService.addIngredient(
+      Ingredient(name: ingredientName),
+    );
+
+    if (mounted) {
+      setState(() {
+        _shoppingListItems = updatedShoppingList;
+        _recomputeSuggestions();
+      });
+
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('"$ingredientName" agregado a tu lista de compras'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -372,7 +465,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
                         ? _buildEmptyState(context)
                         : _buildIngredientsView(context),
                     _shoppingListItems.isEmpty
-                        ? _buildShoppingEmptyState(context)
+                        ? (_suggestions.isEmpty
+                            ? _buildShoppingEmptyState(context)
+                            : _buildShoppingEmptyWithSuggestionsState(context))
                         : _buildShoppingListView(context),
                   ],
                 ),
@@ -513,6 +608,70 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildShoppingEmptyWithSuggestionsState(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return ListView(
+      children: [
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: AppSvgIcon(
+                    assetName: 'shopping_cart',
+                    size: 40,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Tu lista de compras está vacía',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Agrega los ingredientes que necesitas comprar en el supermercado.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _openAddShoppingItemScreen,
+                  icon: AppSvgIcon(
+                    assetName: 'plus',
+                    size: 18,
+                    color: colorScheme.onPrimary,
+                  ),
+                  label: const Text('Agregar a lista de compras'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        SmartShoppingSuggestionsSection(
+          suggestions: _suggestions,
+          onAddIngredient: _addSuggestedIngredient,
+        ),
+        const SizedBox(height: 80),
+      ],
     );
   }
 
@@ -660,8 +819,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 10, top: 2),
@@ -692,14 +850,60 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
             ],
           ),
         ),
-        Expanded(
-          child: _buildPairedList(
-            context,
-            itemCount: _shoppingListItems.length,
-            itemBuilder: (context, index) =>
-                _buildShoppingListItemCard(context, _shoppingListItems[index]),
-          ),
+        _buildPairedItemsColumn(
+          context,
+          itemCount: _shoppingListItems.length,
+          itemBuilder: (context, index) =>
+              _buildShoppingListItemCard(context, _shoppingListItems[index]),
         ),
+        if (_suggestions.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          SmartShoppingSuggestionsSection(
+            suggestions: _suggestions,
+            onAddIngredient: _addSuggestedIngredient,
+          ),
+        ],
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildPairedItemsColumn(
+    BuildContext context, {
+    required int itemCount,
+    required Widget Function(BuildContext context, int index) itemBuilder,
+  }) {
+    if (!context.isDesktop) {
+      return Column(
+        children: [
+          for (int i = 0; i < itemCount; i++) ...[
+            itemBuilder(context, i),
+            if (i < itemCount - 1) const SizedBox(height: 8),
+          ],
+        ],
+      );
+    }
+
+    final rowCount = (itemCount + 1) ~/ 2;
+    return Column(
+      children: [
+        for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) ...[
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: itemBuilder(context, rowIndex * 2)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: (rowIndex * 2 + 1) < itemCount
+                      ? itemBuilder(context, rowIndex * 2 + 1)
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
+          ),
+          if (rowIndex < rowCount - 1) const SizedBox(height: 8),
+        ],
       ],
     );
   }

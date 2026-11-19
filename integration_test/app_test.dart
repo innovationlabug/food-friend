@@ -9,6 +9,7 @@ import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
+import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
 import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 import 'package:food_friend/main.dart' as app;
 
@@ -624,6 +625,105 @@ void main() {
       find.text('La pechuga de pollo es una excelente fuente de proteína'),
       findsOneWidget,
     );
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
+    await goalStorage.clearGoals();
+  });
+
+  testWidgets(
+      'E2E integration test FEAT-3: surfaces favorite and health-goal shopping suggestions, adds missing items in one tap, and updates suggestions',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    final history = RecipeHistoryService(ingredientStorageService: pantry);
+    final goalStorage = HealthGoalStorageService();
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
+    await goalStorage.clearGoals();
+
+    await pantry.saveIngredients([
+      const Ingredient(name: 'Frijoles negros'),
+      const Ingredient(name: 'Cebolla blanca'),
+      const Ingredient(name: 'Ajo'),
+      const Ingredient(name: 'Brócoli'),
+      const Ingredient(name: 'Zanahoria'),
+      const Ingredient(name: 'Chile pimiento'),
+      const Ingredient(name: 'Curry'),
+      const Ingredient(name: 'Aceite vegetal'),
+    ]);
+    await history.setPreference(
+      'frijoles_parados_queso',
+      RecipePreference.favorite,
+    );
+    await goalStorage.saveSelectedGoals({HealthGoal.loseWeight});
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // Navigate to Lista de compras
+    final buyListBtn = find.text('Lista de compras').first;
+    await tester.ensureVisible(buyListBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(buyListBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sugerencias para tu lista'), findsOneWidget);
+    expect(
+      find.text(
+        'Si compras Epazote y Queso de capas puedes cocinar Frijoles Negros Parados con Epazote y Queso de tus recetas favoritas',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Si compras Maní puedes preparar Salteado de Verduras al Curry con Maní para tu meta de bajar calorías',
+      ),
+      findsOneWidget,
+    );
+
+    // One-tap add Epazote -> Por comprar updates and favorite suggestion narrows to Queso de capas
+    final addEpazote = find.byKey(
+      const ValueKey('add_suggestion_frijoles_parados_queso_epazote'),
+    );
+    await tester.ensureVisible(addEpazote);
+    await tester.pumpAndSettle();
+    await tester.tap(addEpazote);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Por comprar (1)'), findsOneWidget);
+    expect(find.text('Epazote'), findsOneWidget);
+    expect(
+      find.text(
+        'Si compras Queso de capas puedes cocinar Frijoles Negros Parados con Epazote y Queso de tus recetas favoritas',
+      ),
+      findsOneWidget,
+    );
+
+    // One-tap add Queso de capas -> favorite suggestion disappears while health-goal remains
+    final addQueso = find.byKey(
+      const ValueKey('add_suggestion_frijoles_parados_queso_queso de capas'),
+    );
+    await tester.ensureVisible(addQueso);
+    await tester.pumpAndSettle();
+    await tester.tap(addQueso);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Por comprar (2)'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('shopping_suggestion_frijoles_parados_queso')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('shopping_suggestion_salteado_verduras_curry')),
+      findsOneWidget,
+    );
+
+    final queued = await shopping.getIngredients();
+    expect(queued.map((i) => i.name), equals(['Epazote', 'Queso de capas']));
 
     // Cleanup
     await pantry.clearIngredients();

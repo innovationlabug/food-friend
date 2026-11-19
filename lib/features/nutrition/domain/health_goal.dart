@@ -56,6 +56,14 @@ enum HealthGoal {
   /// SVG icon asset name in `assets/icons/`.
   final String iconName;
 
+  /// Concise Spanish phrase used in shopping suggestion prompts.
+  String get shoppingGoalPhrase => switch (this) {
+        HealthGoal.loseWeight => 'bajar calorías',
+        HealthGoal.gainMuscle => 'ganar masa muscular',
+        HealthGoal.reduceSodiumAndProcessed => 'reducir sodio',
+        HealthGoal.increaseVitaminsAndFiber => 'aumentar vitaminas y fibra',
+      };
+
   /// Resolves a [HealthGoal] from its persisted [storageKey], or null if unknown.
   static HealthGoal? fromStorageKey(String key) {
     for (final goal in HealthGoal.values) {

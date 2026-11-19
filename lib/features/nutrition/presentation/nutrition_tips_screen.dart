@@ -157,6 +157,8 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
       MaterialPageRoute<void>(
         builder: (_) => ShoppingListScreen(
           shoppingListService: _shoppingListService,
+          historyService: widget.historyService,
+          healthGoalStorageService: _healthGoalStorageService,
           initialTab: 1,
         ),
       ),

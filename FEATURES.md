@@ -63,9 +63,9 @@ Current nutrition tips are generic and disconnected from a user's personal healt
 
 ---
 
-## - [ ] FEAT-3: Smart Shopping List Suggestions from Favorites, History & Health Goals
+## - [x] FEAT-3: Smart Shopping List Suggestions from Favorites, History & Health Goals
 - **Source:** `PLANNING.md` (*Iteration 3 — Shopping list functionality*) & `SPEC.md` (*Next week plan*)
-- **Status:** Open (`iteration-3`)
+- **Status:** Completed (`iteration-3`)
 - **Suggested Branch:** `feat/smart-shopping-suggestions`
 
 ### Product Problem
@@ -83,10 +83,10 @@ Users currently build their `"Por comprar"` list entirely from scratch or right 
    - Allow users to add suggested missing ingredients directly into `"Por comprar"` with a single tap, automatically updating or dismissing the suggestion once added.
 
 ### Acceptance Criteria (Definition of Done)
-- [ ] The `"Por comprar"` screen displays a dedicated, clutter-free suggestions section in Spanish when favorite/liked or health-goal recipes are missing only 1–2 ingredients.
-- [ ] Suggestions explicitly follow the format `"Si compras X puedes cocinar Y de tus recetas favoritas"` (or corresponding health-goal message) using clean SVG icons.
-- [ ] Tapping a suggested ingredient immediately adds it to `"Por comprar"` without duplicates and refreshes the suggestion list.
-- [ ] Unit and widget tests verify gap calculation across available pantry items, favorite/liked recipes, and health-goal recipes.
+- [x] The `"Por comprar"` screen displays a dedicated, clutter-free suggestions section in Spanish when favorite/liked or health-goal recipes are missing only 1–2 ingredients.
+- [x] Suggestions explicitly follow the format `"Si compras X puedes cocinar Y de tus recetas favoritas"` (or corresponding health-goal message) using clean SVG icons.
+- [x] Tapping a suggested ingredient immediately adds it to `"Por comprar"` without duplicates and refreshes the suggestion list.
+- [x] Unit and widget tests verify gap calculation across available pantry items, favorite/liked recipes, and health-goal recipes.
 
 ---
 

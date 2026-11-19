@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:food_friend/core/widgets/app_svg_icon.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/amount_unit.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
+import 'package:food_friend/features/nutrition/domain/health_goal.dart';
+import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
+import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
 import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
+import 'package:food_friend/features/shopping_list/presentation/widgets/smart_shopping_suggestions_section.dart';
 import 'package:food_friend/main.dart';
 
 void main() {
@@ -18,12 +24,16 @@ void main() {
   Widget createTestWidget({
     IngredientStorageService? storageService,
     ShoppingListStorageService? shoppingListService,
+    RecipeHistoryService? historyService,
+    HealthGoalStorageService? healthGoalStorageService,
     int initialTab = 0,
   }) {
     return MaterialApp(
       home: ShoppingListScreen(
         storageService: storageService,
         shoppingListService: shoppingListService,
+        historyService: historyService,
+        healthGoalStorageService: healthGoalStorageService,
         initialTab: initialTab,
       ),
     );
@@ -374,6 +384,225 @@ void main() {
 
       final shoppingCardHeight = tester.getSize(find.byType(Card).first).height;
       expect(shoppingCardHeight, equals(ingredientCardHeight));
+    });
+  });
+
+  group('FEAT-3: Smart shopping list suggestions', () {
+    Future<
+        ({
+          IngredientStorageService pantry,
+          ShoppingListStorageService shopping,
+          RecipeHistoryService history,
+          HealthGoalStorageService goals,
+        })> seedSuggestionFixtures() async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+      final history = RecipeHistoryService(ingredientStorageService: pantry);
+      final goals = HealthGoalStorageService(preferences: prefs);
+
+      await pantry.saveIngredients([
+        const Ingredient(name: 'Frijoles negros'),
+        const Ingredient(name: 'Cebolla blanca'),
+        const Ingredient(name: 'Ajo'),
+        const Ingredient(name: 'Brócoli'),
+        const Ingredient(name: 'Zanahoria'),
+        const Ingredient(name: 'Chile pimiento'),
+        const Ingredient(name: 'Curry'),
+        const Ingredient(name: 'Aceite vegetal'),
+      ]);
+
+      await history.setPreference(
+        'frijoles_parados_queso',
+        RecipePreference.favorite,
+      );
+      await goals.saveSelectedGoals({HealthGoal.loseWeight});
+
+      return (
+        pantry: pantry,
+        shopping: shopping,
+        history: history,
+        goals: goals,
+      );
+    }
+
+    testWidgets(
+        'displays favorite and health-goal suggestions in Por comprar with Spanish copy and SVG icons',
+        (tester) async {
+      final deps = await seedSuggestionFixtures();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          storageService: deps.pantry,
+          shoppingListService: deps.shopping,
+          historyService: deps.history,
+          healthGoalStorageService: deps.goals,
+          initialTab: 1,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final section = find.byType(SmartShoppingSuggestionsSection);
+      expect(section, findsOneWidget);
+      expect(find.text('Sugerencias para tu lista'), findsOneWidget);
+
+      final favText = find.text(
+        'Si compras Epazote y Queso de capas puedes cocinar Frijoles Negros Parados con Epazote y Queso de tus recetas favoritas',
+      );
+      await tester.ensureVisible(favText);
+      await tester.pumpAndSettle();
+      expect(favText, findsOneWidget);
+
+      final goalText = find.text(
+        'Si compras Maní puedes preparar Salteado de Verduras al Curry con Maní para tu meta de bajar calorías',
+      );
+      await tester.ensureVisible(goalText);
+      await tester.pumpAndSettle();
+      expect(goalText, findsOneWidget);
+
+      // Verify SVG icons are used with zero Material Icon widgets
+      expect(
+        find.descendant(of: section, matching: find.byType(Icon)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: section, matching: find.byType(AppSvgIcon)),
+        findsAtLeastNWidgets(4),
+      );
+    });
+
+    testWidgets(
+        'one-tap adding updates and dismisses suggestions without duplicates, and dismissing restores them',
+        (tester) async {
+      final deps = await seedSuggestionFixtures();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          storageService: deps.pantry,
+          shoppingListService: deps.shopping,
+          historyService: deps.history,
+          healthGoalStorageService: deps.goals,
+          initialTab: 1,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 1. Add first missing ingredient (Epazote) from 2-missing favorite suggestion
+      final addEpazote = find.byKey(
+        const ValueKey('add_suggestion_frijoles_parados_queso_epazote'),
+      );
+      await tester.ensureVisible(addEpazote);
+      await tester.pumpAndSettle();
+      await tester.tap(addEpazote);
+      await tester.pumpAndSettle();
+
+      expect(find.text('"Epazote" agregado a tu lista de compras'), findsOneWidget);
+      expect(find.text('Por comprar (1)'), findsOneWidget);
+      expect(find.text('Epazote'), findsOneWidget);
+      expect(
+        find.text(
+          'Si compras Queso de capas puedes cocinar Frijoles Negros Parados con Epazote y Queso de tus recetas favoritas',
+        ),
+        findsOneWidget,
+      );
+
+      // 2. Add second missing ingredient (Queso de capas) -> favorite card is dismissed
+      final addQueso = find.byKey(
+        const ValueKey('add_suggestion_frijoles_parados_queso_queso de capas'),
+      );
+      await tester.ensureVisible(addQueso);
+      await tester.pumpAndSettle();
+      await tester.tap(addQueso);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Por comprar (2)'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('shopping_suggestion_frijoles_parados_queso')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('shopping_suggestion_salteado_verduras_curry')),
+        findsOneWidget,
+      );
+
+      // Persisted list has exactly 2 distinct items without duplicates
+      final storedShopping = await deps.shopping.getIngredients();
+      expect(storedShopping.map((e) => e.name), equals(['Epazote', 'Queso de capas']));
+
+      // 3. Dismiss Epazote from Por comprar -> favorite suggestion reappears for Epazote
+      await tester.tap(find.byTooltip('Descartar de la lista').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Por comprar (1)'), findsOneWidget);
+      expect(
+        find.text(
+          'Si compras Epazote puedes cocinar Frijoles Negros Parados con Epazote y Queso de tus recetas favoritas',
+        ),
+        findsOneWidget,
+      );
+
+      // 4. Mark Queso de capas as bought -> moves to pantry and stays out of suggestions
+      await tester.tap(find.byTooltip('Marcar como comprado').first);
+      await tester.pumpAndSettle();
+
+      expect((await deps.pantry.getIngredients()).map((i) => i.name), contains('Queso de capas'));
+      expect(
+        find.text(
+          'Si compras Epazote puedes cocinar Frijoles Negros Parados con Epazote y Queso de tus recetas favoritas',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'renders smart suggestions cleanly on mobile (360x800) and desktop (1280x900) without overflow',
+        (tester) async {
+      final deps = await seedSuggestionFixtures();
+
+      // Mobile viewport
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        createTestWidget(
+          storageService: deps.pantry,
+          shoppingListService: deps.shopping,
+          historyService: deps.history,
+          healthGoalStorageService: deps.goals,
+          initialTab: 1,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sugerencias para tu lista'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // Desktop viewport (two-column layout for suggestion cards)
+      tester.view.physicalSize = const Size(1280, 900);
+      await tester.pumpAndSettle();
+
+      final favCard = find.byKey(
+        const ValueKey('shopping_suggestion_frijoles_parados_queso'),
+      );
+      final goalCard = find.byKey(
+        const ValueKey('shopping_suggestion_salteado_verduras_curry'),
+      );
+      expect(favCard, findsOneWidget);
+      expect(goalCard, findsOneWidget);
+
+      // Side-by-side on desktop: same top Y, second card strictly to the right
+      final favRect = tester.getRect(favCard);
+      final goalRect = tester.getRect(goalCard);
+      expect((favRect.top - goalRect.top).abs(), lessThan(1.0));
+      expect(goalRect.left, greaterThan(favRect.right));
+      expect(tester.takeException(), isNull);
     });
   });
 }
