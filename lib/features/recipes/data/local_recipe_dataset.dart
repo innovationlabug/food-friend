@@ -1,3 +1,4 @@
+import '../../nutrition/domain/nutrition_metadata.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_variation.dart';
@@ -45,6 +46,12 @@ class LocalRecipeDataset {
       prepTimeMinutes: 25,
       cookTimeMinutes: 45,
       servings: 4,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Pollo', displayAmount: '2 lbs en piezas'),
         RecipeIngredient(name: 'Tomate', displayAmount: '4 unidades'),
@@ -90,6 +97,12 @@ class LocalRecipeDataset {
       prepTimeMinutes: 15,
       cookTimeMinutes: 35,
       servings: 4,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb en trozos grandes'),
         RecipeIngredient(name: 'Güisquil', displayAmount: '1 unidad pelado y en cubos'),
@@ -131,6 +144,12 @@ class LocalRecipeDataset {
       prepTimeMinutes: 20,
       cookTimeMinutes: 50,
       servings: 4,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Posta de res', displayAmount: '1.5 lbs'),
         RecipeIngredient(name: 'Tomate', displayAmount: '5 unidades maduras'),
@@ -173,6 +192,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 10,
       cookTimeMinutes: 0,
       servings: 2,
+      nutritionAttributes: {
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Aguacate', displayAmount: '2 unidades maduras en cubos'),
         RecipeIngredient(name: 'Tomate', displayAmount: '3 unidades picadas en cubos'),
@@ -206,6 +230,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 10,
       cookTimeMinutes: 60,
       servings: 4,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Frijoles negros', displayAmount: '1 libra limpios'),
         RecipeIngredient(name: 'Cebolla blanca', displayAmount: '1/2 unidad en trozo'),
@@ -238,6 +267,12 @@ class LocalRecipeDataset {
       prepTimeMinutes: 20,
       cookTimeMinutes: 25,
       servings: 3,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Ejote', displayAmount: '1 libra despuntado'),
         RecipeIngredient(name: 'Huevo', displayAmount: '3 unidades separadas en claras y yemas'),
@@ -272,6 +307,12 @@ class LocalRecipeDataset {
       prepTimeMinutes: 10,
       cookTimeMinutes: 15,
       servings: 2,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb en filetes delgados'),
         RecipeIngredient(name: 'Güisquil', displayAmount: '1 unidad en medias lunas'),
@@ -311,6 +352,12 @@ class LocalRecipeDataset {
       prepTimeMinutes: 15,
       cookTimeMinutes: 40,
       servings: 4,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Carne de res', displayAmount: '1 libra de falda o posta'),
         RecipeIngredient(name: 'Rábano', displayAmount: '6 unidades finamente picadas'),
@@ -349,6 +396,12 @@ class LocalRecipeDataset {
       prepTimeMinutes: 15,
       cookTimeMinutes: 30,
       servings: 4,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Lentejas', displayAmount: '1 taza lavadas'),
         RecipeIngredient(name: 'Espinaca', displayAmount: '1 taza de hojas limpias troceadas'),
@@ -383,6 +436,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 10,
       cookTimeMinutes: 12,
       servings: 2,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Filete de pescado', displayAmount: '1 lb en filetes limpios'),
         RecipeIngredient(name: 'Limón', displayAmount: '2 unidades'),
@@ -415,6 +473,12 @@ class LocalRecipeDataset {
       prepTimeMinutes: 5,
       cookTimeMinutes: 8,
       servings: 1,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Huevo', displayAmount: '2 unidades batidas'),
         RecipeIngredient(name: 'Espinaca', displayAmount: '1 taza de hojas picadas'),
@@ -446,6 +510,12 @@ class LocalRecipeDataset {
       prepTimeMinutes: 15,
       cookTimeMinutes: 30,
       servings: 3,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Pollo', displayAmount: '1.5 lbs en piezas'),
         RecipeIngredient(name: 'Güisquil', displayAmount: '1 unidad pelado y en cubos'),
@@ -486,6 +556,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 15,
       cookTimeMinutes: 25,
       servings: 4,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Arroz blanco', displayAmount: '1 taza limpio'),
         RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1/2 lb en cubitos'),
@@ -526,6 +601,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 10,
       cookTimeMinutes: 15,
       servings: 2,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Huevo', displayAmount: '2 a 4 unidades'),
         RecipeIngredient(name: 'Frijoles negros', displayAmount: '1 taza cocidos'),
@@ -565,6 +645,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 15,
       cookTimeMinutes: 0,
       servings: 2,
+      nutritionAttributes: {
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Aguacate', displayAmount: '2 unidades firmes en dados'),
         RecipeIngredient(name: 'Pepino', displayAmount: '1 unidad pelado sin semillas y picado'),
@@ -603,6 +688,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 15,
       cookTimeMinutes: 25,
       servings: 4,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Carne molida de res', displayAmount: '1 lb'),
         RecipeIngredient(name: 'Papa', displayAmount: '2 unidades en cubitos finos'),
@@ -643,6 +733,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 15,
       cookTimeMinutes: 20,
       servings: 3,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.calorieDense,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb en tiras'),
         RecipeIngredient(name: 'Curry', displayAmount: '1 cucharada de curry en polvo'),
@@ -685,6 +780,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 10,
       cookTimeMinutes: 20,
       servings: 3,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.highSodiumOrProcessed,
+      },
       ingredients: [
         RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb en filetes'),
         RecipeIngredient(name: 'Queso parmesano', displayAmount: '1/2 taza rallado'),
@@ -725,6 +825,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 10,
       cookTimeMinutes: 15,
       servings: 3,
+      nutritionAttributes: {
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.calorieDense,
+        NutritionalAttribute.highSodiumOrProcessed,
+      },
       ingredients: [
         RecipeIngredient(name: 'Pasta', displayAmount: '1/2 lb (espagueti o fideos)'),
         RecipeIngredient(name: 'Queso gouda', displayAmount: '4 onzas en cubos o rallado'),
@@ -758,6 +863,10 @@ class LocalRecipeDataset {
       prepTimeMinutes: 15,
       cookTimeMinutes: 15,
       servings: 3,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.highSodiumOrProcessed,
+      },
       ingredients: [
         RecipeIngredient(name: 'Pasta', displayAmount: '1/2 lb'),
         RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1/2 lb en cubos'),
@@ -791,6 +900,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 10,
       cookTimeMinutes: 0,
       servings: 2,
+      nutritionAttributes: {
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.calorieDense,
+        NutritionalAttribute.highSodiumOrProcessed,
+      },
       ingredients: [
         RecipeIngredient(name: 'Lechuga', displayAmount: '1 unidad deshojada y limpia'),
         RecipeIngredient(name: 'Manzana', displayAmount: '1 unidad en láminas finas'),
@@ -824,6 +938,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 5,
       cookTimeMinutes: 10,
       servings: 1,
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.calorieDense,
+        NutritionalAttribute.highSodiumOrProcessed,
+      },
       ingredients: [
         RecipeIngredient(name: 'Huevo', displayAmount: '2 unidades batidas'),
         RecipeIngredient(name: 'Queso gouda', displayAmount: '2 onzas rallado o en láminas'),
@@ -855,6 +974,11 @@ class LocalRecipeDataset {
       prepTimeMinutes: 10,
       cookTimeMinutes: 12,
       servings: 2,
+      nutritionAttributes: {
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highFiberOrVitamins,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
       ingredients: [
         RecipeIngredient(name: 'Brócoli', displayAmount: '1 taza en arbolitos'),
         RecipeIngredient(name: 'Zanahoria', displayAmount: '1 unidad en rodajas finas'),

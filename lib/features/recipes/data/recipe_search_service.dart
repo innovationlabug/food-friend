@@ -1,5 +1,7 @@
 import '../../../core/utils/string_normalizer.dart';
 import '../../ingredients/domain/ingredient.dart';
+import '../../nutrition/data/health_goal_evaluator.dart';
+import '../../nutrition/domain/health_goal.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_history_record.dart';
 import '../domain/recipe_ingredient.dart';
@@ -35,12 +37,14 @@ class RecipeSearchService {
   /// [minMatchCount]: Minimum number of matching ingredients required for inclusion (default: 1).
   /// [history]: Optional map of user recipe history records, used to filter out `Nunca` recipes.
   /// [maxTotalTimeMinutes]: Optional maximum total time (`prepTimeMinutes + cookTimeMinutes`) in minutes.
+  /// [activeHealthGoals]: Optional active user health goals used to prioritize and explain recipes.
   List<RecipeSearchResult> searchRecipes({
     required List<String> selectedIngredientNames,
     List<Recipe>? recipePool,
     int minMatchCount = 1,
     Map<String, RecipeHistoryRecord>? history,
     int? maxTotalTimeMinutes,
+    Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
   }) {
     final rawPool = recipePool ?? _dataset.recipes;
     final pool = rawPool.where((recipe) {
@@ -60,13 +64,22 @@ class RecipeSearchService {
 
     if (selectedIngredientNames.isEmpty) {
       if (minMatchCount == 0) {
-        return pool.map((r) {
+        final emptySearchResults = pool.map((r) {
           return RecipeSearchResult(
             recipe: r,
             matchedIngredients: const [],
             missingIngredients: List.of(r.ingredients),
+            goalMatch: HealthGoalEvaluator.evaluateRecipe(r, activeHealthGoals),
           );
         }).toList();
+        if (activeHealthGoals.isNotEmpty) {
+          _sortResults(
+            emptySearchResults,
+            history: history,
+            activeHealthGoals: activeHealthGoals,
+          );
+        }
+        return emptySearchResults;
       }
       return const [];
     }
@@ -101,12 +114,30 @@ class RecipeSearchService {
             recipe: recipe,
             matchedIngredients: matched,
             missingIngredients: missing,
+            goalMatch: HealthGoalEvaluator.evaluateRecipe(
+              recipe,
+              activeHealthGoals,
+            ),
           ),
         );
       }
     }
 
-    // Rank results based on preference marks, cooking recency/variety, and match count/percentage
+    // Rank results based on preference marks, cooking recency/variety, health goals, and match count/percentage
+    _sortResults(
+      results,
+      history: history,
+      activeHealthGoals: activeHealthGoals,
+    );
+
+    return results;
+  }
+
+  void _sortResults(
+    List<RecipeSearchResult> results, {
+    Map<String, RecipeHistoryRecord>? history,
+    Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
+  }) {
     results.sort((a, b) {
       final recA = history?[a.recipe.id];
       final recB = history?[b.recipe.id];
@@ -121,29 +152,48 @@ class RecipeSearchService {
         return isDislikedA ? 1 : -1;
       }
 
-      // 2. Active recipes are ranked by composite score (matches + preference boost + variety balance)
-      final scoreA = calculateScore(a, recA);
-      final scoreB = calculateScore(b, recB);
+      // 2. Active recipes are ranked by composite score (matches + preference boost + goal alignment + variety balance)
+      final scoreA = calculateScore(
+        a,
+        recA,
+        activeHealthGoals: activeHealthGoals,
+      );
+      final scoreB = calculateScore(
+        b,
+        recB,
+        activeHealthGoals: activeHealthGoals,
+      );
       final scoreCompare = scoreB.compareTo(scoreA);
       if (scoreCompare != 0) return scoreCompare;
 
       // 3. Alphabetical title for stability
       return a.recipe.title.compareTo(b.recipe.title);
     });
-
-    return results;
   }
 
   /// Computes a composite ranking score for a recipe based on:
   /// - Ingredient match count and percentage
+  /// - Health-goal alignment net score (positive boost minus conflict penalty)
   /// - User preference boost (Favorita: +12, Me gustó: +6)
   /// - Recency balance to encourage meal variety (recently cooked penalties: -4 for today, -2 for this week)
   static double calculateScore(
     RecipeSearchResult result,
     RecipeHistoryRecord? record, {
     DateTime? now,
+    Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
   }) {
     double score = (result.matchCount * 10.0) + (result.matchPercentage * 5.0);
+
+    final effectiveGoalMatch =
+        (result.goalMatch.hasMatch || result.goalMatch.penaltyScore > 0)
+            ? result.goalMatch
+            : (activeHealthGoals.isEmpty
+                ? result.goalMatch
+                : HealthGoalEvaluator.evaluateRecipe(
+                    result.recipe,
+                    activeHealthGoals,
+                  ));
+    score += effectiveGoalMatch.netScore;
 
     final pref = record?.preference ?? RecipePreference.none;
     switch (pref) {
@@ -185,21 +235,28 @@ class RecipeSearchService {
   List<RecipeSearchResult> findClosestPartialMatches(
     List<String> selectedIngredientNames, {
     int limit = 5,
+    Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
   }) {
     final results = searchRecipes(
       selectedIngredientNames: selectedIngredientNames,
       minMatchCount: 1,
+      activeHealthGoals: activeHealthGoals,
     );
 
     if (results.isEmpty) {
-      // If zero overlap, return top diverse recipes from local pool
-      return _dataset.recipes.take(limit).map((r) {
+      // If zero overlap, return top diverse recipes from local pool (goal-prioritized when active)
+      final allZeroMatch = _dataset.recipes.map((r) {
         return RecipeSearchResult(
           recipe: r,
           matchedIngredients: const [],
           missingIngredients: List.of(r.ingredients),
+          goalMatch: HealthGoalEvaluator.evaluateRecipe(r, activeHealthGoals),
         );
       }).toList();
+      if (activeHealthGoals.isNotEmpty) {
+        _sortResults(allZeroMatch, activeHealthGoals: activeHealthGoals);
+      }
+      return allZeroMatch.take(limit).toList();
     }
 
     return results.take(limit).toList();

@@ -1,13 +1,16 @@
+import '../../nutrition/domain/recipe_goal_match.dart';
 import 'recipe.dart';
 import 'recipe_ingredient.dart';
 
 /// Encapsulates the evaluation of a recipe against a user's selected ingredients,
-/// tracking matched ingredients, missing ingredients, and match percentages.
+/// tracking matched ingredients, missing ingredients, match percentages, and
+/// deterministic health-goal alignment.
 class RecipeSearchResult {
   const RecipeSearchResult({
     required this.recipe,
     required this.matchedIngredients,
     required this.missingIngredients,
+    this.goalMatch = RecipeGoalMatch.empty,
   });
 
   /// The evaluated recipe.
@@ -18,6 +21,9 @@ class RecipeSearchResult {
 
   /// List of recipe ingredients that the user is currently missing.
   final List<RecipeIngredient> missingIngredients;
+
+  /// Deterministic health-goal alignment and Spanish tooltip reasoning.
+  final RecipeGoalMatch goalMatch;
 
   /// Number of matched ingredients.
   int get matchCount => matchedIngredients.length;

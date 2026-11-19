@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
+import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
@@ -754,6 +756,54 @@ void main() {
       expect(amt1.right, equals(amt0.right));
       expect(amt2.right, equals(amt0.right));
       expect(amt0.right, lessThan(btn0.left));
+    });
+  });
+
+  group('FEAT-2: Health-Goal Alignment Card in RecipeDetailScreen', () {
+    testWidgets(
+        'renders Spanish nutritional reasoning when active health goals match and hides it when none are active',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final goalStorage = HealthGoalStorageService(preferences: prefs);
+
+      // No goals selected -> alignment card is absent
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen(
+            recipe: sampleRecipe,
+            healthGoalStorageService: goalStorage,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Alineado con tus metas de salud'), findsNothing);
+
+      // Select goals and reopen detail screen
+      await goalStorage.saveSelectedGoals({
+        HealthGoal.gainMuscle,
+        HealthGoal.loseWeight,
+      });
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen(
+            recipe: sampleRecipe,
+            healthGoalStorageService: goalStorage,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alineado con tus metas de salud'), findsOneWidget);
+      expect(
+        find.text('La pechuga de pollo es una excelente fuente de proteína'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('El güisquil contiene pocas calorías y aporta fibra'),
+        findsOneWidget,
+      );
     });
   });
 }

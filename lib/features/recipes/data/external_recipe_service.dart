@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../../nutrition/domain/health_goal.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_history_record.dart';
 import '../domain/recipe_preference.dart';
@@ -51,6 +52,7 @@ class ExternalRecipeService {
     required List<String> selectedIngredients,
     required RecipeSearchService localSearchService,
     Map<String, RecipeHistoryRecord>? history,
+    Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
   }) async {
     if (selectedIngredients.isEmpty) {
       return const RecipeDiscoveryResponse(
@@ -64,6 +66,7 @@ class ExternalRecipeService {
       selectedIngredientNames: selectedIngredients,
       minMatchCount: 1,
       history: history,
+      activeHealthGoals: activeHealthGoals,
     );
 
     if (localMatches.isNotEmpty) {
@@ -83,6 +86,7 @@ class ExternalRecipeService {
           recipePool: externalRecipes,
           minMatchCount: 0,
           history: history,
+          activeHealthGoals: activeHealthGoals,
         );
 
         final resolvedSource = (externalRecipes.first.source == 'gemini')
@@ -99,10 +103,14 @@ class ExternalRecipeService {
     }
 
     // 3. Graceful fallback: closest partial matches from local dataset
-    final partials = localSearchService.findClosestPartialMatches(
-      selectedIngredients,
-      limit: 5,
-    ).where((r) => history?[r.recipe.id]?.preference != RecipePreference.never).toList();
+    final partials = localSearchService
+        .findClosestPartialMatches(
+          selectedIngredients,
+          limit: 5,
+          activeHealthGoals: activeHealthGoals,
+        )
+        .where((r) => history?[r.recipe.id]?.preference != RecipePreference.never)
+        .toList();
 
     return RecipeDiscoveryResponse(
       results: partials,

@@ -3,21 +3,31 @@ import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
 import '../../recipes/data/recipe_history_service.dart';
+import '../../recipes/domain/recipe.dart';
+import '../../recipes/presentation/recipe_detail_screen.dart';
+import '../../recipes/presentation/recipe_suggestions_screen.dart';
 import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
+import '../data/health_goal_storage_service.dart';
 import '../data/nutrition_service.dart';
+import '../domain/health_goal.dart';
 import '../domain/nutrition_tip.dart';
+import '../domain/recipe_goal_match.dart';
+import 'widgets/goal_tooltip_banner.dart';
 
-/// Displays deterministic nutrition tips derived from the user's cooked recipe history,
-/// allowing direct one-tap additions of recommended ingredients to Lista de Compras.
+/// Displays interactive health-goal selection, dynamic goal-oriented nutrition
+/// guidance derived from cooking history and active goals, and goal-matched
+/// recipe suggestions with specific Spanish nutritional tooltips.
 class NutritionTipsScreen extends StatefulWidget {
   const NutritionTipsScreen({
     super.key,
     this.nutritionService,
     this.historyService,
     this.shoppingListService,
+    this.healthGoalStorageService,
   });
 
   /// Optional injected nutrition service for testing.
@@ -29,12 +39,16 @@ class NutritionTipsScreen extends StatefulWidget {
   /// Optional injected shopping list storage service for testing.
   final ShoppingListStorageService? shoppingListService;
 
+  /// Optional injected health goal storage service for testing.
+  final HealthGoalStorageService? healthGoalStorageService;
+
   /// Navigates to [NutritionTipsScreen].
   static Future<void> navigate(
     BuildContext context, {
     NutritionService? nutritionService,
     RecipeHistoryService? historyService,
     ShoppingListStorageService? shoppingListService,
+    HealthGoalStorageService? healthGoalStorageService,
   }) {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -42,6 +56,7 @@ class NutritionTipsScreen extends StatefulWidget {
           nutritionService: nutritionService,
           historyService: historyService,
           shoppingListService: shoppingListService,
+          healthGoalStorageService: healthGoalStorageService,
         ),
       ),
     );
@@ -52,18 +67,25 @@ class NutritionTipsScreen extends StatefulWidget {
 }
 
 class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
+  late final HealthGoalStorageService _healthGoalStorageService;
   late final NutritionService _nutritionService;
   late final ShoppingListStorageService _shoppingListService;
 
   NutritionReport? _report;
+  Set<HealthGoal> _selectedGoals = <HealthGoal>{};
   Set<String> _shoppingListNormalized = <String>{};
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _healthGoalStorageService =
+        widget.healthGoalStorageService ?? HealthGoalStorageService();
     _nutritionService = widget.nutritionService ??
-        NutritionService(historyService: widget.historyService);
+        NutritionService(
+          historyService: widget.historyService,
+          healthGoalStorageService: _healthGoalStorageService,
+        );
     _shoppingListService =
         widget.shoppingListService ?? ShoppingListStorageService();
     _loadData();
@@ -74,18 +96,36 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
       _isLoading = true;
     });
 
-    final report = await _nutritionService.generateReport();
-    final shoppingItems = await _shoppingListService.getIngredients();
+    final results = await Future.wait<dynamic>([
+      _healthGoalStorageService.getSelectedGoals(),
+      _nutritionService.generateReport(),
+      _shoppingListService.getIngredients(),
+    ]);
 
-    if (mounted) {
-      setState(() {
-        _report = report;
-        _shoppingListNormalized = shoppingItems
-            .map((item) => StringNormalizer.normalize(item.name))
-            .toSet();
-        _isLoading = false;
-      });
-    }
+    if (!mounted) return;
+    final selectedGoals = results[0] as Set<HealthGoal>;
+    final report = results[1] as NutritionReport;
+    final shoppingItems = results[2] as List<Ingredient>;
+
+    setState(() {
+      _selectedGoals = selectedGoals;
+      _report = report;
+      _shoppingListNormalized = shoppingItems
+          .map((item) => StringNormalizer.normalize(item.name))
+          .toSet();
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _toggleGoal(HealthGoal goal) async {
+    final updatedGoals = await _healthGoalStorageService.toggleGoal(goal);
+    final updatedReport = await _nutritionService.generateReport();
+    if (!mounted) return;
+
+    setState(() {
+      _selectedGoals = updatedGoals;
+      _report = updatedReport;
+    });
   }
 
   bool _isInShoppingList(String ingredientName) {
@@ -118,6 +158,46 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
         builder: (_) => ShoppingListScreen(
           shoppingListService: _shoppingListService,
           initialTab: 1,
+        ),
+      ),
+    );
+    if (mounted) {
+      await _loadData();
+    }
+  }
+
+  Future<void> _openSuggestionsWithGoals() async {
+    final pantry = await IngredientStorageService().getIngredients();
+    if (!mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RecipeSuggestionsScreen(
+          selectedIngredientNames: pantry.map((i) => i.name).toList(),
+          historyService: widget.historyService,
+          shoppingListService: _shoppingListService,
+          healthGoalStorageService: _healthGoalStorageService,
+        ),
+      ),
+    );
+    if (mounted) {
+      await _loadData();
+    }
+  }
+
+  Future<void> _openRecipeDetail(
+    Recipe recipe,
+    RecipeGoalMatch goalMatch,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: 'recipe_${recipe.id}'),
+        builder: (_) => RecipeDetailScreen(
+          recipe: recipe,
+          goalMatch: goalMatch,
+          historyService: widget.historyService,
+          shoppingListService: _shoppingListService,
+          healthGoalStorageService: _healthGoalStorageService,
         ),
       ),
     );
@@ -170,55 +250,233 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
       return const SizedBox.shrink();
     }
 
+    final isDesktop = context.isDesktop;
+
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
         children: [
-          if (!report.hasCookingHistory) ...[
-            _buildEmptyHistoryBanner(context),
-            const SizedBox(height: 16),
-            Text(
-              'Consejos básicos para tus comidas',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 12),
+          _buildGoalsSection(context),
+          const SizedBox(height: 16),
+          if (!report.hasCookingHistory && _selectedGoals.isEmpty) ...[
+            _buildEmptyGuidanceCard(context),
           ] else ...[
-            _buildSummaryHeader(context, report),
-            const SizedBox(height: 16),
-          ],
-          if (report.tips.isEmpty)
-            _buildBalancedHistoryCard(context)
-          else if (!context.isDesktop)
-            for (int i = 0; i < report.tips.length; i++) ...[
-              _buildTipCard(context, report.tips[i]),
-              if (i < report.tips.length - 1) const SizedBox(height: 12),
-            ]
-          else
-            for (int i = 0; i < report.tips.length; i += 2) ...[
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: _buildTipCard(context, report.tips[i])),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: i + 1 < report.tips.length
-                          ? _buildTipCard(context, report.tips[i + 1])
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
-                ),
-              ),
-              if (i + 2 < report.tips.length) const SizedBox(height: 12),
+            if (report.hasCookingHistory) ...[
+              _buildSummaryHeader(context, report),
+              const SizedBox(height: 16),
             ],
+            if (report.tips.isEmpty && report.hasCookingHistory)
+              _buildBalancedHistoryCard(context)
+            else if (report.tips.isNotEmpty) ...[
+              Text(
+                report.hasCookingHistory
+                    ? 'Consejos personalizados'
+                    : 'Recomendaciones para tus metas',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              if (!isDesktop)
+                for (int i = 0; i < report.tips.length; i++) ...[
+                  _buildTipCard(context, report.tips[i]),
+                  if (i < report.tips.length - 1) const SizedBox(height: 12),
+                ]
+              else
+                for (int i = 0; i < report.tips.length; i += 2) ...[
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: _buildTipCard(context, report.tips[i])),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: i + 1 < report.tips.length
+                              ? _buildTipCard(context, report.tips[i + 1])
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (i + 2 < report.tips.length) const SizedBox(height: 12),
+                ],
+            ],
+          ],
+          if (report.recommendedGoalRecipes.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            _buildRecommendedGoalRecipesSection(
+              context,
+              report.recommendedGoalRecipes,
+            ),
+          ],
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyHistoryBanner(BuildContext context) {
+  Widget _buildGoalsSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    const goals = HealthGoal.values;
+    final isDesktop = context.isDesktop;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                AppSvgIcon(
+                  assetName: 'nutrition',
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tus metas de salud',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Elige una o más metas para priorizar recetas y recibir consejos a tu medida.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (!isDesktop)
+              for (int i = 0; i < goals.length; i++) ...[
+                _buildGoalTile(context, goals[i]),
+                if (i < goals.length - 1) const SizedBox(height: 8),
+              ]
+            else
+              for (int i = 0; i < goals.length; i += 2) ...[
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: _buildGoalTile(context, goals[i])),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: i + 1 < goals.length
+                            ? _buildGoalTile(context, goals[i + 1])
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                ),
+                if (i + 2 < goals.length) const SizedBox(height: 10),
+              ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoalTile(BuildContext context, HealthGoal goal) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isSelected = _selectedGoals.contains(goal);
+
+    return Semantics(
+      button: true,
+      toggled: isSelected,
+      label: goal.label,
+      child: Card(
+        key: ValueKey('health_goal_${goal.storageKey}'),
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        clipBehavior: Clip.antiAlias,
+        color: isSelected
+            ? colorScheme.primaryContainer.withValues(alpha: 0.45)
+            : colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.outlineVariant.withValues(alpha: 0.65),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: InkWell(
+          onTap: () => _toggleGoal(goal),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: AppSvgIcon(
+                    assetName: goal.iconName,
+                    size: 18,
+                    color: isSelected
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        goal.label,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        goal.description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: AppSvgIcon(
+                    assetName: isSelected ? 'check_circle' : 'circle',
+                    size: 20,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.outline,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyGuidanceCard(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -247,15 +505,15 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Aún no has registrado recetas cocinadas',
+                    'Personaliza tu nutrición',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Usa el botón "Lo cociné" al preparar cualquier receta para desbloquear '
-                    'consejos personalizados según tus comidas recientes.',
+                    'Selecciona una o más metas de salud arriba o usa el botón "Lo cociné" '
+                    'al preparar cualquier receta para recibir consejos adaptados a tu alimentación.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -380,6 +638,11 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
           colorScheme.errorContainer,
           colorScheme.onErrorContainer,
         ),
+      NutritionTipCategory.goalGuidance => (
+          tip.goal?.iconName ?? 'sparkles',
+          colorScheme.primaryContainer,
+          colorScheme.onPrimaryContainer,
+        ),
       NutritionTipCategory.vitaminSuggestion => (
           'nutrition',
           colorScheme.primaryContainer,
@@ -389,11 +652,6 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
           'heart',
           colorScheme.secondaryContainer,
           colorScheme.onSecondaryContainer,
-        ),
-      NutritionTipCategory.foundational => (
-          'nutrition',
-          colorScheme.surfaceContainerHighest,
-          colorScheme.onSurfaceVariant,
         ),
     };
 
@@ -485,5 +743,152 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
       ),
     );
   }
-}
 
+  Widget _buildRecommendedGoalRecipesSection(
+    BuildContext context,
+    List<({Recipe recipe, RecipeGoalMatch goalMatch})> recommendations,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDesktop = context.isDesktop;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            AppSvgIcon(
+              assetName: 'sparkles',
+              size: 20,
+              color: colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Recetas alineadas con tus metas',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (!isDesktop)
+          for (int i = 0; i < recommendations.length; i++) ...[
+            _buildRecommendedRecipeCard(context, recommendations[i]),
+            if (i < recommendations.length - 1) const SizedBox(height: 10),
+          ]
+        else
+          for (int i = 0; i < recommendations.length; i += 2) ...[
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _buildRecommendedRecipeCard(
+                      context,
+                      recommendations[i],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: i + 1 < recommendations.length
+                        ? _buildRecommendedRecipeCard(
+                            context,
+                            recommendations[i + 1],
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+            if (i + 2 < recommendations.length) const SizedBox(height: 10),
+          ],
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: _openSuggestionsWithGoals,
+          icon: AppSvgIcon(
+            assetName: 'restaurant',
+            size: 18,
+            color: colorScheme.primary,
+          ),
+          label: const Text('Ver todas en recetas sugeridas'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendedRecipeCard(
+    BuildContext context,
+    ({Recipe recipe, RecipeGoalMatch goalMatch}) item,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final recipe = item.recipe;
+    final goalMatch = item.goalMatch;
+
+    final metaParts = <String>[
+      if (recipe.category != null) recipe.category!,
+      if (recipe.totalTimeMinutes != null) '${recipe.totalTimeMinutes} min',
+    ];
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _openRecipeDetail(recipe, goalMatch),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      recipe.title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  AppSvgIcon(
+                    assetName: 'chevron_right',
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              if (metaParts.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  metaParts.join(' • '),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (goalMatch.hasMatch) ...[
+                const SizedBox(height: 10),
+                GoalTooltipBanner(
+                  tooltipKey: ValueKey('nutrition_goal_tooltip_${recipe.id}'),
+                  goalMatch: goalMatch,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

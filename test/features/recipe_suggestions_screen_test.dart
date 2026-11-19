@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
+import 'package:food_friend/features/nutrition/domain/health_goal.dart';
+import 'package:food_friend/features/nutrition/presentation/nutrition_tips_screen.dart';
 import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
 import 'package:food_friend/features/recipes/data/recipe_search_service.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
@@ -25,6 +28,7 @@ void main() {
     ExternalRecipeService? externalService,
     IngredientStorageService? ingredientStorageService,
     ShoppingListStorageService? shoppingListService,
+    HealthGoalStorageService? healthGoalStorageService,
   }) {
     return MaterialApp(
       home: RecipeSuggestionsScreen(
@@ -33,6 +37,7 @@ void main() {
         externalService: externalService,
         ingredientStorageService: ingredientStorageService,
         shoppingListService: shoppingListService,
+        healthGoalStorageService: healthGoalStorageService,
       ),
     );
   }
@@ -779,6 +784,133 @@ void main() {
 
       // Selected ingredients should now reflect only the 2 remaining pantry items
       expect(find.text('Con base en 2 ingredientes seleccionados'), findsOneWidget);
+    });
+  });
+
+  group('FEAT-2: Health-Goal Ranking & Specific Spanish Tooltips', () {
+    testWidgets(
+        'prioritizes goal-aligned recipes, renders inline & interactive Spanish tooltips, and links to Cambiar metas',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final prefs = await SharedPreferences.getInstance();
+      final goalStorage = HealthGoalStorageService(preferences: prefs);
+      await goalStorage.saveSelectedGoals({HealthGoal.loseWeight});
+
+      final mockClient = MockClient((_) async {
+        return http.Response(
+          '{"success": true, "count": 2, "recipes": ['
+          '{"id": "ext_creamy", "title": "Pasta en Crema y Mantequilla", "category": "Almuerzo", "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "1 taza"}, {"name": "Crema agria", "displayAmount": "1 taza"}, {"name": "Mantequilla", "displayAmount": "2 cdas"}], "instructions": ["Cocinar."]},'
+          '{"id": "ext_light", "title": "Salteado de Berenjena y Güisquil", "category": "Almuerzo", "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "1 taza"}, {"name": "Güisquil", "displayAmount": "1 unidad"}], "instructions": ["Saltear."]}'
+          ']}',
+          200,
+        );
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Berenjena', 'Crema agria'],
+        externalService: externalService,
+        healthGoalStorageService: goalStorage,
+      ));
+      await tester.pumpAndSettle();
+
+      // Active goals summary bar renders with Cambiar metas
+      expect(find.text('Metas activas: Bajar calorías'), findsOneWidget);
+      expect(find.text('Cambiar metas'), findsOneWidget);
+
+      // Light aligned recipe ranks above calorie-dense creamy recipe
+      final lightCardRect = tester.getRect(
+        find.text('Salteado de Berenjena y Güisquil'),
+      );
+      final creamyCardRect = tester.getRect(
+        find.text('Pasta en Crema y Mantequilla'),
+      );
+      expect(lightCardRect.top, lessThan(creamyCardRect.top));
+
+      // Aligned recipe renders specific Spanish tooltip while conflicting recipe does not
+      final tooltipFinder = find.byKey(const ValueKey('goal_tooltip_ext_light'));
+      expect(tooltipFinder, findsOneWidget);
+      expect(find.byKey(const ValueKey('goal_tooltip_ext_creamy')), findsNothing);
+      expect(
+        find.text('El güisquil contiene pocas calorías y aporta fibra'),
+        findsOneWidget,
+      );
+
+      // Tap tooltip to verify interactive Tooltip message
+      await tester.tap(tooltipFinder);
+      await tester.pump();
+      final tooltipWidget = tester.widget<Tooltip>(tooltipFinder);
+      expect(
+        tooltipWidget.message,
+        equals('El güisquil contiene pocas calorías y aporta fibra'),
+      );
+
+      // Tap Cambiar metas -> opens NutritionTipsScreen
+      await tester.tap(find.text('Cambiar metas'));
+      await tester.pumpAndSettle();
+      expect(find.byType(NutritionTipsScreen), findsOneWidget);
+    });
+
+    testWidgets(
+        'hides active goals bar when no goals are selected and avoids overflows with tooltips on mobile (360x640) and desktop (1280x800)',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final goalStorage = HealthGoalStorageService(preferences: prefs);
+
+      // No goals selected: bar and goal tooltips are hidden
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Pechuga de pollo', 'Güisquil'],
+        healthGoalStorageService: goalStorage,
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Cambiar metas'), findsNothing);
+      expect(
+        find.text('La pechuga de pollo es una excelente fuente de proteína'),
+        findsNothing,
+      );
+
+      // Enable multiple goals and test both narrow mobile & wide desktop viewports
+      await goalStorage.saveSelectedGoals({
+        HealthGoal.gainMuscle,
+        HealthGoal.loseWeight,
+        HealthGoal.increaseVitaminsAndFiber,
+      });
+
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Pechuga de pollo', 'Güisquil', 'Zanahoria'],
+        healthGoalStorageService: goalStorage,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Metas activas:'), findsOneWidget);
+      expect(find.text('Cambiar metas'), findsOneWidget);
+      expect(
+        find.text('El güisquil contiene pocas calorías y aporta fibra'),
+        findsAtLeastNWidgets(1),
+      );
+      final firstTooltip = tester.widget<Tooltip>(
+        find.byKey(const ValueKey('goal_tooltip_pollo_plancha_vegetales')),
+      );
+      expect(
+        firstTooltip.message,
+        contains('La pechuga de pollo es una excelente fuente de proteína'),
+      );
+
+      tester.view.physicalSize = const Size(1280, 800);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
     });
   });
 }

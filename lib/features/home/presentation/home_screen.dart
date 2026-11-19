@@ -7,7 +7,9 @@ import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/presentation/add_ingredient_screen.dart';
+import '../../nutrition/data/health_goal_storage_service.dart';
 import '../../nutrition/data/nutrition_service.dart';
+import '../../nutrition/domain/health_goal.dart';
 import '../../nutrition/domain/nutrition_tip.dart';
 import '../../nutrition/presentation/nutrition_tips_screen.dart';
 import '../../recipes/presentation/recipe_management_screen.dart';
@@ -28,8 +30,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final NutritionService _nutritionService = NutritionService();
   final IngredientStorageService _ingredientStorageService =
       IngredientStorageService();
+  final HealthGoalStorageService _healthGoalStorageService =
+      HealthGoalStorageService();
 
   NutritionReport? _nutritionReport;
+  Set<HealthGoal> _activeGoals = <HealthGoal>{};
   int _ingredientCount = 0;
 
   @override
@@ -62,12 +67,14 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     final results = await Future.wait([
       _nutritionService.generateReport(),
       _ingredientStorageService.getIngredients(),
+      _healthGoalStorageService.getSelectedGoals(),
       SettingsController.instance.load(),
     ]);
     if (!mounted) return;
     setState(() {
       _nutritionReport = results[0] as NutritionReport;
       _ingredientCount = (results[1] as List).length;
+      _activeGoals = results[2] as Set<HealthGoal>;
     });
   }
 
@@ -95,16 +102,24 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
   String _nutritionCardDescription() {
     final report = _nutritionReport;
-    if (report == null || !report.hasCookingHistory) {
-      return 'Consejos personalizados según las recetas que cocinas.';
+    if (report != null && report.hasCookingHistory) {
+      if (report.tips.isEmpty) {
+        return 'Tus comidas recientes están bien equilibradas.';
+      }
+      final count = report.tips.length;
+      return count == 1
+          ? 'Tienes 1 consejo de nutrición activo.'
+          : 'Tienes $count consejos de nutrición activos.';
     }
-    if (report.tips.isEmpty) {
-      return 'Tus comidas recientes están bien equilibradas.';
+
+    if (_activeGoals.isNotEmpty) {
+      if (_activeGoals.length == 1) {
+        return '1 meta activa: ${_activeGoals.first.shortLabel}.';
+      }
+      return '${_activeGoals.length} metas de salud activas.';
     }
-    final count = report.tips.length;
-    return count == 1
-        ? 'Tienes 1 consejo de nutrición activo.'
-        : 'Tienes $count consejos de nutrición activos.';
+
+    return 'Elige tus metas de salud y recibe consejos personalizados.';
   }
 
   @override

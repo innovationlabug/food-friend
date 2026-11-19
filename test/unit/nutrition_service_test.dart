@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_catalog.dart';
+import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
 import 'package:food_friend/features/nutrition/data/nutrition_catalog.dart';
 import 'package:food_friend/features/nutrition/data/nutrition_service.dart';
+import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/nutrition/domain/nutrition_metadata.dart';
 import 'package:food_friend/features/nutrition/domain/nutrition_tip.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
@@ -98,16 +100,46 @@ void main() {
     final service = NutritionService();
     final now = DateTime(2026, 11, 13, 12, 0);
 
-    test('returns foundational Spanish tips when cooking history is empty', () {
+    test('returns no generic static tips when cooking history and health goals are empty',
+        () {
       final report = service.evaluateCookedMeals(const [], now: now);
 
       expect(report.hasCookingHistory, isFalse);
       expect(report.totalCookedMeals, equals(0));
-      expect(report.tips, isNotEmpty);
+      expect(report.activeGoals, isEmpty);
+      expect(report.tips, isEmpty);
+      expect(report.recommendedGoalRecipes, isEmpty);
+    });
+
+    test('returns dynamic goalGuidance tips and goal-aligned recipes when goals are active and history is empty',
+        () {
+      final report = service.evaluateCookedMeals(
+        const [],
+        activeGoals: {
+          HealthGoal.loseWeight,
+          HealthGoal.gainMuscle,
+        },
+        now: now,
+      );
+
+      expect(report.hasCookingHistory, isFalse);
       expect(
-        report.tips.every((t) => t.category == NutritionTipCategory.foundational),
+        report.activeGoals,
+        equals({HealthGoal.loseWeight, HealthGoal.gainMuscle}),
+      );
+      expect(report.tips.length, equals(2));
+      expect(
+        report.tips.every((t) => t.category == NutritionTipCategory.goalGuidance),
         isTrue,
       );
+      for (final tip in report.tips) {
+        expect(tip.recommendedIngredients, isNotEmpty);
+      }
+      expect(report.recommendedGoalRecipes, isNotEmpty);
+      for (final rec in report.recommendedGoalRecipes) {
+        expect(rec.goalMatch.hasMatch, isTrue);
+        expect(rec.goalMatch.primaryReason, isNotNull);
+      }
     });
 
     test('Rule 1: triggers processed meat alert at >= 2 meals in 7 days or >= 30% recent ratio',
@@ -296,6 +328,46 @@ void main() {
         report.tips.any((t) => t.category == NutritionTipCategory.vitaminSuggestion),
         isTrue,
       );
+    });
+
+    test('generateReport combines persisted health goals with cooked history heuristics',
+        () async {
+      final prefs = await SharedPreferences.getInstance();
+      final historyService = RecipeHistoryService(preferences: prefs);
+      final goalStorage = HealthGoalStorageService(preferences: prefs);
+      final nutritionService = NutritionService(
+        historyService: historyService,
+        healthGoalStorageService: goalStorage,
+      );
+
+      await goalStorage.saveSelectedGoals({
+        HealthGoal.loseWeight,
+        HealthGoal.gainMuscle,
+      });
+      await historyService.recordCooked(
+        _makeRecipe('creamy_meal', 'Pasta cremosa', ['Pasta', 'Crema pura', 'Mantequilla']),
+        cookedAt: now,
+      );
+
+      final report = await nutritionService.generateReport(now: now);
+      expect(report.hasCookingHistory, isTrue);
+      expect(
+        report.activeGoals,
+        equals({HealthGoal.loseWeight, HealthGoal.gainMuscle}),
+      );
+      final goalTips = report.tips
+          .where((t) => t.category == NutritionTipCategory.goalGuidance)
+          .toList();
+      expect(goalTips.length, equals(2));
+      expect(
+        goalTips.any((t) => t.goal == HealthGoal.loseWeight && t.title.contains('Aligera')),
+        isTrue,
+      );
+      expect(
+        goalTips.any((t) => t.goal == HealthGoal.gainMuscle && t.recommendedIngredients.isNotEmpty),
+        isTrue,
+      );
+      expect(report.recommendedGoalRecipes, isNotEmpty);
     });
   });
 }

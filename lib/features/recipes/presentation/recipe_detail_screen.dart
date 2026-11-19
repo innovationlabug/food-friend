@@ -5,6 +5,9 @@ import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
+import '../../nutrition/data/health_goal_evaluator.dart';
+import '../../nutrition/data/health_goal_storage_service.dart';
+import '../../nutrition/domain/recipe_goal_match.dart';
 import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../data/local_recipe_dataset.dart';
 import '../data/recipe_history_service.dart';
@@ -26,9 +29,11 @@ class RecipeDetailScreen extends StatefulWidget {
     this.matchedIngredients = const [],
     this.missingIngredients = const [],
     this.previousRecipeIds = const [],
+    this.goalMatch = RecipeGoalMatch.empty,
     this.historyService,
     this.shoppingListService,
     this.ingredientStorageService,
+    this.healthGoalStorageService,
   });
 
   /// Factory constructor when navigating with a [RecipeSearchResult].
@@ -39,6 +44,7 @@ class RecipeDetailScreen extends StatefulWidget {
     RecipeHistoryService? historyService,
     ShoppingListStorageService? shoppingListService,
     IngredientStorageService? ingredientStorageService,
+    HealthGoalStorageService? healthGoalStorageService,
   }) {
     return RecipeDetailScreen(
       key: key,
@@ -46,9 +52,11 @@ class RecipeDetailScreen extends StatefulWidget {
       matchedIngredients: result.matchedIngredients,
       missingIngredients: result.missingIngredients,
       previousRecipeIds: previousRecipeIds,
+      goalMatch: result.goalMatch,
       historyService: historyService,
       shoppingListService: shoppingListService,
       ingredientStorageService: ingredientStorageService,
+      healthGoalStorageService: healthGoalStorageService,
     );
   }
 
@@ -57,9 +65,11 @@ class RecipeDetailScreen extends StatefulWidget {
   final List<RecipeIngredient> missingIngredients;
   /// IDs of recipes previously opened in this navigation branch to prevent loops.
   final List<String> previousRecipeIds;
+  final RecipeGoalMatch goalMatch;
   final RecipeHistoryService? historyService;
   final ShoppingListStorageService? shoppingListService;
   final IngredientStorageService? ingredientStorageService;
+  final HealthGoalStorageService? healthGoalStorageService;
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -69,6 +79,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final RecipeHistoryService _historyService;
   late final ShoppingListStorageService _shoppingListService;
   late final IngredientStorageService _ingredientStorageService;
+  late final HealthGoalStorageService _healthGoalStorageService;
+  late RecipeGoalMatch _goalMatch;
   bool _isCookedToday = false;
   int _timesCooked = 0;
   RecipePreference _preference = RecipePreference.none;
@@ -91,10 +103,27 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ShoppingListStorageService(
           pantryStorageService: _ingredientStorageService,
         );
+    _healthGoalStorageService =
+        widget.healthGoalStorageService ?? HealthGoalStorageService();
+    _goalMatch = widget.goalMatch;
     _loadHistoryStatus();
     _loadShoppingListStatus();
+    if (!_goalMatch.hasMatch) {
+      _loadGoalMatch();
+    }
     if (widget.matchedIngredients.isEmpty && widget.missingIngredients.isEmpty) {
       _resolveIngredientsFromPantry();
+    }
+  }
+
+  Future<void> _loadGoalMatch() async {
+    final goals = await _healthGoalStorageService.getSelectedGoals();
+    if (!mounted || goals.isEmpty) return;
+    final evaluated = HealthGoalEvaluator.evaluateRecipe(widget.recipe, goals);
+    if (evaluated.hasMatch) {
+      setState(() {
+        _goalMatch = evaluated;
+      });
     }
   }
 
@@ -381,6 +410,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 _buildHeader(context),
                 const SizedBox(height: 16),
                 _buildMetadataRow(context),
+                if (_goalMatch.hasMatch) ...[
+                  const SizedBox(height: 12),
+                  _buildGoalAlignmentCard(context),
+                ],
                 const SizedBox(height: 16),
                 _buildActionButtons(context),
                 const SizedBox(height: 24),
@@ -499,6 +532,73 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         spacing: 16,
         runSpacing: 8,
         children: items,
+      ),
+    );
+  }
+
+  Widget _buildGoalAlignmentCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppSvgIcon(
+                assetName: 'nutrition',
+                size: 18,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Alineado con tus metas de salud',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (int i = 0; i < _goalMatch.reasons.length; i++) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: AppSvgIcon(
+                    assetName: _goalMatch.reasons[i].goal.iconName,
+                    size: 15,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _goalMatch.reasons[i].message,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (i < _goalMatch.reasons.length - 1) const SizedBox(height: 6),
+          ],
+        ],
       ),
     );
   }
@@ -804,6 +904,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                               historyService: _historyService,
                                               shoppingListService: _shoppingListService,
                                               ingredientStorageService: _ingredientStorageService,
+                                              healthGoalStorageService: _healthGoalStorageService,
                                             ),
                                           ),
                                         );
@@ -819,6 +920,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                               historyService: _historyService,
                                               shoppingListService: _shoppingListService,
                                               ingredientStorageService: _ingredientStorageService,
+                                              healthGoalStorageService: _healthGoalStorageService,
                                             ),
                                           ),
                                         );

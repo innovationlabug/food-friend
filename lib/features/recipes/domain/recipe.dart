@@ -1,9 +1,10 @@
+import '../../nutrition/domain/nutrition_metadata.dart';
 import 'recipe_ingredient.dart';
 import 'recipe_variation.dart';
 
 /// Represents a cooking recipe with standardized Spanish metadata,
 /// ingredient requirements, ordered step-by-step preparation instructions,
-/// and linked pre-defined recipe variations.
+/// structured nutritional attributes, and linked pre-defined recipe variations.
 class Recipe {
   const Recipe({
     required this.id,
@@ -18,10 +19,22 @@ class Recipe {
     this.category,
     this.source = 'local',
     this.variations = const [],
+    this.nutritionAttributes = const <NutritionalAttribute>{},
   });
 
   /// Factory constructor to deserialize from JSON map.
   factory Recipe.fromJson(Map<String, dynamic> json) {
+    final rawAttributes = json['nutritionAttributes'] as List<dynamic>?;
+    final parsedAttributes = <NutritionalAttribute>{};
+    if (rawAttributes != null) {
+      for (final item in rawAttributes) {
+        final attr = NutritionalAttribute.fromName(item.toString());
+        if (attr != null) {
+          parsedAttributes.add(attr);
+        }
+      }
+    }
+
     return Recipe(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
@@ -47,6 +60,7 @@ class Recipe {
               ?.map((id) => RecipeVariation(recipeId: id.toString(), title: id.toString()))
               .toList() ??
           const [],
+      nutritionAttributes: parsedAttributes,
     );
   }
 
@@ -86,6 +100,9 @@ class Recipe {
   /// Pre-defined variations of this recipe linking to related recipes.
   final List<RecipeVariation> variations;
 
+  /// Structured nutritional attributes supporting health-goal matching.
+  final Set<NutritionalAttribute> nutritionAttributes;
+
   /// List of variation identifiers for direct ID lookup.
   List<String> get variationIds => variations.map((v) => v.recipeId).toList();
 
@@ -114,6 +131,8 @@ class Recipe {
       'source': source,
       if (variations.isNotEmpty) 'variations': variations.map((v) => v.toJson()).toList(),
       if (variations.isNotEmpty) 'variationIds': variationIds,
+      if (nutritionAttributes.isNotEmpty)
+        'nutritionAttributes': nutritionAttributes.map((a) => a.name).toList(),
     };
   }
 
@@ -131,6 +150,7 @@ class Recipe {
     String? category,
     String? source,
     List<RecipeVariation>? variations,
+    Set<NutritionalAttribute>? nutritionAttributes,
   }) {
     return Recipe(
       id: id ?? this.id,
@@ -145,6 +165,7 @@ class Recipe {
       category: category ?? this.category,
       source: source ?? this.source,
       variations: variations ?? this.variations,
+      nutritionAttributes: nutritionAttributes ?? this.nutritionAttributes,
     );
   }
 

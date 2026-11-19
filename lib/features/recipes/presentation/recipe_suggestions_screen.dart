@@ -5,6 +5,11 @@ import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
+import '../../nutrition/data/health_goal_evaluator.dart';
+import '../../nutrition/data/health_goal_storage_service.dart';
+import '../../nutrition/domain/health_goal.dart';
+import '../../nutrition/presentation/nutrition_tips_screen.dart';
+import '../../nutrition/presentation/widgets/goal_tooltip_banner.dart';
 import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 import '../data/external_recipe_service.dart';
@@ -27,6 +32,7 @@ class RecipeSuggestionsScreen extends StatefulWidget {
     this.historyService,
     this.ingredientStorageService,
     this.shoppingListService,
+    this.healthGoalStorageService,
     this.openedFromIngredientList = false,
   });
 
@@ -48,6 +54,9 @@ class RecipeSuggestionsScreen extends StatefulWidget {
   /// Optional injected shopping list storage service forwarded to recipe detail.
   final ShoppingListStorageService? shoppingListService;
 
+  /// Optional injected health goal storage service for goal-based ranking and tooltips.
+  final HealthGoalStorageService? healthGoalStorageService;
+
   /// Whether this screen was pushed from [ShoppingListScreen].
   final bool openedFromIngredientList;
 
@@ -60,6 +69,7 @@ class RecipeSuggestionsScreen extends StatefulWidget {
     RecipeHistoryService? historyService,
     IngredientStorageService? ingredientStorageService,
     ShoppingListStorageService? shoppingListService,
+    HealthGoalStorageService? healthGoalStorageService,
     bool openedFromIngredientList = false,
   }) {
     return Navigator.of(context).push(
@@ -71,6 +81,7 @@ class RecipeSuggestionsScreen extends StatefulWidget {
           historyService: historyService,
           ingredientStorageService: ingredientStorageService,
           shoppingListService: shoppingListService,
+          healthGoalStorageService: healthGoalStorageService,
           openedFromIngredientList: openedFromIngredientList,
         ),
       ),
@@ -87,9 +98,11 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   late final RecipeHistoryService _historyService;
   late final IngredientStorageService _ingredientStorageService;
   late final ShoppingListStorageService _shoppingListService;
+  late final HealthGoalStorageService _healthGoalStorageService;
 
   late List<String> _selectedIngredientNames;
   List<Ingredient> _pantryIngredients = const [];
+  Set<HealthGoal> _activeHealthGoals = <HealthGoal>{};
   bool _isLoading = true;
   bool _isGeneratingAi = false;
   RecipeDiscoveryResponse? _discoveryResponse;
@@ -157,6 +170,8 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         ShoppingListStorageService(
           pantryStorageService: _ingredientStorageService,
         );
+    _healthGoalStorageService =
+        widget.healthGoalStorageService ?? HealthGoalStorageService();
     _selectedIngredientNames = List<String>.from(widget.selectedIngredientNames);
     _performDiscovery();
   }
@@ -168,13 +183,16 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
 
     final pantryFuture = _ingredientStorageService.getIngredients();
     final historyFuture = _historyService.getHistory();
+    final goalsFuture = _healthGoalStorageService.getSelectedGoals();
     final pantry = await pantryFuture;
     final history = await historyFuture;
+    final activeGoals = await goalsFuture;
 
     if (_selectedIngredientNames.isEmpty) {
       if (!mounted) return;
       setState(() {
         _pantryIngredients = pantry;
+        _activeHealthGoals = activeGoals;
         _discoveryResponse = null;
         _results = [];
         _isLoading = false;
@@ -189,6 +207,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
       selectedIngredients: _selectedIngredientNames,
       localSearchService: _searchService,
       history: history,
+      activeHealthGoals: activeGoals,
     );
 
     if (mounted) {
@@ -198,6 +217,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
 
       setState(() {
         _pantryIngredients = pantry;
+        _activeHealthGoals = activeGoals;
         _discoveryResponse = response;
         _results = filteredResults;
         _isLoading = false;
@@ -251,6 +271,9 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
 
   Future<void> _showAllLocalRecipes() async {
     final history = await _historyService.getHistory();
+    final activeGoals = await _healthGoalStorageService.getSelectedGoals();
+    if (!mounted) return;
+
     final all = _searchService
         .getAllRecipes()
         .where((r) => history[r.id]?.preference != RecipePreference.never)
@@ -270,17 +293,43 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         recipe: r,
         matchedIngredients: r.ingredients.where((i) => matched.contains(i.name)).toList(),
         missingIngredients: r.ingredients.where((i) => missing.contains(i.name)).toList(),
+        goalMatch: HealthGoalEvaluator.evaluateRecipe(r, activeGoals),
       );
     }).toList();
 
-    // Sort by matchCount descending, then title
+    // Sort by preference, match score, health-goal alignment, then title
     all.sort((a, b) {
-      final c = b.matchCount.compareTo(a.matchCount);
-      if (c != 0) return c;
+      final recA = history[a.recipe.id];
+      final recB = history[b.recipe.id];
+      final isDislikedA = recA?.preference == RecipePreference.disliked;
+      final isDislikedB = recB?.preference == RecipePreference.disliked;
+      if (isDislikedA != isDislikedB) {
+        return isDislikedA ? 1 : -1;
+      }
+
+      if (activeGoals.isNotEmpty) {
+        final scoreA = RecipeSearchService.calculateScore(
+          a,
+          recA,
+          activeHealthGoals: activeGoals,
+        );
+        final scoreB = RecipeSearchService.calculateScore(
+          b,
+          recB,
+          activeHealthGoals: activeGoals,
+        );
+        final scoreCompare = scoreB.compareTo(scoreA);
+        if (scoreCompare != 0) return scoreCompare;
+      } else {
+        final c = b.matchCount.compareTo(a.matchCount);
+        if (c != 0) return c;
+      }
+
       return a.recipe.title.compareTo(b.recipe.title);
     });
 
     setState(() {
+      _activeHealthGoals = activeGoals;
       _results = all;
       _showingAllRecipes = true;
       _selectedCategory = 'Todos';
@@ -315,6 +364,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
           selectedIngredientNames: _selectedIngredientNames,
           recipePool: newRecipes,
           minMatchCount: 0,
+          activeHealthGoals: _activeHealthGoals,
         );
 
         setState(() {
@@ -417,6 +467,10 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         _buildCategoryFilters(context),
         const SizedBox(height: 8),
         _buildTimeFilters(context),
+        if (_activeHealthGoals.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _buildActiveGoalsBar(context),
+        ],
         const SizedBox(height: 12),
         Expanded(
           child: filtered.isEmpty
@@ -601,6 +655,69 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openNutritionGoals() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => NutritionTipsScreen(
+          historyService: _historyService,
+          shoppingListService: _shoppingListService,
+          healthGoalStorageService: _healthGoalStorageService,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (_showingAllRecipes) {
+      await _showAllLocalRecipes();
+    } else {
+      await _performDiscovery();
+    }
+  }
+
+  Widget _buildActiveGoalsBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final goalSummary = _activeHealthGoals.map((g) => g.shortLabel).join(', ');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          AppSvgIcon(
+            assetName: 'nutrition',
+            size: 16,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Metas activas: $goalSummary',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: _openNutritionGoals,
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            ),
+            child: const Text('Cambiar metas'),
+          ),
         ],
       ),
     );
@@ -893,6 +1010,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                 historyService: _historyService,
                 shoppingListService: _shoppingListService,
                 ingredientStorageService: _ingredientStorageService,
+                healthGoalStorageService: _healthGoalStorageService,
               ),
             ),
           ).then((_) {
@@ -997,6 +1115,13 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (result.goalMatch.hasMatch) ...[
+                const SizedBox(height: 10),
+                GoalTooltipBanner(
+                  tooltipKey: ValueKey('goal_tooltip_${recipe.id}'),
+                  goalMatch: result.goalMatch,
                 ),
               ],
             ],

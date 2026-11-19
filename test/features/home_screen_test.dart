@@ -7,6 +7,8 @@ import 'package:food_friend/features/home/presentation/home_screen.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
 import 'package:food_friend/features/ingredients/presentation/add_ingredient_screen.dart';
+import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
+import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/nutrition/presentation/nutrition_tips_screen.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
@@ -259,6 +261,19 @@ void main() {
 
       expect(find.byType(NutritionTipsScreen), findsOneWidget);
       expect(find.text('Consejos de Nutrición'), findsOneWidget);
+    });
+
+    testWidgets(
+        'displays active health goal summary on HomeScreen Consejos de Nutrición card',
+        (tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final goalStorage = HealthGoalStorageService(preferences: prefs);
+      await goalStorage.saveSelectedGoals({HealthGoal.gainMuscle});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 meta activa: Más proteína.'), findsOneWidget);
     });
   });
 

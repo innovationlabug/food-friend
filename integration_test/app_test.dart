@@ -4,6 +4,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/amount_unit.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
+import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
@@ -322,9 +324,11 @@ void main() {
     final pantry = IngredientStorageService();
     final shopping = ShoppingListStorageService(pantryStorageService: pantry);
     final history = RecipeHistoryService(ingredientStorageService: pantry);
+    final goalStorage = HealthGoalStorageService();
     await pantry.clearIngredients();
     await shopping.clearIngredients();
     await history.clearHistory();
+    await goalStorage.clearGoals();
 
     app.main();
     await tester.pumpAndSettle();
@@ -336,8 +340,9 @@ void main() {
     await tester.tap(tipsBtn);
     await tester.pumpAndSettle();
 
-    expect(find.text('Aún no has registrado recetas cocinadas'), findsOneWidget);
-    expect(find.text('Proteína completa combinando arroz y frijoles'), findsOneWidget);
+    expect(find.text('Tus metas de salud'), findsOneWidget);
+    expect(find.text('Personaliza tu nutrición'), findsOneWidget);
+    expect(find.text('Ganar masa muscular / Más proteína'), findsOneWidget);
 
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
@@ -372,11 +377,16 @@ void main() {
     await tester.tap(tipsBtn);
     await tester.pumpAndSettle();
 
-    expect(find.text('Modera el consumo de carnes procesadas'), findsOneWidget);
-    expect(
-      find.text('Combina granos y legumbres para lograr proteína completa'),
-      findsOneWidget,
-    );
+    final alertTitle = find.text('Modera el consumo de carnes procesadas');
+    await tester.scrollUntilVisible(alertTitle, 250);
+    await tester.pumpAndSettle();
+    expect(alertTitle, findsOneWidget);
+
+    final proteinTitle =
+        find.text('Combina granos y legumbres para lograr proteína completa');
+    await tester.scrollUntilVisible(proteinTitle, 250);
+    await tester.pumpAndSettle();
+    expect(proteinTitle, findsOneWidget);
 
     final vitA = find.text('Refuerza tu aporte de Vitamina A');
     await tester.scrollUntilVisible(vitA, 250);
@@ -498,5 +508,127 @@ void main() {
     await pantry.clearIngredients();
     await shopping.clearIngredients();
     await history.clearHistory();
+  });
+
+  testWidgets(
+      'E2E integration test FEAT-2: selects and persists health goals, prioritizes aligned recipes, and displays Spanish nutritional tooltips',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    final history = RecipeHistoryService(ingredientStorageService: pantry);
+    final goalStorage = HealthGoalStorageService();
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
+    await goalStorage.clearGoals();
+
+    await pantry.saveIngredients([
+      const Ingredient(name: 'Pechuga de pollo'),
+      const Ingredient(name: 'Güisquil'),
+      const Ingredient(name: 'Zanahoria'),
+      const Ingredient(name: 'Crema pura'),
+    ]);
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // 1. Open Consejos de Nutrición and select goals
+    final tipsBtn = find.text('Consejos de Nutrición');
+    await tester.ensureVisible(tipsBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(tipsBtn);
+    await tester.pumpAndSettle();
+
+    final loseWeightTile = find.byKey(
+      ValueKey('health_goal_${HealthGoal.loseWeight.storageKey}'),
+    );
+    final gainMuscleTile = find.byKey(
+      ValueKey('health_goal_${HealthGoal.gainMuscle.storageKey}'),
+    );
+    await tester.ensureVisible(loseWeightTile);
+    await tester.pumpAndSettle();
+    await tester.tap(loseWeightTile);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(gainMuscleTile);
+    await tester.pumpAndSettle();
+    await tester.tap(gainMuscleTile);
+    await tester.pumpAndSettle();
+
+    expect(
+      await goalStorage.getSelectedGoals(),
+      equals({HealthGoal.loseWeight, HealthGoal.gainMuscle}),
+    );
+
+    // 2. Open recipe suggestions from goal screen and verify ranking + tooltips
+    final seeAllBtn =
+        find.widgetWithText(OutlinedButton, 'Ver todas en recetas sugeridas');
+    await tester.scrollUntilVisible(seeAllBtn, 250);
+    await tester.pumpAndSettle();
+    await tester.tap(seeAllBtn);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Metas activas: Bajar calorías, Más proteína'),
+      findsOneWidget,
+    );
+
+    final lightDish = find.text('Pechuga a la Plancha con Verduras al Vapor');
+    final creamyDish = find.text('Pechuga al Curry Cremoso con Maní');
+    expect(lightDish, findsOneWidget);
+
+    final tooltipFinder = find.byKey(
+      const ValueKey('goal_tooltip_pollo_plancha_vegetales'),
+    );
+    expect(tooltipFinder, findsOneWidget);
+    expect(
+      tester.widget<Tooltip>(tooltipFinder).message,
+      contains('La pechuga de pollo es una excelente fuente de proteína'),
+    );
+
+    if (creamyDish.evaluate().isNotEmpty) {
+      expect(
+        tester.getRect(lightDish).top,
+        lessThan(tester.getRect(creamyDish).top),
+      );
+    } else {
+      final listScrollable = find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        creamyDish,
+        200,
+        scrollable: listScrollable,
+      );
+      await tester.pumpAndSettle();
+      expect(creamyDish, findsOneWidget);
+      await tester.scrollUntilVisible(
+        lightDish,
+        -200,
+        scrollable: listScrollable,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    // 3. Open recipe detail and confirm Spanish alignment card renders
+    await tester.tap(lightDish);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alineado con tus metas de salud'), findsOneWidget);
+    expect(
+      find.text('El güisquil contiene pocas calorías y aporta fibra'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('La pechuga de pollo es una excelente fuente de proteína'),
+      findsOneWidget,
+    );
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
+    await goalStorage.clearGoals();
   });
 }

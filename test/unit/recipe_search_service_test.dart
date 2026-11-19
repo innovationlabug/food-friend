@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/nutrition/domain/health_goal.dart';
+import 'package:food_friend/features/nutrition/domain/nutrition_metadata.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/data/recipe_search_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
@@ -463,6 +465,154 @@ void main() {
         matched.map((i) => i.name),
         equals(['Pechuga de pollo', 'Huevos', 'Tomate']),
       );
+    });
+  });
+
+  group('FEAT-2: Health-Goal Recipe Prioritization & Deterministic Tooltips', () {
+    const lightProteinRecipe = Recipe(
+      id: 'light_chicken',
+      title: 'Pechuga con Güisquil',
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
+      ingredients: [
+        RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+        RecipeIngredient(name: 'Güisquil', displayAmount: '1 unidad'),
+      ],
+      instructions: ['Cocinar al vapor.'],
+    );
+
+    const creamyRecipe = Recipe(
+      id: 'creamy_chicken',
+      title: 'Pollo en Crema y Mantequilla',
+      nutritionAttributes: {
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.calorieDense,
+      },
+      ingredients: [
+        RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+        RecipeIngredient(name: 'Crema pura', displayAmount: '1 taza'),
+        RecipeIngredient(name: 'Mantequilla', displayAmount: '2 cdas'),
+      ],
+      instructions: ['Cocinar en crema.'],
+    );
+
+    const hiddenLightRecipe = Recipe(
+      id: 'never_light',
+      title: 'Ensalada Oculta',
+      nutritionAttributes: {
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
+      ingredients: [
+        RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+      ],
+      instructions: ['Servir.'],
+    );
+
+    const dislikedLightRecipe = Recipe(
+      id: 'disliked_light',
+      title: 'Caldo No Me Gustó',
+      nutritionAttributes: {
+        NutritionalAttribute.lowCalorieDensity,
+        NutritionalAttribute.highProtein,
+        NutritionalAttribute.lowSodiumWholeFood,
+      },
+      ingredients: [
+        RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+        RecipeIngredient(name: 'Güisquil', displayAmount: '1 unidad'),
+      ],
+      instructions: ['Hervir.'],
+    );
+
+    test('prioritizes recipes aligned with active health goals and attaches Spanish tooltips',
+        () {
+      final service = RecipeSearchService();
+      final results = service.searchRecipes(
+        selectedIngredientNames: ['Pechuga de pollo', 'Crema pura'],
+        recipePool: const [creamyRecipe, lightProteinRecipe],
+        activeHealthGoals: {HealthGoal.loseWeight},
+      );
+
+      // Even though creamyRecipe has 2 matching ingredients (Pechuga + Crema) vs 1,
+      // loseWeight boosts lightProteinRecipe (+9.5) and penalizes creamyRecipe (-4.0).
+      expect(results.first.recipe.id, equals('light_chicken'));
+      expect(results.first.goalMatch.hasMatch, isTrue);
+      expect(
+        results.first.goalMatch.primaryReason,
+        equals('El güisquil contiene pocas calorías y aporta fibra'),
+      );
+
+      expect(results.last.recipe.id, equals('creamy_chicken'));
+      expect(results.last.goalMatch.hasMatch, isFalse);
+    });
+
+    test('ranks multi-goal matches ahead of single-goal matches when ingredients tie',
+        () {
+      final service = RecipeSearchService();
+      const singleGoalOnly = Recipe(
+        id: 'single_goal',
+        title: 'Arroz con Pollo',
+        ingredients: [
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+          RecipeIngredient(name: 'Arroz blanco', displayAmount: '1 taza'),
+        ],
+        instructions: ['Cocinar.'],
+      );
+      const multiGoal = Recipe(
+        id: 'multi_goal',
+        title: 'Pollo con Espinaca',
+        ingredients: [
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+          RecipeIngredient(name: 'Espinaca', displayAmount: '1 taza'),
+        ],
+        instructions: ['Saltear.'],
+      );
+
+      final results = service.searchRecipes(
+        selectedIngredientNames: ['Pechuga de pollo'],
+        recipePool: const [singleGoalOnly, multiGoal],
+        activeHealthGoals: {
+          HealthGoal.gainMuscle,
+          HealthGoal.increaseVitaminsAndFiber,
+        },
+      );
+
+      expect(results.first.recipe.id, equals('multi_goal'));
+      expect(results.first.goalMatch.matchedGoals.length, equals(2));
+      expect(results.first.goalMatch.reasons.length, equals(2));
+    });
+
+    test('still excludes Nunca and keeps No me gustó at the bottom even when aligned with goals',
+        () {
+      final service = RecipeSearchService();
+      final history = {
+        hiddenLightRecipe.id: const RecipeHistoryRecord(
+          recipeId: 'never_light',
+          preference: RecipePreference.never,
+        ),
+        dislikedLightRecipe.id: const RecipeHistoryRecord(
+          recipeId: 'disliked_light',
+          preference: RecipePreference.disliked,
+        ),
+      };
+
+      final results = service.searchRecipes(
+        selectedIngredientNames: ['Pechuga de pollo', 'Güisquil'],
+        recipePool: const [
+          dislikedLightRecipe,
+          hiddenLightRecipe,
+          creamyRecipe,
+        ],
+        history: history,
+        activeHealthGoals: {HealthGoal.loseWeight, HealthGoal.gainMuscle},
+      );
+
+      expect(results.any((r) => r.recipe.id == 'never_light'), isFalse);
+      expect(results.first.recipe.id, equals('creamy_chicken'));
+      expect(results.last.recipe.id, equals('disliked_light'));
     });
   });
 }
