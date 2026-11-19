@@ -423,3 +423,21 @@ Read the latest `Next week plan` section in `SPEC.md` and the `Iteration 3` sect
 Every feature must include product problem, scope and deliverables and acceptance criteria.
 
 Push the current `FEAT-2` and `FEAT-3` to the end of document.
+
+
+---
+
+
+Implement `FEAT-2` from `FEATURES.md` end-to-end.
+
+Adhere strictly to all rules in `AGENTS.md` and requirements in `SPEC.md` (Spanish UI, GTQ currency where applicable, SVG icons only, no pseudo-metadata badges, and offline/local resilience).
+
+Work autonomously through the full lifecycle:
+
+1. **Branch Management:** Create and switch to the suggested feature branch (`feat/cooking-cycle-and-time-filter`) before making changes.
+2. **Design & Implementation:** Review the existing codebase first, then implement all deliverables in `FEAT-1` so they integrate cleanly with the current architecture.
+3. **Automated Tests:** Create or update unit tests, widget tests, and `package:integration_test` end-to-end tests covering all acceptance criteria in `FEAT-1` (plus backend tests if `/api/*` files are modified).
+4. **Verification:** Run `flutter analyze`, `flutter test`, and the relevant `flutter test integration_test/...` suite. Resolve any lint issues, layout overflows, or test failures before finishing.
+5. **Tracking & Commit:** Update `FEAT-1` and its acceptance criteria with `[x]` in `FEATURES.md` (and update `SPEC.md` if required by the feature). Stage and commit your changes using Conventional Commits (e.g., `feat(recipes): ...`).
+
+When finished, provide a concise summary of the changes, files touched, and exact test results. Execute `[console]::beep(800, 800)` to notify me when complete.
