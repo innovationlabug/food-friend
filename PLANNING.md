@@ -167,3 +167,32 @@ This is the updated plan for the second iteration.
         - Alert about ingredients that might be harmful long term. For example, if the user has been consuming excesive amount of processed meats lately.
         - Suggest which ingredients might be used to obtain health benefits. For example, track fruits and vegetables and the vitamins they include, if the user seems to be missing some vitamin from their diet suggest them some item that includes it.
         - If the user has been consuming "incomplete proteins" give them pairing suggestions. For example, rice and beans on their own only contain certain aminoacids, but together they can be considered a complete source of protein.
+
+---
+
+# Iteration 3
+
+## Week 3 updated planning
+This is the updated plan for the third iteration.
+
+- Nutrition tips.
+    - Implement goal selection. The user can select some health goals such as losing weight, gaining muscle, etc. from a list. The app will suggest recipes based on that. When suggesting some recipe based on health goals add some small tooltip stating why the recipe is being suggested. Provide short but specific details such as "X es una excelente fuente de proteína", "X contiene pocas calorías".
+    - If needed, remove the current generic tips when implementing this.
+
+- Shopping list functionality.
+    - Give suggestions according to the cooking history and user's liked and favorited recipes. Check which recipes have been marked as liked or favorite, check if many of their ingredients are available and if only some of them are missing give the user some "si compras X puedes cocinar Y de tus recetas favoritas" suggestion.
+    - Give suggestions according to the nutrition tips. Help the user with their goals by checking what recipes they are almost ready to cook and only miss some of the ingredients.
+
+- Recipe suggestions.
+    - Suggest ingredient replacements according to the available ingredients. Suggest which recipes can be cooked if we make some logical replacement.
+    - Suggest ingredient replacements according to health goals. Suggest which recipes can be cooked using healthier ingredients without altering too much in the recipe.
+
+- Ingredient sales notifications.
+    - First, validate if feasible: Is it possible to reliably fetch information from local supermarket webpages to implement this feature? Consider the possibility to execute this fetch server-side, at a scheduled time, instead of every time the user opens the app's client.
+    - Give the user notifications on sales. The user will be notified if some ingredient they often use is in sale at some local supermarket.
+    - If implemented, on later iterations we will add improvements like recognizing the user's favorite market or supermarket.
+
+- Market and supermarket notifications.
+    - First, validate if feasible: Is it possible to get the user location when they are using the app and use it for notifications?
+    - Notify the user when they have pending ingredients and they are near a market or supermarket. Have a list of markets and supermarkets stored in the app and notify the user when they are near one.
+    - If implemented, on later iterations we will add improvements like recognizing the user's favorite market or supermarket.

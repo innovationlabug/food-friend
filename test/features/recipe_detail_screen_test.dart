@@ -564,7 +564,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Direct actions appear
-      final moveToBuyBtn = find.text('Quitar y pasar a Por comprar (1)');
+      final moveToBuyBtn = find.text('Quitar y pasar a Lista de compras (1)');
       expect(moveToBuyBtn, findsOneWidget);
       expect(find.text('Solo quitar de Mis ingredientes'), findsOneWidget);
 
@@ -574,7 +574,7 @@ void main() {
       // Sheet closes and feedback snackbar appears
       expect(find.text('¿Qué se te acabó?'), findsNothing);
       expect(
-        find.text('Receta cocinada. "Pechuga de pollo" pasó a Por comprar.'),
+        find.text('Receta cocinada. "Pechuga de pollo" pasó a Lista de compras.'),
         findsOneWidget,
       );
 
@@ -707,6 +707,53 @@ void main() {
       expect(remaining.first.timesUsed, 1);
       expect(remaining.first.lastUsed, isNotNull);
       expect(await shopping.getIngredients(), isEmpty);
+    });
+  });
+
+  group('UI Alignment: Missing ingredient rows', () {
+    testWidgets(
+        'aligns all missing ingredient amounts on the right and pins all shopping cart icons vertically',
+        (WidgetTester tester) async {
+      const mixedLengthsRecipe = Recipe(
+        id: 'alignment_test',
+        title: 'Receta de Prueba',
+        ingredients: [
+          RecipeIngredient(name: 'Sal', displayAmount: '1 cdta'),
+          RecipeIngredient(name: 'Tomate rojo', displayAmount: '2 unidades'),
+          RecipeIngredient(
+            name: 'Aceite de oliva virgen extra',
+            displayAmount: '2 cucharadas',
+          ),
+        ],
+        instructions: ['Mezclar todo.'],
+      );
+
+      final result = RecipeSearchResult(
+        recipe: mixedLengthsRecipe,
+        matchedIngredients: const [],
+        missingIngredients: mixedLengthsRecipe.ingredients,
+      );
+
+      await tester.pumpWidget(createTestWidget(result: result));
+      await tester.pumpAndSettle();
+
+      final cartButtons = find.byTooltip('Agregar a lista de compras');
+      expect(cartButtons, findsNWidgets(3));
+
+      final btn0 = tester.getRect(cartButtons.at(0));
+      final btn1 = tester.getRect(cartButtons.at(1));
+      final btn2 = tester.getRect(cartButtons.at(2));
+      expect(btn1.left, equals(btn0.left));
+      expect(btn2.left, equals(btn0.left));
+      expect(btn1.right, equals(btn0.right));
+      expect(btn2.right, equals(btn0.right));
+
+      final amt0 = tester.getRect(find.text('1 cdta'));
+      final amt1 = tester.getRect(find.text('2 unidades'));
+      final amt2 = tester.getRect(find.text('2 cucharadas'));
+      expect(amt1.right, equals(amt0.right));
+      expect(amt2.right, equals(amt0.right));
+      expect(amt0.right, lessThan(btn0.left));
     });
   });
 }

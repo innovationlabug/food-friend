@@ -457,11 +457,11 @@ void main() {
     await tester.tap(find.descendant(of: sheet, matching: find.text('Aguacate')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Quitar y pasar a Por comprar (1)'));
+    await tester.tap(find.text('Quitar y pasar a Lista de compras (1)'));
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Receta cocinada. "Aguacate" pasó a Por comprar.'),
+      find.text('Receta cocinada. "Aguacate" pasó a Lista de compras.'),
       findsOneWidget,
     );
 

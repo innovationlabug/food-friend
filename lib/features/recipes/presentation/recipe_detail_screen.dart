@@ -278,8 +278,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       final String message;
       if (selection.addToShoppingList) {
         message = count == 1
-            ? 'Receta cocinada. "$singleName" pasó a Por comprar.'
-            : 'Receta cocinada. $count ingredientes pasaron a Por comprar.';
+            ? 'Receta cocinada. "$singleName" pasó a Lista de compras.'
+            : 'Receta cocinada. $count ingredientes pasaron a Lista de compras.';
       } else {
         message = count == 1
             ? 'Receta cocinada. "$singleName" se quitó de Mis ingredientes.'
@@ -1073,38 +1073,61 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                ingredient.name,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isAvailable ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Flexible(
-              child: Text(
-                ingredient.displayAmount,
-                textAlign: TextAlign.end,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          ingredient.name,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isAvailable
+                                ? colorScheme.onSurface
+                                : colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * 0.42,
+                        ),
+                        child: Text(
+                          ingredient.displayAmount,
+                          textAlign: TextAlign.end,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
             if (!isAvailable) ...[
-              const SizedBox(width: 4),
-              IconButton(
-                tooltip: inShoppingList
-                    ? 'En lista de compras'
-                    : 'Agregar a lista de compras',
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                icon: AppSvgIcon(
-                  assetName: inShoppingList ? 'check' : 'shopping_cart',
-                  size: 18,
-                  color: colorScheme.primary,
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  style: IconButton.styleFrom(
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  tooltip: inShoppingList
+                      ? 'En lista de compras'
+                      : 'Agregar a lista de compras',
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  icon: AppSvgIcon(
+                    assetName: inShoppingList ? 'check' : 'shopping_cart',
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  onPressed: () => _addMissingToShoppingList(ingredient),
                 ),
-                onPressed: () => _addMissingToShoppingList(ingredient),
               ),
             ],
           ],

@@ -394,14 +394,14 @@ void main() {
     expect(find.descendant(of: sheet, matching: find.text('Pepino')), findsOneWidget);
     expect(find.descendant(of: sheet, matching: find.text('Pollo')), findsNothing);
 
-    // 5. Mark Aguacate as depleted and send to Por comprar
+    // 5. Mark Aguacate as depleted and send to Lista de compras
     await tester.tap(find.descendant(of: sheet, matching: find.text('Aguacate')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Quitar y pasar a Por comprar (1)'));
+    await tester.tap(find.text('Quitar y pasar a Lista de compras (1)'));
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Receta cocinada. "Aguacate" pasó a Por comprar.'),
+      find.text('Receta cocinada. "Aguacate" pasó a Lista de compras.'),
       findsOneWidget,
     );
 

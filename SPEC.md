@@ -160,11 +160,10 @@ In the first iterations, while we validate user interest in the project we will 
 
 - Suggest relevant and useful ingredient substitutions according to user's health goals.
 
-- Improve ingredient list and shopping list to track slowly consumed ingredients amount and expiration date.
+- Improve ingredient list and shopping list to track slowly consumed ingredients amount and expiration date. (PENDING)
 
 - Validate if feasible: Notification on ingredients' sales.
   - Can we reliable get information from local supermarket webpages to implement this feature?
 
-- Validtae if feasible: Notify the user when they are near some market or supermarket and they have pending items on their shopping list.
+- Validate if feasible: Notify the user when they are near some market or supermarket and they have pending items on their shopping list.
   - Can we get GPS info and send these notifications from Flutter?
-

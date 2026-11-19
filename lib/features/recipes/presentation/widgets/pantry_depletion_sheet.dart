@@ -267,7 +267,7 @@ class _PantryDepletionSheetState extends State<PantryDepletionSheet> {
                     color: colorScheme.onPrimary,
                   ),
                   label: Text(
-                    'Quitar y pasar a Por comprar ($selectedCount)',
+                    'Quitar y pasar a Lista de compras ($selectedCount)',
                     textAlign: TextAlign.center,
                   ),
                   style: FilledButton.styleFrom(
