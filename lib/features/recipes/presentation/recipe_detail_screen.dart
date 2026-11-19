@@ -13,6 +13,7 @@ import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
+import 'widgets/pantry_depletion_sheet.dart';
 import 'widgets/recipe_preference_style.dart';
 
 /// Detailed view for a single recipe.
@@ -80,10 +81,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _historyService = widget.historyService ?? RecipeHistoryService();
-    _shoppingListService = widget.shoppingListService ?? ShoppingListStorageService();
     _ingredientStorageService =
         widget.ingredientStorageService ?? IngredientStorageService();
+    _historyService = widget.historyService ??
+        RecipeHistoryService(
+          ingredientStorageService: _ingredientStorageService,
+        );
+    _shoppingListService = widget.shoppingListService ??
+        ShoppingListStorageService(
+          pantryStorageService: _ingredientStorageService,
+        );
     _loadHistoryStatus();
     _loadShoppingListStatus();
     if (widget.matchedIngredients.isEmpty && widget.missingIngredients.isEmpty) {
@@ -227,6 +234,68 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       _isCookedToday = true;
     });
 
+    final pantry = await _ingredientStorageService.getIngredients();
+    if (!mounted) return;
+
+    final matchingPantry = RecipeSearchService.findMatchingPantryIngredients(
+      widget.recipe,
+      pantry,
+    );
+
+    if (matchingPantry.isEmpty) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('¡Receta registrada como cocinada!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final selection = await showPantryDepletionSheet(
+      context,
+      recipeTitle: widget.recipe.title,
+      matchingIngredients: matchingPantry,
+    );
+    if (!mounted) return;
+
+    if (selection != null && selection.depletedIngredients.isNotEmpty) {
+      await _historyService.applyPantryDepletion(
+        depletedIngredients: selection.depletedIngredients,
+        addToShoppingList: selection.addToShoppingList,
+        shoppingListService: _shoppingListService,
+        ingredientStorageService: _ingredientStorageService,
+      );
+      if (!mounted) return;
+
+      await _resolveIngredientsFromPantry();
+      await _loadShoppingListStatus();
+      if (!mounted) return;
+
+      final count = selection.depletedIngredients.length;
+      final singleName = selection.depletedIngredients.first.name;
+      final String message;
+      if (selection.addToShoppingList) {
+        message = count == 1
+            ? 'Receta cocinada. "$singleName" pasó a Por comprar.'
+            : 'Receta cocinada. $count ingredientes pasaron a Por comprar.';
+      } else {
+        message = count == 1
+            ? 'Receta cocinada. "$singleName" se quitó de Mis ingredientes.'
+            : 'Receta cocinada. $count ingredientes se quitaron de Mis ingredientes.';
+      }
+
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       const SnackBar(
@@ -273,10 +342,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
     late final List<RecipeIngredient> effectiveMatched;
     late final List<RecipeIngredient> effectiveMissing;
-    if (matchedIngredients.isEmpty && missingIngredients.isEmpty) {
-      effectiveMatched = _resolvedFromPantry ? _pantryMatched : const [];
-      effectiveMissing =
-          _resolvedFromPantry ? _pantryMissing : recipe.ingredients;
+    if (_resolvedFromPantry) {
+      effectiveMatched = _pantryMatched;
+      effectiveMissing = _pantryMissing;
+    } else if (matchedIngredients.isEmpty && missingIngredients.isEmpty) {
+      effectiveMatched = const [];
+      effectiveMissing = recipe.ingredients;
     } else {
       final matchedSet = matchedIngredients.map((i) => i.normalizedName).toSet();
       effectiveMatched = matchedIngredients.isNotEmpty

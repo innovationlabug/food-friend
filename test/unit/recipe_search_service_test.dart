@@ -1,10 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:food_friend/features/ingredients/domain/ingredient.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/data/recipe_search_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_history_record.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
 import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
+import 'package:food_friend/features/recipes/domain/recipe_time_filter.dart';
 
 void main() {
   group('US-4.1: RecipeSearchService Matching and Ranking', () {
@@ -329,6 +331,138 @@ void main() {
       expect(results.length, 2);
       expect(results[0].recipe.id, 'rec_fav_fresh');
       expect(results[1].recipe.id, 'rec_fav_cooked_today');
+    });
+  });
+
+  group('FEAT-1: Total Cooking Time Filter & Pantry Ingredient Matching', () {
+    const quickRecipe = Recipe(
+      id: 'rec_quick',
+      title: 'Ensalada Rápida',
+      prepTimeMinutes: 10,
+      cookTimeMinutes: 10, // total 20
+      ingredients: [RecipeIngredient(name: 'Tomate', displayAmount: '2 unidades')],
+      instructions: ['Mezclar.'],
+    );
+
+    const mediumRecipe = Recipe(
+      id: 'rec_medium',
+      title: 'Salteado Medio',
+      prepTimeMinutes: 15,
+      cookTimeMinutes: 25, // total 40
+      ingredients: [RecipeIngredient(name: 'Tomate', displayAmount: '2 unidades')],
+      instructions: ['Saltear.'],
+    );
+
+    const hourRecipe = Recipe(
+      id: 'rec_hour',
+      title: 'Caldo Tradicional',
+      prepTimeMinutes: 20,
+      cookTimeMinutes: 40, // total 60
+      ingredients: [RecipeIngredient(name: 'Tomate', displayAmount: '2 unidades')],
+      instructions: ['Hervir.'],
+    );
+
+    const slowRecipe = Recipe(
+      id: 'rec_slow',
+      title: 'Guiso Lento',
+      prepTimeMinutes: 25,
+      cookTimeMinutes: 45, // total 70
+      ingredients: [RecipeIngredient(name: 'Tomate', displayAmount: '2 unidades')],
+      instructions: ['Cocer lentamente.'],
+    );
+
+    const noTimeRecipe = Recipe(
+      id: 'rec_no_time',
+      title: 'Receta sin tiempo',
+      ingredients: [RecipeIngredient(name: 'Tomate', displayAmount: '2 unidades')],
+      instructions: ['Preparar.'],
+    );
+
+    test('RecipeTimeFilter matches totalTimeMinutes accurately at boundaries', () {
+      // Todos includes everything including null time
+      expect(RecipeTimeFilter.all.matches(quickRecipe), isTrue);
+      expect(RecipeTimeFilter.all.matches(slowRecipe), isTrue);
+      expect(RecipeTimeFilter.all.matches(noTimeRecipe), isTrue);
+
+      // <= 20 min
+      expect(RecipeTimeFilter.upTo20.matches(quickRecipe), isTrue);
+      expect(RecipeTimeFilter.upTo20.matches(mediumRecipe), isFalse);
+      expect(RecipeTimeFilter.upTo20.matches(noTimeRecipe), isFalse);
+
+      // <= 40 min
+      expect(RecipeTimeFilter.upTo40.matches(quickRecipe), isTrue);
+      expect(RecipeTimeFilter.upTo40.matches(mediumRecipe), isTrue);
+      expect(RecipeTimeFilter.upTo40.matches(hourRecipe), isFalse);
+
+      // <= 60 min
+      expect(RecipeTimeFilter.upTo60.matches(quickRecipe), isTrue);
+      expect(RecipeTimeFilter.upTo60.matches(mediumRecipe), isTrue);
+      expect(RecipeTimeFilter.upTo60.matches(hourRecipe), isTrue);
+      expect(RecipeTimeFilter.upTo60.matches(slowRecipe), isFalse);
+      expect(RecipeTimeFilter.upTo60.matches(noTimeRecipe), isFalse);
+    });
+
+    test('RecipeSearchService.searchRecipes filters by maxTotalTimeMinutes', () {
+      final service = RecipeSearchService();
+      final pool = [quickRecipe, mediumRecipe, hourRecipe, slowRecipe, noTimeRecipe];
+
+      final upTo20 = service.searchRecipes(
+        selectedIngredientNames: ['Tomate'],
+        recipePool: pool,
+        maxTotalTimeMinutes: 20,
+      );
+      expect(upTo20.map((r) => r.recipe.id), equals(['rec_quick']));
+
+      final upTo40 = service.searchRecipes(
+        selectedIngredientNames: ['Tomate'],
+        recipePool: pool,
+        maxTotalTimeMinutes: 40,
+      );
+      expect(
+        upTo40.map((r) => r.recipe.id).toSet(),
+        equals({'rec_quick', 'rec_medium'}),
+      );
+
+      final upTo60 = service.searchRecipes(
+        selectedIngredientNames: ['Tomate'],
+        recipePool: pool,
+        maxTotalTimeMinutes: 60,
+      );
+      expect(
+        upTo60.map((r) => r.recipe.id).toSet(),
+        equals({'rec_quick', 'rec_medium', 'rec_hour'}),
+      );
+    });
+
+    test('findMatchingPantryIngredients returns matching pantry items without duplicates', () {
+      const recipe = Recipe(
+        id: 'rec_pantry_match',
+        title: 'Pollo con Huevo y Tomate',
+        ingredients: [
+          RecipeIngredient(name: 'Pollo', displayAmount: '1 lb'),
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1/2 lb'),
+          RecipeIngredient(name: 'Huevo', displayAmount: '2 unidades'),
+          RecipeIngredient(name: 'Tomate', displayAmount: '3 unidades'),
+        ],
+        instructions: ['Cocinar.'],
+      );
+
+      const pantry = [
+        Ingredient(name: 'Pechuga de pollo'),
+        Ingredient(name: 'Huevos'),
+        Ingredient(name: 'Zanahoria'),
+        Ingredient(name: 'Tomate'),
+      ];
+
+      final matched = RecipeSearchService.findMatchingPantryIngredients(
+        recipe,
+        pantry,
+      );
+
+      expect(
+        matched.map((i) => i.name),
+        equals(['Pechuga de pollo', 'Huevos', 'Tomate']),
+      );
     });
   });
 }

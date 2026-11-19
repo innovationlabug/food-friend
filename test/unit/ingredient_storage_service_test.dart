@@ -183,6 +183,49 @@ void main() {
       expect(retrieved.first.timesUsed, equals(1));
       expect(retrieved.first.lastUsed, equals(usageDate));
     });
+
+    test('removeIngredients removes multiple ingredients case- and accent-insensitively', () async {
+      await storageService.saveIngredients([
+        const Ingredient(name: 'Limón'),
+        const Ingredient(name: 'Aguacate'),
+        const Ingredient(name: 'Tomate'),
+        const Ingredient(name: 'Güisquil'),
+      ]);
+
+      final remaining = await storageService.removeIngredients(['limon', 'guisquil']);
+
+      expect(remaining.map((i) => i.name), equals(['Aguacate', 'Tomate']));
+      final reloaded = await storageService.getIngredients();
+      expect(reloaded.map((i) => i.name), equals(['Aguacate', 'Tomate']));
+    });
+
+    test('recordIngredientsUsage uses custom matcher and increments each item at most once', () async {
+      await storageService.saveIngredients([
+        const Ingredient(name: 'Pechuga de pollo', timesUsed: 0),
+        const Ingredient(name: 'Tomate', timesUsed: 2),
+        const Ingredient(name: 'Arroz blanco', timesUsed: 0),
+      ]);
+
+      final usedAt = DateTime(2026, 11, 19, 13, 30);
+      final updated = await storageService.recordIngredientsUsage(
+        ['Pollo', 'Pechuga de pollo', 'Tomate'],
+        usedAt: usedAt,
+        matcher: (stored, target) =>
+            stored == target || stored.contains(target) || target.contains(stored),
+      );
+
+      final chicken = updated.firstWhere((i) => i.name == 'Pechuga de pollo');
+      final tomato = updated.firstWhere((i) => i.name == 'Tomate');
+      final rice = updated.firstWhere((i) => i.name == 'Arroz blanco');
+
+      // Matched by both 'Pollo' and 'Pechuga de pollo', still incremented only once
+      expect(chicken.timesUsed, equals(1));
+      expect(chicken.lastUsed, equals(usedAt));
+      expect(tomato.timesUsed, equals(3));
+      expect(tomato.lastUsed, equals(usedAt));
+      expect(rice.timesUsed, equals(0));
+      expect(rice.lastUsed, isNull);
+    });
   });
 }
 

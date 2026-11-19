@@ -489,4 +489,224 @@ void main() {
       expect(instrRect.left, greaterThan(ingRect.left));
     });
   });
+
+  group('FEAT-1: Post-Cooking Pantry Deduction Sheet ("¿Qué se te acabó?")', () {
+    testWidgets(
+        'opens "¿Qué se te acabó?" sheet with matching pantry items, deducts depleted items, adds them to Por comprar, and updates timesUsed/lastUsed',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+      final history = RecipeHistoryService(
+        preferences: prefs,
+        ingredientStorageService: pantry,
+      );
+
+      // Pantry has 2 items matching sampleRecipe + 1 unrelated item
+      await pantry.saveIngredients([
+        const Ingredient(name: 'Pechuga de pollo'),
+        const Ingredient(name: 'Papa'),
+        const Ingredient(name: 'Arroz blanco'),
+      ]);
+
+      final result = RecipeSearchResult(
+        recipe: sampleRecipe,
+        matchedIngredients: const [
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+          RecipeIngredient(name: 'Papa', displayAmount: '2 unidades'),
+        ],
+        missingIngredients: const [
+          RecipeIngredient(name: 'Güisquil', displayAmount: '1 unidad'),
+          RecipeIngredient(name: 'Zanahoria', displayAmount: '2 unidades'),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen.fromResult(
+            result: result,
+            historyService: history,
+            shoppingListService: shopping,
+            ingredientStorageService: pantry,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap "Lo cociné"
+      await tester.tap(find.text('Lo cociné'));
+      await tester.pumpAndSettle();
+
+      // Verify sheet opens with matching pantry items only (not Arroz blanco)
+      expect(find.text('¿Qué se te acabó?'), findsOneWidget);
+      final sheetFinder = find.byType(BottomSheet);
+      expect(
+        find.descendant(of: sheetFinder, matching: find.text('Pechuga de pollo')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sheetFinder, matching: find.text('Papa')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sheetFinder, matching: find.text('Arroz blanco')),
+        findsNothing,
+      );
+      expect(find.text('Listo, no se acabó nada'), findsOneWidget);
+
+      // One-tap select "Pechuga de pollo" as depleted
+      await tester.tap(
+        find.descendant(of: sheetFinder, matching: find.text('Pechuga de pollo')),
+      );
+      await tester.pumpAndSettle();
+
+      // Direct actions appear
+      final moveToBuyBtn = find.text('Quitar y pasar a Por comprar (1)');
+      expect(moveToBuyBtn, findsOneWidget);
+      expect(find.text('Solo quitar de Mis ingredientes'), findsOneWidget);
+
+      await tester.tap(moveToBuyBtn);
+      await tester.pumpAndSettle();
+
+      // Sheet closes and feedback snackbar appears
+      expect(find.text('¿Qué se te acabó?'), findsNothing);
+      expect(
+        find.text('Receta cocinada. "Pechuga de pollo" pasó a Por comprar.'),
+        findsOneWidget,
+      );
+
+      // Pantry no longer has Pechuga de pollo, Papa updated with timesUsed=1 & lastUsed, Arroz untouched
+      final updatedPantry = await pantry.getIngredients();
+      expect(
+        updatedPantry.map((i) => i.name),
+        equals(['Papa', 'Arroz blanco']),
+      );
+      final papa = updatedPantry.firstWhere((i) => i.name == 'Papa');
+      final arroz = updatedPantry.firstWhere((i) => i.name == 'Arroz blanco');
+      expect(papa.timesUsed, 1);
+      expect(papa.lastUsed, isNotNull);
+      expect(arroz.timesUsed, 0);
+      expect(arroz.lastUsed, isNull);
+
+      // Shopping list now contains Pechuga de pollo with preserved usage tracking
+      final updatedShopping = await shopping.getIngredients();
+      expect(updatedShopping.map((i) => i.name), equals(['Pechuga de pollo']));
+      expect(updatedShopping.first.timesUsed, 1);
+      expect(updatedShopping.first.lastUsed, isNotNull);
+
+      // RecipeDetailScreen updates live to show only 1/4 ready now
+      expect(find.text('Tienes en casa (1)'), findsOneWidget);
+      expect(find.text('Ingredientes adicionales necesarios (3)'), findsOneWidget);
+
+      // Daily idempotency: second tap does NOT re-open sheet or increment timesUsed
+      await tester.tap(find.text('Cocinada hoy (1 vez)'));
+      await tester.pumpAndSettle();
+      expect(find.text('¿Qué se te acabó?'), findsNothing);
+      expect(find.text('Esta receta ya fue registrada como cocinada hoy.'), findsOneWidget);
+
+      final papaAfterSecondTap =
+          (await pantry.getIngredients()).firstWhere((i) => i.name == 'Papa');
+      expect(papaAfterSecondTap.timesUsed, 1);
+    });
+
+    testWidgets(
+        'allows removing depleted items from Mis ingredientes without adding to Por comprar',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+      final history = RecipeHistoryService(
+        preferences: prefs,
+        ingredientStorageService: pantry,
+      );
+
+      await pantry.saveIngredients([
+        const Ingredient(name: 'Pechuga de pollo'),
+        const Ingredient(name: 'Papa'),
+      ]);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen(
+            recipe: sampleRecipe,
+            historyService: history,
+            shoppingListService: shopping,
+            ingredientStorageService: pantry,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Lo cociné'));
+      await tester.pumpAndSettle();
+
+      final sheetFinder = find.byType(BottomSheet);
+      await tester.tap(
+        find.descendant(of: sheetFinder, matching: find.text('Seleccionar todos')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Solo quitar de Mis ingredientes'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Receta cocinada. 2 ingredientes se quitaron de Mis ingredientes.'),
+        findsOneWidget,
+      );
+      expect(await pantry.getIngredients(), isEmpty);
+      expect(await shopping.getIngredients(), isEmpty);
+    });
+
+    testWidgets(
+        'keeps all pantry items when user taps "Listo, no se acabó nada" while still updating usage',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+      final history = RecipeHistoryService(
+        preferences: prefs,
+        ingredientStorageService: pantry,
+      );
+
+      await pantry.saveIngredients([
+        const Ingredient(name: 'Papa'),
+      ]);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen(
+            recipe: sampleRecipe,
+            historyService: history,
+            shoppingListService: shopping,
+            ingredientStorageService: pantry,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Lo cociné'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('¿Qué se te acabó?'), findsOneWidget);
+      await tester.tap(find.text('Listo, no se acabó nada'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('¡Receta registrada como cocinada!'), findsOneWidget);
+      final remaining = await pantry.getIngredients();
+      expect(remaining.length, 1);
+      expect(remaining.first.name, 'Papa');
+      expect(remaining.first.timesUsed, 1);
+      expect(remaining.first.lastUsed, isNotNull);
+      expect(await shopping.getIngredients(), isEmpty);
+    });
+  });
 }

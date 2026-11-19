@@ -98,6 +98,25 @@ class IngredientStorageService {
     return updatedList;
   }
 
+  /// Removes multiple ingredients by name (case- and accent-insensitive) in a single write.
+  Future<List<Ingredient>> removeIngredients(Iterable<String> names) async {
+    final normalizedTargets = names
+        .map(StringNormalizer.normalize)
+        .where((name) => name.isNotEmpty)
+        .toSet();
+    final currentList = await getIngredients();
+    if (normalizedTargets.isEmpty) {
+      return currentList;
+    }
+
+    final updatedList = currentList
+        .where((item) => !normalizedTargets.contains(StringNormalizer.normalize(item.name)))
+        .toList();
+
+    await saveIngredients(updatedList);
+    return updatedList;
+  }
+
   /// Clears all stored ingredients.
   Future<void> clearIngredients() async {
     final prefs = await _prefs;
@@ -180,20 +199,51 @@ class IngredientStorageService {
     String name, {
     DateTime? usedAt,
   }) async {
+    return recordIngredientsUsage(
+      [name],
+      usedAt: usedAt,
+    );
+  }
+
+  /// Records usage for all stored ingredients matching any name in [names].
+  ///
+  /// Each matching stored ingredient has [timesUsed] incremented at most once
+  /// and [lastUsed] updated to [usedAt] (defaults to `DateTime.now()`), persisted
+  /// in a single write. An optional [matcher] can override exact normalized
+  /// comparison (for example, culinary sub-phrase and synonym matching).
+  Future<List<Ingredient>> recordIngredientsUsage(
+    Iterable<String> names, {
+    DateTime? usedAt,
+    bool Function(String storedNorm, String targetNorm)? matcher,
+  }) async {
+    final normalizedTargets = names
+        .map(StringNormalizer.normalize)
+        .where((name) => name.isNotEmpty)
+        .toSet();
     final currentList = await getIngredients();
+    if (normalizedTargets.isEmpty || currentList.isEmpty) {
+      return currentList;
+    }
+
+    final matchFn = matcher ?? (a, b) => a == b;
+    final timestamp = usedAt ?? DateTime.now();
     final updatedList = <Ingredient>[];
-    bool found = false;
+    bool anyUpdated = false;
 
     for (final item in currentList) {
-      if (!found && StringNormalizer.areEquivalent(item.name, name)) {
-        updatedList.add(item.markUsed(usedAt: usedAt));
-        found = true;
+      final storedNorm = StringNormalizer.normalize(item.name);
+      final isMatch = normalizedTargets.any(
+        (targetNorm) => matchFn(storedNorm, targetNorm),
+      );
+      if (isMatch) {
+        updatedList.add(item.markUsed(usedAt: timestamp));
+        anyUpdated = true;
       } else {
         updatedList.add(item);
       }
     }
 
-    if (found) {
+    if (anyUpdated) {
       await saveIngredients(updatedList);
     }
     return updatedList;

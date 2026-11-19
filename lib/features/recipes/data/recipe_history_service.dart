@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
+import '../../ingredients/domain/ingredient.dart';
+import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_history_record.dart';
 import '../domain/recipe_preference.dart';
 import 'local_recipe_dataset.dart';
+import 'recipe_search_service.dart';
 
 /// Local persistence service tracking recipe cooking history, timestamps,
 /// and user preferences (Favorita, Me gustó, No me gustó, Nunca).
@@ -95,15 +98,59 @@ class RecipeHistoryService {
     history[recipe.id] = updatedRecord;
     await _saveHistory(history);
 
-    // Update timesUsed and lastUsed on matching home ingredients
-    for (final ingredient in recipe.ingredients) {
-      await _ingredientStorageService.recordIngredientUsage(
-        ingredient.name,
-        usedAt: date,
+    // Update timesUsed and lastUsed on all matching pantry ingredients
+    // using culinary matching rules (exact, sub-phrase, and synonyms).
+    await _ingredientStorageService.recordIngredientsUsage(
+      recipe.ingredients.map((i) => i.name),
+      usedAt: date,
+      matcher: RecipeSearchService.isIngredientMatch,
+    );
+
+    return updatedRecord;
+  }
+
+  /// Removes [depletedIngredients] from available pantry items (`"Mis ingredientes"`)
+  /// and, when [addToShoppingList] is `true`, adds them to `"Por comprar"` while
+  /// preserving their internal `timesUsed` and `lastUsed` tracking metadata.
+  Future<({List<Ingredient> pantry, List<Ingredient> shoppingList})>
+      applyPantryDepletion({
+    required List<Ingredient> depletedIngredients,
+    required bool addToShoppingList,
+    required ShoppingListStorageService shoppingListService,
+    IngredientStorageService? ingredientStorageService,
+  }) async {
+    final pantryService = ingredientStorageService ?? _ingredientStorageService;
+    if (depletedIngredients.isEmpty) {
+      return (
+        pantry: await pantryService.getIngredients(),
+        shoppingList: await shoppingListService.getIngredients(),
       );
     }
 
-    return updatedRecord;
+    final updatedPantry = await pantryService.removeIngredients(
+      depletedIngredients.map((item) => item.name),
+    );
+
+    final List<Ingredient> updatedShoppingList;
+    if (addToShoppingList) {
+      final itemsToBuy = depletedIngredients
+          .map(
+            (item) => Ingredient(
+              name: item.name,
+              timesUsed: item.timesUsed,
+              lastUsed: item.lastUsed,
+            ),
+          )
+          .toList();
+      updatedShoppingList = await shoppingListService.addIngredients(itemsToBuy);
+    } else {
+      updatedShoppingList = await shoppingListService.getIngredients();
+    }
+
+    return (
+      pantry: updatedPantry,
+      shoppingList: updatedShoppingList,
+    );
   }
 
   /// Sets or updates the preference mark for [recipeId].

@@ -9,6 +9,7 @@ import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_history_record.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
 import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
+import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -155,6 +156,90 @@ void main() {
 
       expect(pollo.timesUsed, 1);
       expect(pollo.lastUsed, isNotNull);
+    });
+
+    test('increments timesUsed on synonym/sub-phrase pantry matches and respects daily idempotency', () async {
+      await ingredientStorage.saveIngredients([
+        const Ingredient(name: 'Pollo', timesUsed: 0),
+        const Ingredient(name: 'Huevos', timesUsed: 1),
+        const Ingredient(name: 'Aguacate', timesUsed: 0),
+      ]);
+
+      const synonymRecipe = Recipe(
+        id: 'test_synonym_usage',
+        title: 'Pollo con Huevo Test',
+        ingredients: [
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+          RecipeIngredient(name: 'Huevo', displayAmount: '2 unidades'),
+        ],
+        instructions: ['Cocinar.'],
+      );
+
+      final morning = DateTime(2026, 11, 19, 9, 0);
+      final evening = DateTime(2026, 11, 19, 20, 0);
+
+      await historyService.recordCooked(synonymRecipe, cookedAt: morning);
+      // Same-day repeat must not increment timesUsed or change lastUsed
+      await historyService.recordCooked(synonymRecipe, cookedAt: evening);
+
+      final updated = await ingredientStorage.getIngredients();
+      final pollo = updated.firstWhere((i) => i.name == 'Pollo');
+      final huevos = updated.firstWhere((i) => i.name == 'Huevos');
+      final aguacate = updated.firstWhere((i) => i.name == 'Aguacate');
+
+      expect(pollo.timesUsed, 1);
+      expect(pollo.lastUsed, morning);
+      expect(huevos.timesUsed, 2);
+      expect(huevos.lastUsed, morning);
+      expect(aguacate.timesUsed, 0);
+      expect(aguacate.lastUsed, isNull);
+    });
+
+    test('applyPantryDepletion deducts items and optionally moves them to shopping list preserving usage stats', () async {
+      final shoppingService = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: ingredientStorage,
+      );
+      final usedAt = DateTime(2026, 11, 19, 12, 30);
+
+      await ingredientStorage.saveIngredients([
+        Ingredient(name: 'Pechuga de pollo', timesUsed: 2, lastUsed: usedAt),
+        Ingredient(name: 'Zanahoria', timesUsed: 1, lastUsed: usedAt),
+        const Ingredient(name: 'Papa', timesUsed: 0),
+      ]);
+
+      final pantryBefore = await ingredientStorage.getIngredients();
+      final chicken = pantryBefore.firstWhere((i) => i.name == 'Pechuga de pollo');
+
+      // Deduct and add to Por comprar
+      final resultWithBuy = await historyService.applyPantryDepletion(
+        depletedIngredients: [chicken],
+        addToShoppingList: true,
+        shoppingListService: shoppingService,
+      );
+
+      expect(
+        resultWithBuy.pantry.map((i) => i.name),
+        equals(['Zanahoria', 'Papa']),
+      );
+      expect(resultWithBuy.shoppingList.length, 1);
+      expect(resultWithBuy.shoppingList.first.name, 'Pechuga de pollo');
+      expect(resultWithBuy.shoppingList.first.timesUsed, 2);
+      expect(resultWithBuy.shoppingList.first.lastUsed, usedAt);
+
+      // Deduct Zanahoria without adding to Por comprar
+      final carrot = resultWithBuy.pantry.firstWhere((i) => i.name == 'Zanahoria');
+      final resultRemoveOnly = await historyService.applyPantryDepletion(
+        depletedIngredients: [carrot],
+        addToShoppingList: false,
+        shoppingListService: shoppingService,
+      );
+
+      expect(resultRemoveOnly.pantry.map((i) => i.name), equals(['Papa']));
+      expect(
+        resultRemoveOnly.shoppingList.map((i) => i.name),
+        equals(['Pechuga de pollo']),
+      );
     });
 
     test('getAllKnownRecipes includes local recipes and cached external recipes', () async {

@@ -6,6 +6,7 @@ import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
 import 'package:food_friend/features/recipes/data/recipe_search_service.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
+import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -23,6 +24,7 @@ void main() {
     RecipeSearchService? searchService,
     ExternalRecipeService? externalService,
     IngredientStorageService? ingredientStorageService,
+    ShoppingListStorageService? shoppingListService,
   }) {
     return MaterialApp(
       home: RecipeSuggestionsScreen(
@@ -30,6 +32,7 @@ void main() {
         searchService: searchService,
         externalService: externalService,
         ingredientStorageService: ingredientStorageService,
+        shoppingListService: shoppingListService,
       ),
     );
   }
@@ -613,6 +616,169 @@ void main() {
       final firstRect = tester.getRect(cards.at(0));
       final secondRect = tester.getRect(cards.at(1));
       expect(secondRect.left, greaterThan(firstRect.left));
+    });
+  });
+
+  group('FEAT-1: Total Cooking Time Filter & Post-Cooking Refresh', () {
+    testWidgets(
+        'filters recipes by total cooking time (<= 20, <= 40, <= 60, Todos) and composes with meal category',
+        (WidgetTester tester) async {
+      final mockClient = MockClient((_) async {
+        return http.Response(
+          '{"success": true, "count": 4, "recipes": ['
+          '{"id": "t_15", "title": "Omelet Express", "category": "Desayuno", "prepTimeMinutes": 5, "cookTimeMinutes": 10, "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "1 taza"}], "instructions": ["Cocinar."]},'
+          '{"id": "t_30", "title": "Salteado Rápido", "category": "Almuerzo", "prepTimeMinutes": 10, "cookTimeMinutes": 20, "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "1 taza"}], "instructions": ["Saltear."]},'
+          '{"id": "t_55", "title": "Guiso Tradicional", "category": "Almuerzo", "prepTimeMinutes": 15, "cookTimeMinutes": 40, "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "1 taza"}], "instructions": ["Guisar."]},'
+          '{"id": "t_75", "title": "Estofado Lento", "category": "Cena", "prepTimeMinutes": 25, "cookTimeMinutes": 50, "source": "external", "ingredients": [{"name": "Berenjena", "displayAmount": "1 taza"}], "instructions": ["Cocer lento."]}'
+          ']}',
+          200,
+        );
+      });
+
+      final externalService = ExternalRecipeService(
+        client: mockClient,
+        proxyBaseUrl: 'https://test/api/recipes',
+      );
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Berenjena'],
+        externalService: externalService,
+      ));
+      await tester.pumpAndSettle();
+
+      // Verify all time filter chips render
+      expect(find.text('Tiempo:'), findsOneWidget);
+      expect(find.byKey(const ValueKey('time_filter_all')), findsOneWidget);
+      expect(find.byKey(const ValueKey('time_filter_upTo20')), findsOneWidget);
+      expect(find.byKey(const ValueKey('time_filter_upTo40')), findsOneWidget);
+      expect(find.byKey(const ValueKey('time_filter_upTo60')), findsOneWidget);
+
+      // Initially all 4 recipes are included
+      expect(find.text('4 recetas en línea'), findsOneWidget);
+      expect(find.text('Estofado Lento'), findsOneWidget);
+      expect(find.text('Guiso Tradicional'), findsOneWidget);
+
+      // Filter <= 20 min -> only Omelet Express (15 min)
+      await tester.tap(find.text('≤ 20 min'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 receta en línea (≤ 20 min)'), findsOneWidget);
+      expect(find.text('Omelet Express'), findsOneWidget);
+      expect(find.text('Salteado Rápido'), findsNothing);
+      expect(find.text('Guiso Tradicional'), findsNothing);
+      expect(find.text('Estofado Lento'), findsNothing);
+
+      // Filter <= 40 min -> Omelet Express (15) + Salteado Rápido (30)
+      await tester.tap(find.text('≤ 40 min'));
+      await tester.pumpAndSettle();
+      expect(find.text('2 recetas en línea (≤ 40 min)'), findsOneWidget);
+      expect(find.text('Omelet Express'), findsOneWidget);
+      expect(find.text('Salteado Rápido'), findsOneWidget);
+      expect(find.text('Guiso Tradicional'), findsNothing);
+      expect(find.text('Estofado Lento'), findsNothing);
+
+      // Compose with meal category "Almuerzo" -> only Salteado Rápido (30 min, Almuerzo)
+      final almuerzoChip = find.descendant(
+        of: find.byType(ChoiceChip),
+        matching: find.textContaining('Almuerzo'),
+      );
+      await tester.tap(almuerzoChip);
+      await tester.pumpAndSettle();
+      expect(find.text('1 receta en línea (Almuerzo, ≤ 40 min)'), findsOneWidget);
+      expect(find.text('Salteado Rápido'), findsOneWidget);
+      expect(find.text('Omelet Express'), findsNothing);
+      expect(find.text('Guiso Tradicional'), findsNothing);
+
+      // Expand time to <= 60 min while keeping Almuerzo -> Salteado Rápido + Guiso Tradicional
+      await tester.tap(find.text('≤ 60 min'));
+      await tester.pumpAndSettle();
+      expect(find.text('2 recetas en línea (Almuerzo, ≤ 60 min)'), findsOneWidget);
+      expect(find.text('Salteado Rápido'), findsOneWidget);
+      expect(find.text('Guiso Tradicional'), findsOneWidget);
+      expect(find.text('Estofado Lento'), findsNothing);
+
+      // Switch to <= 20 min with Almuerzo active -> empty combined state
+      await tester.tap(find.text('≤ 20 min'));
+      await tester.pumpAndSettle();
+      expect(find.text('Sin recetas de "Almuerzo" en ≤ 20 min'), findsOneWidget);
+
+      // Reset both filters via "Mostrar todas las recetas"
+      await tester.tap(find.text('Mostrar todas las recetas'));
+      await tester.pumpAndSettle();
+      expect(find.text('4 recetas en línea'), findsOneWidget);
+      expect(find.text('Estofado Lento'), findsOneWidget);
+      expect(find.text('Guiso Tradicional'), findsOneWidget);
+    });
+
+    testWidgets(
+        'renders category and time filters cleanly without layout overflows on mobile (360x640) and desktop (1280x800)',
+        (WidgetTester tester) async {
+      // Mobile narrow viewport
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Pollo', 'Tomate', 'Aguacate', 'Huevo'],
+      ));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('≤ 20 min'), findsOneWidget);
+      expect(find.text('≤ 40 min'), findsOneWidget);
+      expect(find.text('≤ 60 min'), findsOneWidget);
+
+      // Desktop web viewport
+      tester.view.physicalSize = const Size(1280, 800);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('≤ 20 min'), findsOneWidget);
+    });
+
+    testWidgets(
+        'syncs suggestions after depleting an ingredient via "Lo cociné" in RecipeDetailScreen',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final shopping = ShoppingListStorageService(
+        preferences: prefs,
+        pantryStorageService: pantry,
+      );
+      await pantry.saveIngredients([
+        const Ingredient(name: 'Aguacate'),
+        const Ingredient(name: 'Tomate'),
+        const Ingredient(name: 'Pepino'),
+      ]);
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: ['Aguacate', 'Tomate', 'Pepino'],
+        ingredientStorageService: pantry,
+        shoppingListService: shopping,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Con base en 3 ingredientes seleccionados'), findsOneWidget);
+
+      // Open Ensalada Chapina
+      await tester.tap(find.text('Ensalada Chapina de Aguacate y Tomate'));
+      await tester.pumpAndSettle();
+
+      // Tap "Lo cociné" and deplete Aguacate
+      await tester.tap(find.text('Lo cociné'));
+      await tester.pumpAndSettle();
+
+      final sheet = find.byType(BottomSheet);
+      await tester.tap(find.descendant(of: sheet, matching: find.text('Aguacate')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Quitar y pasar a Por comprar (1)'));
+      await tester.pumpAndSettle();
+
+      // Return to suggestions screen
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      // Selected ingredients should now reflect only the 2 remaining pantry items
+      expect(find.text('Con base en 2 ingredientes seleccionados'), findsOneWidget);
     });
   });
 }

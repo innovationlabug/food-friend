@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
+import 'package:food_friend/features/ingredients/domain/ingredient.dart';
 import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_management_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
+import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 import 'package:food_friend/features/shopping_list/presentation/shopping_list_screen.dart';
 import 'package:food_friend/main.dart';
 import 'package:http/http.dart' as http;
@@ -330,5 +333,107 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
+  });
+
+  testWidgets(
+      'E2E Flow FEAT-1: Time + category filtering -> "Lo cociné" depletion sheet -> pantry deduction & Por comprar sync',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    await pantry.saveIngredients([
+      const Ingredient(name: 'Aguacate'),
+      const Ingredient(name: 'Tomate'),
+      const Ingredient(name: 'Pepino'),
+      const Ingredient(name: 'Pollo'),
+      const Ingredient(name: 'Papa'),
+    ]);
+
+    await tester.pumpWidget(const FoodFriendApp());
+    await tester.pumpAndSettle();
+
+    // 1. Open Ingredientes disponibles and tap Buscar recetas
+    await tester.tap(find.text('Ingredientes disponibles').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Ingredientes disponibles (5)'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Buscar recetas'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
+
+    // 2. Filter by <= 20 min total time (excludes 70 min Pepián & 50 min Caldo)
+    await tester.tap(find.text('≤ 20 min'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
+    expect(find.text('Pepián de Pollo Tradicional'), findsNothing);
+    expect(find.text('Caldo de Pollo con Verduras Frescas'), findsNothing);
+
+    // Compose with category filter "Ensaladas"
+    final ensaladasChip = find.descendant(
+      of: find.byType(ChoiceChip),
+      matching: find.textContaining('Ensaladas'),
+    );
+    await tester.ensureVisible(ensaladasChip);
+    await tester.pumpAndSettle();
+    await tester.tap(ensaladasChip);
+    await tester.pumpAndSettle();
+    expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
+
+    // 3. Open recipe detail and tap "Lo cociné"
+    await tester.tap(find.text('Ensalada Chapina de Aguacate y Tomate'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RecipeDetailScreen), findsOneWidget);
+
+    await tester.tap(find.text('Lo cociné'));
+    await tester.pumpAndSettle();
+
+    // 4. Verify "¿Qué se te acabó?" sheet lists only matching pantry items
+    expect(find.text('¿Qué se te acabó?'), findsOneWidget);
+    final sheet = find.byType(BottomSheet);
+    expect(find.descendant(of: sheet, matching: find.text('Aguacate')), findsOneWidget);
+    expect(find.descendant(of: sheet, matching: find.text('Tomate')), findsOneWidget);
+    expect(find.descendant(of: sheet, matching: find.text('Pepino')), findsOneWidget);
+    expect(find.descendant(of: sheet, matching: find.text('Pollo')), findsNothing);
+
+    // 5. Mark Aguacate as depleted and send to Por comprar
+    await tester.tap(find.descendant(of: sheet, matching: find.text('Aguacate')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Quitar y pasar a Por comprar (1)'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Receta cocinada. "Aguacate" pasó a Por comprar.'),
+      findsOneWidget,
+    );
+
+    // Verify usage stats & storage state
+    final remainingPantry = await pantry.getIngredients();
+    expect(remainingPantry.map((i) => i.name), isNot(contains('Aguacate')));
+    final tomate = remainingPantry.firstWhere((i) => i.name == 'Tomate');
+    final pepino = remainingPantry.firstWhere((i) => i.name == 'Pepino');
+    final pollo = remainingPantry.firstWhere((i) => i.name == 'Pollo');
+    expect(tomate.timesUsed, 1);
+    expect(tomate.lastUsed, isNotNull);
+    expect(pepino.timesUsed, 1);
+    expect(pepino.lastUsed, isNotNull);
+    expect(pollo.timesUsed, 0);
+
+    final toBuy = await shopping.getIngredients();
+    expect(toBuy.map((i) => i.name), contains('Aguacate'));
+
+    // 6. Return to suggestions -> selected count reflects 4 remaining pantry items
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Con base en 4 ingredientes seleccionados'), findsOneWidget);
+
+    // 7. Return to ShoppingListScreen -> verify Mis ingredientes and Por comprar updated
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Ingredientes disponibles (4)'), findsOneWidget);
+    expect(find.text('Aguacate'), findsNothing);
+
+    await tester.tap(find.text('Por comprar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Por comprar (1)'), findsOneWidget);
+    expect(find.text('Aguacate'), findsOneWidget);
   });
 }

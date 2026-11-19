@@ -277,15 +277,19 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     });
   }
 
-  void _openRecipeSuggestions() {
+  Future<void> _openRecipeSuggestions() async {
     if (_selectedIngredientNames.isEmpty) return;
-    RecipeSuggestionsScreen.navigate(
+    await RecipeSuggestionsScreen.navigate(
       context,
       selectedIngredientNames: _selectedIngredientNames.toList(),
       externalService: widget.externalRecipeService,
       ingredientStorageService: _storageService,
+      shoppingListService: _shoppingListService,
       openedFromIngredientList: true,
     );
+    if (mounted) {
+      await _loadIngredients();
+    }
   }
 
   @override

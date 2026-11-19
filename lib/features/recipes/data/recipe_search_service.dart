@@ -1,4 +1,5 @@
 import '../../../core/utils/string_normalizer.dart';
+import '../../ingredients/domain/ingredient.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_history_record.dart';
 import '../domain/recipe_ingredient.dart';
@@ -33,16 +34,24 @@ class RecipeSearchService {
   /// [recipePool]: Optional subset of recipes to search against (defaults to all local recipes).
   /// [minMatchCount]: Minimum number of matching ingredients required for inclusion (default: 1).
   /// [history]: Optional map of user recipe history records, used to filter out `Nunca` recipes.
+  /// [maxTotalTimeMinutes]: Optional maximum total time (`prepTimeMinutes + cookTimeMinutes`) in minutes.
   List<RecipeSearchResult> searchRecipes({
     required List<String> selectedIngredientNames,
     List<Recipe>? recipePool,
     int minMatchCount = 1,
     Map<String, RecipeHistoryRecord>? history,
+    int? maxTotalTimeMinutes,
   }) {
     final rawPool = recipePool ?? _dataset.recipes;
     final pool = rawPool.where((recipe) {
       if (history != null && history.containsKey(recipe.id)) {
         if (history[recipe.id]?.preference == RecipePreference.never) {
+          return false;
+        }
+      }
+      if (maxTotalTimeMinutes != null) {
+        final total = recipe.totalTimeMinutes;
+        if (total == null || total > maxTotalTimeMinutes) {
           return false;
         }
       }
@@ -210,6 +219,41 @@ class RecipeSearchService {
       }
     }
     return false;
+  }
+
+  /// Finds all pantry [Ingredient] items currently in `"Mis ingredientes"`
+  /// that match at least one required ingredient of [recipe] using the standard
+  /// normalized, sub-phrase, and culinary synonym rules.
+  ///
+  /// Each matching pantry ingredient is returned at most once, preserving pantry order.
+  static List<Ingredient> findMatchingPantryIngredients(
+    Recipe recipe,
+    List<Ingredient> pantryIngredients,
+  ) {
+    if (recipe.ingredients.isEmpty || pantryIngredients.isEmpty) {
+      return const [];
+    }
+
+    final recipeNormalizedNames = recipe.ingredients
+        .map((ing) => ing.normalizedName)
+        .where((name) => name.isNotEmpty)
+        .toList();
+    if (recipeNormalizedNames.isEmpty) {
+      return const [];
+    }
+
+    final matched = <Ingredient>[];
+    for (final pantryItem in pantryIngredients) {
+      final pantryNorm = StringNormalizer.normalize(pantryItem.name);
+      if (pantryNorm.isEmpty) continue;
+      final isUsed = recipeNormalizedNames.any(
+        (recipeNorm) => isIngredientMatch(pantryNorm, recipeNorm),
+      );
+      if (isUsed) {
+        matched.add(pantryItem);
+      }
+    }
+    return matched;
   }
 
   /// Static helper for comparing two normalized ingredient strings.

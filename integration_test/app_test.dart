@@ -397,4 +397,106 @@ void main() {
     await shopping.clearIngredients();
     await history.clearHistory();
   });
+
+  testWidgets(
+      'E2E integration test FEAT-1: filters recipes by total time + category, deducts depleted items on "Lo cociné", and syncs Por comprar',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    final history = RecipeHistoryService(ingredientStorageService: pantry);
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
+
+    await pantry.saveIngredients([
+      const Ingredient(name: 'Aguacate'),
+      const Ingredient(name: 'Tomate'),
+      const Ingredient(name: 'Pepino'),
+      const Ingredient(name: 'Pollo'),
+      const Ingredient(name: 'Papa'),
+    ]);
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // Navigate to Available Ingredients and start recipe discovery
+    await tester.tap(find.text('Ingredientes disponibles').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Ingredientes disponibles (5)'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Buscar recetas'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recetas sugeridas'), findsOneWidget);
+
+    // Apply <= 20 min total time filter alongside Ensaladas category
+    await tester.tap(find.text('≤ 20 min'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
+    expect(find.text('Pepián de Pollo Tradicional'), findsNothing);
+
+    final ensaladasChip = find.descendant(
+      of: find.byType(ChoiceChip),
+      matching: find.textContaining('Ensaladas'),
+    );
+    await tester.ensureVisible(ensaladasChip);
+    await tester.pumpAndSettle();
+    await tester.tap(ensaladasChip);
+    await tester.pumpAndSettle();
+    expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
+
+    // Open recipe detail and tap "Lo cociné"
+    await tester.tap(find.text('Ensalada Chapina de Aguacate y Tomate'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Lo cociné'));
+    await tester.pumpAndSettle();
+
+    // Quick depletion sheet opens with matching pantry ingredients
+    expect(find.text('¿Qué se te acabó?'), findsOneWidget);
+    final sheet = find.byType(BottomSheet);
+    await tester.tap(find.descendant(of: sheet, matching: find.text('Aguacate')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Quitar y pasar a Por comprar (1)'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Receta cocinada. "Aguacate" pasó a Por comprar.'),
+      findsOneWidget,
+    );
+
+    // Verify daily idempotency on repeat tap
+    await tester.tap(find.text('Cocinada hoy (1 vez)'));
+    await tester.pumpAndSettle();
+    expect(find.text('¿Qué se te acabó?'), findsNothing);
+
+    // Verify storage state (deduction + Por comprar + timesUsed/lastUsed)
+    final remainingPantry = await pantry.getIngredients();
+    expect(remainingPantry.map((i) => i.name), isNot(contains('Aguacate')));
+    final tomate = remainingPantry.firstWhere((i) => i.name == 'Tomate');
+    expect(tomate.timesUsed, equals(1));
+    expect(tomate.lastUsed, isNotNull);
+
+    final shoppingItems = await shopping.getIngredients();
+    expect(shoppingItems.map((i) => i.name), contains('Aguacate'));
+
+    // Navigate back through suggestions to shopping list and confirm UI sync
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Con base en 4 ingredientes seleccionados'), findsOneWidget);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Ingredientes disponibles (4)'), findsOneWidget);
+
+    await tester.tap(find.text('Por comprar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Por comprar (1)'), findsOneWidget);
+    expect(find.text('Aguacate'), findsOneWidget);
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
+  });
 }

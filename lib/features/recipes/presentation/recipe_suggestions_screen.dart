@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
+import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 import '../data/external_recipe_service.dart';
 import '../data/recipe_history_service.dart';
 import '../data/recipe_search_service.dart';
 import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
+import '../domain/recipe_time_filter.dart';
 import 'recipe_detail_screen.dart';
 
 /// Screen presenting recipe suggestions generated from the user's selected ingredients.
@@ -23,6 +26,7 @@ class RecipeSuggestionsScreen extends StatefulWidget {
     this.externalService,
     this.historyService,
     this.ingredientStorageService,
+    this.shoppingListService,
     this.openedFromIngredientList = false,
   });
 
@@ -41,6 +45,9 @@ class RecipeSuggestionsScreen extends StatefulWidget {
   /// Optional injected pantry storage service to select all saved ingredients.
   final IngredientStorageService? ingredientStorageService;
 
+  /// Optional injected shopping list storage service forwarded to recipe detail.
+  final ShoppingListStorageService? shoppingListService;
+
   /// Whether this screen was pushed from [ShoppingListScreen].
   final bool openedFromIngredientList;
 
@@ -52,6 +59,7 @@ class RecipeSuggestionsScreen extends StatefulWidget {
     ExternalRecipeService? externalService,
     RecipeHistoryService? historyService,
     IngredientStorageService? ingredientStorageService,
+    ShoppingListStorageService? shoppingListService,
     bool openedFromIngredientList = false,
   }) {
     return Navigator.of(context).push(
@@ -62,6 +70,7 @@ class RecipeSuggestionsScreen extends StatefulWidget {
           externalService: externalService,
           historyService: historyService,
           ingredientStorageService: ingredientStorageService,
+          shoppingListService: shoppingListService,
           openedFromIngredientList: openedFromIngredientList,
         ),
       ),
@@ -77,6 +86,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   late final ExternalRecipeService _externalService;
   late final RecipeHistoryService _historyService;
   late final IngredientStorageService _ingredientStorageService;
+  late final ShoppingListStorageService _shoppingListService;
 
   late List<String> _selectedIngredientNames;
   List<Ingredient> _pantryIngredients = const [];
@@ -86,6 +96,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   List<RecipeSearchResult> _results = [];
   bool _showingAllRecipes = false;
   String _selectedCategory = 'Todos';
+  RecipeTimeFilter _selectedTimeFilter = RecipeTimeFilter.all;
 
   static const List<String> _baseMealCategories = [
     'Todos',
@@ -119,13 +130,16 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   }
 
   int _countForCategory(String category) {
-    if (category == 'Todos') return _results.length;
-    return _results.where((r) => _matchesCategory(r, category)).length;
+    final timeMatched = _results.where((r) => _selectedTimeFilter.matches(r.recipe));
+    if (category == 'Todos') return timeMatched.length;
+    return timeMatched.where((r) => _matchesCategory(r, category)).length;
   }
 
   List<RecipeSearchResult> get _filteredResults {
-    if (_selectedCategory == 'Todos') return _results;
-    return _results.where((r) => _matchesCategory(r, _selectedCategory)).toList();
+    return _results.where((r) {
+      return _matchesCategory(r, _selectedCategory) &&
+          _selectedTimeFilter.matches(r.recipe);
+    }).toList();
   }
 
   @override
@@ -133,9 +147,16 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     super.initState();
     _searchService = widget.searchService ?? RecipeSearchService();
     _externalService = widget.externalService ?? ExternalRecipeService();
-    _historyService = widget.historyService ?? RecipeHistoryService();
     _ingredientStorageService =
         widget.ingredientStorageService ?? IngredientStorageService();
+    _historyService = widget.historyService ??
+        RecipeHistoryService(
+          ingredientStorageService: _ingredientStorageService,
+        );
+    _shoppingListService = widget.shoppingListService ??
+        ShoppingListStorageService(
+          pantryStorageService: _ingredientStorageService,
+        );
     _selectedIngredientNames = List<String>.from(widget.selectedIngredientNames);
     _performDiscovery();
   }
@@ -159,6 +180,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         _isLoading = false;
         _showingAllRecipes = false;
         _selectedCategory = 'Todos';
+        _selectedTimeFilter = RecipeTimeFilter.all;
       });
       return;
     }
@@ -181,7 +203,32 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         _isLoading = false;
         _showingAllRecipes = false;
         _selectedCategory = 'Todos';
+        _selectedTimeFilter = RecipeTimeFilter.all;
       });
+    }
+  }
+
+  /// Syncs selected ingredients with pantry changes made while inside
+  /// [RecipeDetailScreen] (e.g., depleted ingredients removed via `"Lo cociné"`),
+  /// then refreshes the recipe list.
+  Future<void> _refreshAfterRecipeDetail(Set<String> previousPantryNorms) async {
+    final latestPantry = await _ingredientStorageService.getIngredients();
+    if (!mounted) return;
+
+    final latestPantryNorms =
+        latestPantry.map((item) => StringNormalizer.normalize(item.name)).toSet();
+    final removedNorms = previousPantryNorms.difference(latestPantryNorms);
+
+    if (removedNorms.isNotEmpty) {
+      _selectedIngredientNames = _selectedIngredientNames
+          .where((name) => !removedNorms.contains(StringNormalizer.normalize(name)))
+          .toList();
+    }
+
+    if (_showingAllRecipes) {
+      await _showAllLocalRecipes();
+    } else {
+      await _performDiscovery();
     }
   }
 
@@ -237,6 +284,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
       _results = all;
       _showingAllRecipes = true;
       _selectedCategory = 'Todos';
+      _selectedTimeFilter = RecipeTimeFilter.all;
     });
   }
 
@@ -367,6 +415,8 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         _buildHeaderBanner(context, displayedCount: filtered.length),
         const SizedBox(height: 12),
         _buildCategoryFilters(context),
+        const SizedBox(height: 8),
+        _buildTimeFilters(context),
         const SizedBox(height: 12),
         Expanded(
           child: filtered.isEmpty
@@ -441,11 +491,14 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    'Generando recetas con IA...',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary,
+                  Flexible(
+                    child: Text(
+                      'Generando recetas con IA...',
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -459,11 +512,14 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                     color: colorScheme.primary,
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    'Generar más recetas con IA',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary,
+                  Flexible(
+                    child: Text(
+                      'Generar más recetas con IA',
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -500,9 +556,71 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     );
   }
 
+  Widget _buildTimeFilters(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          AppSvgIcon(
+            assetName: 'timer',
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Tiempo:',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          ...RecipeTimeFilter.values.map((filter) {
+            final isSelected = _selectedTimeFilter == filter;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                key: ValueKey('time_filter_${filter.name}'),
+                label: Text(filter.label),
+                selected: isSelected,
+                showCheckmark: false,
+                onSelected: (_) {
+                  setState(() {
+                    if (filter == RecipeTimeFilter.all) {
+                      _selectedTimeFilter = RecipeTimeFilter.all;
+                    } else {
+                      _selectedTimeFilter = _selectedTimeFilter == filter
+                          ? RecipeTimeFilter.all
+                          : filter;
+                    }
+                  });
+                },
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyFilteredState(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final hasCategory = _selectedCategory != 'Todos';
+    final hasTime = _selectedTimeFilter != RecipeTimeFilter.all;
+
+    final String emptyTitle;
+    if (hasCategory && hasTime) {
+      emptyTitle =
+          'Sin recetas de "$_selectedCategory" en ${_selectedTimeFilter.label}';
+    } else if (hasTime) {
+      emptyTitle = 'Sin recetas en ${_selectedTimeFilter.label}';
+    } else {
+      emptyTitle = 'Sin recetas de tipo "$_selectedCategory"';
+    }
 
     return Center(
       child: Padding(
@@ -517,7 +635,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Sin recetas de tipo "$_selectedCategory"',
+              emptyTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -536,6 +654,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
               onPressed: () {
                 setState(() {
                   _selectedCategory = 'Todos';
+                  _selectedTimeFilter = RecipeTimeFilter.all;
                 });
               },
               icon: AppSvgIcon(
@@ -597,6 +716,7 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     final route = MaterialPageRoute<void>(
       builder: (_) => ShoppingListScreen(
         storageService: widget.ingredientStorageService,
+        shoppingListService: widget.shoppingListService,
         externalRecipeService: widget.externalService,
       ),
     );
@@ -632,8 +752,12 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
           : '$count recetas sugeridas';
     }
 
-    if (_selectedCategory != 'Todos' && count != totalCount) {
-      bannerTitle = '$bannerTitle ($_selectedCategory)';
+    final activeFilters = <String>[
+      if (_selectedCategory != 'Todos') _selectedCategory,
+      if (_selectedTimeFilter != RecipeTimeFilter.all) _selectedTimeFilter.label,
+    ];
+    if (activeFilters.isNotEmpty && count != totalCount) {
+      bannerTitle = '$bannerTitle (${activeFilters.join(', ')})';
     }
 
     final ingredientSummary = _showingAllRecipes && ingredientCount == 0
@@ -758,17 +882,21 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
+          final previousPantryNorms = _pantryIngredients
+              .map((item) => StringNormalizer.normalize(item.name))
+              .toSet();
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               settings: RouteSettings(name: 'recipe_${result.recipe.id}'),
               builder: (_) => RecipeDetailScreen.fromResult(
                 result: result,
                 historyService: _historyService,
+                shoppingListService: _shoppingListService,
                 ingredientStorageService: _ingredientStorageService,
               ),
             ),
           ).then((_) {
-            _performDiscovery();
+            _refreshAfterRecipeDetail(previousPantryNorms);
           });
         },
         child: Padding(
@@ -809,15 +937,19 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Tienes ${result.matchCount} de ${result.totalIngredients} ingredientes',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: result.hasAllIngredients
-                          ? colorScheme.primary
-                          : colorScheme.onSurface,
+                  Expanded(
+                    child: Text(
+                      'Tienes ${result.matchCount} de ${result.totalIngredients} ingredientes',
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: result.hasAllIngredients
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     '${result.matchPercentageInt}%',
                     style: theme.textTheme.bodySmall?.copyWith(
