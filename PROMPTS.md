@@ -459,3 +459,84 @@ Work autonomously through the full lifecycle:
 5. **Tracking & Commit:** Update `FEAT-1` and its acceptance criteria with `[x]` in `FEATURES.md` (and update `SPEC.md` if required by the feature). Stage and commit your changes using Conventional Commits (e.g., `feat(recipes): ...`).
 
 When finished, provide a concise summary of the changes, files touched, and exact test results. Execute `[console]::beep(800, 800)` to notify me when complete.
+
+
+---
+
+
+# TASK: Standalone Feasibility Demo — FEAT-5 (Supermarket Sales Scraping & Alerts)
+
+## Operating Mode: Override AGENTS.md for Demos Only
+For this session, you are building a quick, isolated proof-of-concept (POC) demo to validate the feasibility of `FEAT-5` from `FEATURES.md`.
+- You are explicitly authorized to bypass standard `AGENTS.md` architectural constraints (e.g., Flutter stack, Vercel serverless structure, commit conventions, strict styling rules).
+- You may use **any minimal standalone tech stack** (e.g., a lightweight Node.js/Express or Python server + single-page HTML/JS UI, or whatever local script/app stack is fastest and most reliable) instead of Flutter.
+- Prioritize speed, rapid feasibility validation, and honest technical findings over production polish.
+- Place all demo code in a dedicated sandbox directory: `/demos/supermarket-sales/` (do not alter any existing Flutter, `/api/`, or main project scaffolding).
+
+---
+
+## Goal
+Implement a standalone minimal app in `/demos/supermarket-sales/` to validate whether promotional/sale data can be reliably fetched and parsed from local Guatemalan supermarket web pages (e.g., Walmart Guatemala and/or La Torre) and matched against a user's shopping needs.
+
+### What to Validate & Build
+- **Server-Side Fetch & Scraping Spike:**
+  - Test fetching real promotional/offers pages or public endpoints from at least one Guatemalan supermarket (e.g., Walmart Guatemala and/or La Torre) from a backend script/server (not directly from the browser) to evaluate HTML structure, API endpoints, pagination, anti-bot protections, and reliability.
+  - Design the retrieval around a cached/scheduled snapshot pattern (so requests don't scrape live on every client view) and include a curated fallback sales snapshot in `GTQ` (`Q`) if live fetching fails or is blocked.
+- **Ingredient & Shopping-List Matching:**
+  - Seed the demo with sample frequent ingredients (`timesUsed > 0`), sample `Favorita` recipe ingredients, and a mock `"Por comprar"` list.
+  - Match fetched (or fallback) supermarket deals against those ingredients.
+- **Minimal Demo UI (Spanish):**
+  - Show an in-app notification banner and deals list displaying: supermarket name, product/ingredient name, regular vs. discounted price in Quetzales (`Q`), whether it came from a live fetch or fallback snapshot, and a quick button to add/check it in `"Por comprar"`.
+  - Include a manual `"Actualizar ofertas ahora"` trigger and a short feasibility findings panel or `README.md` documenting what worked, what failed (e.g., JS-rendered pages, Cloudflare/anti-bot, rate limits), and whether scheduled scraping is viable for the main app.
+
+---
+
+## Technical Guidance for Demo
+- Keep everything self-contained inside `/demos/supermarket-sales/` with a simple `README.md` explaining how to install and run it locally on Windows.
+- Do not call any LLM unless strictly needed; test traditional HTTP fetching, HTML parsing, or public JSON/GraphQL endpoints first.
+- Include automated or reproducible checks verifying live fetch handling, cache snapshot refresh, fallback behavior on network/block errors, and ingredient matching.
+
+## General Rules
+- Before starting implementation, ask questions if you need any clarification.
+- Do not modify `SPEC.md`, `FEATURES.md`, or main Flutter app files during this feasibility spike.
+
+
+---
+
+
+# TASK: Standalone Feasibility Demo — FEAT-6 (Local GPS Market Proximity Notifications)
+
+## Operating Mode: Override AGENTS.md for Demos Only
+For this session, you are building a quick, isolated proof-of-concept (POC) demo to validate the feasibility of `FEAT-6` from `FEATURES.md`.
+- You are explicitly authorized to bypass standard `AGENTS.md` architectural constraints (e.g., Flutter stack, Vercel serverless structure, commit conventions, strict styling rules).
+- You may use **any minimal standalone tech stack** (e.g., a lightweight HTML/JS/PWA app served locally, or a minimal Node/Vite web app testable on desktop and phone browsers) instead of Flutter.
+- Prioritize speed, rapid feasibility validation, and honest technical findings over production polish.
+- Place all demo code in a dedicated sandbox directory: `/demos/market-proximity/` (do not alter any existing Flutter, `/api/`, or main project scaffolding).
+
+---
+
+## Goal
+Implement a standalone minimal app in `/demos/market-proximity/` to validate the feasibility of local GPS proximity detection and Spanish notifications when a user with pending items in `"Por comprar"` is near a Guatemalan market or supermarket—without ever sending user location data to any server.
+
+### What to Validate & Build
+- **100% Local GPS & Privacy Validation:**
+  - Request foreground device/browser location with explicit opt-in controls and graceful handling if permission is denied or unavailable.
+  - Strictly enforce that GPS coordinates never leave the client device (no backend/API/LLM calls with user coordinates).
+  - Test and document browser/OS requirements and limitations (e.g., HTTPS/localhost requirement for Geolocation & Notifications APIs, foreground-only vs. background limits on mobile web).
+- **Local Directory of Guatemalan Markets & Supermarkets:**
+  - Include a local, extensible JSON/JS dataset of Guatemalan supermarkets and municipal markets (e.g., Mercado Central, Mercado El Guarda, La Torre, Walmart, Paiz) with name, type, latitude, longitude, and zone/municipality, structured so future iterations can support favorite stores.
+- **Proximity Detection & Notification Flow (Spanish):**
+  - Provide a minimal `"Por comprar"` list where the user can add/remove pending items (and test both empty and non-empty states).
+  - Calculate Haversine distance locally against the store dataset. When within threshold (e.g., `<= 500 m`) AND `"Por comprar"` has pending items, trigger a clear Spanish alert banner (and browser Notification API alert if permitted) naming the nearby market/supermarket and the count of pending items. Stay silent when `"Por comprar"` is empty.
+  - Include an interactive **Simulation / Test Coordinates Mode** (e.g., preset locations near a market or custom lat/lng sliders/inputs) so the proximity flow can be verified indoors without physically traveling.
+
+---
+
+## Technical Guidance for Demo
+- Keep everything self-contained inside `/demos/market-proximity/` with a simple `README.md` explaining how to run it locally on Windows (and how to test on a mobile device if applicable).
+- Include unit or browser/scripted tests verifying Haversine distance calculations, threshold boundaries (`<= 500 m` vs. `> 500 m`), empty vs. non-empty `"Por comprar"` behavior, and permission-denied handling.
+- Document feasibility findings in `/demos/market-proximity/README.md` (what works cleanly in Web/mobile browsers vs. what would require native Android background permissions).
+
+## General Rules
+- Before starting implementation, ask questions if you need any clarification.
+- Do not modify `SPEC.md`, `FEATURES.md`, or main Flutter app files during this feasibility spike.
