@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_catalog.dart';
+import 'package:food_friend/features/nutrition/data/health_goal_evaluator.dart';
+import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
@@ -261,6 +263,93 @@ void main() {
             reason: 'Ingredient "${ingredient.name}" in recipe "${recipe.title}" should map to catalog',
           );
         }
+      }
+    });
+
+    test('expanded dataset provides 50+ recipes covering all categories, time tiers, variations, and health goals', () {
+      final dataset = LocalRecipeDataset.instance;
+      const expectedCategories = <String>[
+        'Desayuno',
+        'Almuerzo',
+        'Cena',
+        'Sopas y Caldos',
+        'Ensaladas',
+      ];
+
+      expect(dataset.recipes.length, greaterThanOrEqualTo(50));
+
+      final ids = dataset.recipes.map((r) => r.id).toSet();
+      expect(ids.length, equals(dataset.recipes.length));
+
+      var withVariations = 0;
+      for (final recipe in dataset.recipes) {
+        if (recipe.hasVariations) {
+          withVariations++;
+          for (final variation in recipe.variations) {
+            expect(
+              variation.recipeId,
+              isNot(equals(recipe.id)),
+              reason: '${recipe.id} should not link to itself',
+            );
+            expect(
+              ids.contains(variation.recipeId),
+              isTrue,
+              reason: '${recipe.id} variation ${variation.recipeId} must exist in dataset',
+            );
+          }
+        }
+      }
+
+      expect(withVariations / dataset.recipes.length, greaterThanOrEqualTo(0.8));
+
+      for (final category in expectedCategories) {
+        final categoryRecipes = dataset.recipes.where((r) => r.category == category).toList();
+        final tier20 = categoryRecipes.where((r) {
+          final t = r.totalTimeMinutes;
+          return t != null && t <= 20;
+        }).toList();
+        final tier40 = categoryRecipes.where((r) {
+          final t = r.totalTimeMinutes;
+          return t != null && t > 20 && t <= 40;
+        }).toList();
+        final tier60 = categoryRecipes.where((r) {
+          final t = r.totalTimeMinutes;
+          return t != null && t > 40 && t <= 60;
+        }).toList();
+
+        expect(tier20.length, greaterThanOrEqualTo(2), reason: '$category <=20 min');
+        expect(tier40.length, greaterThanOrEqualTo(2), reason: '$category 21-40 min');
+        expect(tier60.length, greaterThanOrEqualTo(2), reason: '$category 41-60 min');
+
+        for (final goal in HealthGoal.values) {
+          for (final entry in {
+            '<=20 min': tier20,
+            '21-40 min': tier40,
+            '41-60 min': tier60,
+          }.entries) {
+            final alignedInTier = entry.value.where((recipe) {
+              final eval = HealthGoalEvaluator.evaluateRecipe(recipe, {goal});
+              return eval.matchedGoals.contains(goal) && eval.penaltyScore == 0;
+            }).length;
+            expect(
+              alignedInTier,
+              greaterThanOrEqualTo(1),
+              reason: '$category (${entry.key}) must have >= 1 recipe aligned with $goal',
+            );
+          }
+        }
+      }
+
+      for (final goal in HealthGoal.values) {
+        final alignedCount = dataset.recipes.where((recipe) {
+          final eval = HealthGoalEvaluator.evaluateRecipe(recipe, {goal});
+          return eval.matchedGoals.contains(goal) && eval.penaltyScore == 0;
+        }).length;
+        expect(
+          alignedCount / dataset.recipes.length,
+          greaterThanOrEqualTo(0.75),
+          reason: '$goal should be cleanly supported by at least 75% of offline recipes',
+        );
       }
     });
   });

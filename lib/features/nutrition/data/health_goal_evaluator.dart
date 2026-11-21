@@ -28,6 +28,10 @@ class HealthGoalEvaluator {
     'requeson',
     'yogur griego',
     'queso de capas',
+    'camarones',
+    'atun en lata',
+    'queso fresco',
+    'yogur natural',
   ];
 
   static const List<String> _lowCaloriePriorityKeywords = <String>[

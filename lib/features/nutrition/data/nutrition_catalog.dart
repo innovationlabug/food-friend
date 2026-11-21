@@ -1138,6 +1138,96 @@ class NutritionCatalog {
         },
       ),
       const IngredientNutritionProfile(
+        canonicalName: 'Achiote en pasta',
+        attributes: <NutritionalAttribute>{
+          NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.reduceSodiumAndProcessed:
+              'Condimento natural que da sabor y color tradicional sin glutamato ni exceso de sodio',
+        },
+      ),
+      const IngredientNutritionProfile(
+        canonicalName: 'Canela en polvo',
+        attributes: <NutritionalAttribute>{
+          NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.reduceSodiumAndProcessed:
+              'Especia aromática natural que realza el dulzor sin azúcares añadidos ni sodio',
+        },
+      ),
+      const IngredientNutritionProfile(
+        canonicalName: 'Comino molido',
+        attributes: <NutritionalAttribute>{
+          NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.reduceSodiumAndProcessed:
+              'Especia natural que potencia el sabor casero sin necesidad de cubitos artificiales',
+        },
+      ),
+      const IngredientNutritionProfile(
+        canonicalName: 'Cúrcuma',
+        attributes: <NutritionalAttribute>{
+          NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.reduceSodiumAndProcessed:
+              'Especia antioxidante sin sodio añadido para condimentar platos diarios',
+        },
+      ),
+      const IngredientNutritionProfile(
+        canonicalName: 'Epazote',
+        attributes: <NutritionalAttribute>{
+          NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.reduceSodiumAndProcessed:
+              'Hierba aromática tradicional que condimenta legumbres sin exceso de sal',
+        },
+      ),
+      const IngredientNutritionProfile(
+        canonicalName: 'Páprika',
+        attributes: <NutritionalAttribute>{
+          NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.reduceSodiumAndProcessed:
+              'Especia de pimiento seco que aporta color y sabor natural sin aditivos',
+        },
+      ),
+      const IngredientNutritionProfile(
+        canonicalName: 'Romero',
+        attributes: <NutritionalAttribute>{
+          NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.reduceSodiumAndProcessed:
+              'Hierba aromática fresca o seca que reduce la dependencia de salsas altas en sodio',
+        },
+      ),
+      const IngredientNutritionProfile(
+        canonicalName: 'Tomillo',
+        attributes: <NutritionalAttribute>{
+          NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.reduceSodiumAndProcessed:
+              'Hierba aromática natural ideal para sazonar al horno con menos sal',
+        },
+      ),
+      const IngredientNutritionProfile(
+        canonicalName: 'Vinagre de manzana',
+        attributes: <NutritionalAttribute>{
+          NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.reduceSodiumAndProcessed:
+              'Aderezo ácido natural que realza ensaladas sin sodio ni preservantes',
+        },
+      ),
+      const IngredientNutritionProfile(
         canonicalName: 'Ajo',
         attributes: <NutritionalAttribute>{
           NutritionalAttribute.lowSodiumWholeFood,
@@ -1529,6 +1619,12 @@ class NutritionCatalog {
           NutritionalAttribute.highFiberOrVitamins,
           NutritionalAttribute.lowSodiumWholeFood,
         },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.increaseVitaminsAndFiber:
+              'Cereal integral rico en fibra soluble y minerales esenciales',
+          HealthGoal.reduceSodiumAndProcessed:
+              'Grano entero natural sin azúcares ni sodio añadido',
+        },
       ),
       const IngredientNutritionProfile(
         canonicalName: 'Avena molida',
@@ -1823,6 +1919,14 @@ class NutritionCatalog {
           NutritionalAttribute.lowCalorieDensity,
           NutritionalAttribute.lowSodiumWholeFood,
         },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Fuente magra y práctica de proteína completa para apoyar masa muscular',
+          HealthGoal.loseWeight:
+              'Aporta saciedad sostenida con bajo contenido calórico',
+          HealthGoal.reduceSodiumAndProcessed:
+              'Preparación natural sin embutidos ni sodio añadido',
+        },
       ),
       const IngredientNutritionProfile(
         canonicalName: 'Pollo entero',
@@ -1885,6 +1989,14 @@ class NutritionCatalog {
           NutritionalAttribute.lowCalorieDensity,
           NutritionalAttribute.lowSodiumWholeFood,
         },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Corte magro rico en proteína de alto valor biológico y hierro',
+          HealthGoal.loseWeight:
+              'Corte magro que brinda alta saciedad sin exceso de grasa saturada',
+          HealthGoal.reduceSodiumAndProcessed:
+              'Carne fresca sin procesar ni conservantes artificiales',
+        },
       ),
       const IngredientNutritionProfile(
         canonicalName: 'Lomo de cerdo',
@@ -1893,6 +2005,14 @@ class NutritionCatalog {
           NutritionalAttribute.highProtein,
           NutritionalAttribute.lowCalorieDensity,
           NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Corte magro con proteína completa ideal para recuperación muscular',
+          HealthGoal.loseWeight:
+              'Uno de los cortes más magros y saciantes para controlar calorías',
+          HealthGoal.reduceSodiumAndProcessed:
+              'Carne fresca sin curar y naturalmente baja en sodio',
         },
       ),
       const IngredientNutritionProfile(
@@ -1920,6 +2040,14 @@ class NutritionCatalog {
           NutritionalAttribute.lowCalorieDensity,
           NutritionalAttribute.lowSodiumWholeFood,
         },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Pescado blanco alto en proteína magra de fácil digestión',
+          HealthGoal.loseWeight:
+              'Muy bajo en calorías y grasas para comidas ligeras y saciantes',
+          HealthGoal.reduceSodiumAndProcessed:
+              'Pescado fresco natural sin aditivos ni sodio excesivo',
+        },
       ),
       const IngredientNutritionProfile(
         canonicalName: 'Filete de robalo',
@@ -1928,6 +2056,14 @@ class NutritionCatalog {
           NutritionalAttribute.highProtein,
           NutritionalAttribute.lowCalorieDensity,
           NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Proteína magra de pescado fresco ideal para mantenimiento muscular',
+          HealthGoal.loseWeight:
+              'Bajo en grasa y denso en proteínas para control calórico',
+          HealthGoal.reduceSodiumAndProcessed:
+              'Filete fresco sin procesar y naturalmente bajo en sodio',
         },
       ),
       const IngredientNutritionProfile(
@@ -1938,6 +2074,12 @@ class NutritionCatalog {
           NutritionalAttribute.lowCalorieDensity,
           NutritionalAttribute.lowSodiumWholeFood,
         },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Fuente tradicional de proteína completa y minerales',
+          HealthGoal.loseWeight:
+              'Pescado ligero que satisface con pocas calorías',
+        },
       ),
       const IngredientNutritionProfile(
         canonicalName: 'Salmón',
@@ -1945,6 +2087,12 @@ class NutritionCatalog {
         attributes: <NutritionalAttribute>{
           NutritionalAttribute.highProtein,
           NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Proteína completa de alta calidad combinada con ácidos grasos omega-3',
+          HealthGoal.reduceSodiumAndProcessed:
+              'Pescado entero sin procesar, libre de sodio añadido',
         },
       ),
       const IngredientNutritionProfile(
@@ -1954,6 +2102,12 @@ class NutritionCatalog {
           NutritionalAttribute.highProtein,
           NutritionalAttribute.lowCalorieDensity,
         },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Concentrado práctico de proteína magra listo para usar',
+          HealthGoal.loseWeight:
+              'Alto en proteína y muy bajo en calorías para comidas rápidas',
+        },
       ),
       const IngredientNutritionProfile(
         canonicalName: 'Camarones',
@@ -1962,6 +2116,14 @@ class NutritionCatalog {
           NutritionalAttribute.highProtein,
           NutritionalAttribute.lowCalorieDensity,
           NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Marisco rico en proteína magra de rápida cocción',
+          HealthGoal.loseWeight:
+              'Muy bajo en calorías y grasas para ensaladas y salteados ligeros',
+          HealthGoal.reduceSodiumAndProcessed:
+              'Proteína marina fresca sin procesamiento industrial',
         },
       ),
       const IngredientNutritionProfile(
@@ -2011,6 +2173,12 @@ class NutritionCatalog {
         attributes: <NutritionalAttribute>{
           NutritionalAttribute.highProtein,
           NutritionalAttribute.lowCalorieDensity,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Aporta proteína completa láctea y calcio para acompañar comidas',
+          HealthGoal.loseWeight:
+              'Alternativa láctea fresca más ligera que los quesos madurados',
         },
       ),
       const IngredientNutritionProfile(
@@ -2084,6 +2252,14 @@ class NutritionCatalog {
           NutritionalAttribute.highProtein,
           NutritionalAttribute.lowCalorieDensity,
           NutritionalAttribute.lowSodiumWholeFood,
+        },
+        goalReasons: <HealthGoal, String>{
+          HealthGoal.gainMuscle:
+              'Aporta proteína láctea de fácil absorción para desayunos y meriendas',
+          HealthGoal.loseWeight:
+              'Lácteo ligero sin azúcares añadidos ideal para saciedad',
+          HealthGoal.reduceSodiumAndProcessed:
+              'Alternativa natural sin saborizantes ni aditivos procesados',
         },
       ),
       const IngredientNutritionProfile(

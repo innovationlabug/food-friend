@@ -2,6 +2,7 @@ import '../../nutrition/domain/nutrition_metadata.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_variation.dart';
+import 'local_recipe_dataset_expanded.dart';
 
 /// Preloaded collection of varied, healthy Spanish recipes suited for Guatemalan kitchens.
 /// All ingredient names match standard leaf entries from [IngredientCatalog].
@@ -36,7 +37,12 @@ class LocalRecipeDataset {
     return list;
   }
 
-  static const List<Recipe> _recipes = [
+  static final List<Recipe> _recipes = <Recipe>[
+    ..._coreRecipes,
+    ...expandedLocalRecipes,
+  ];
+
+  static const List<Recipe> _coreRecipes = [
     Recipe(
       id: 'pepian_pollo',
       title: 'Pepián de Pollo Tradicional',
@@ -133,6 +139,12 @@ class LocalRecipeDataset {
           description: 'Guiso en caldillo de tomate natural con perulero y güisquil.',
           swappedIngredients: ['Perulero', 'Tomate'],
         ),
+        RecipeVariation(
+          recipeId: 'sopa_rapida_pollo_fideos',
+          title: 'Sopa Express de Pollo y Fideos (20 min)',
+          description: 'Versión rápida en 20 minutos usando pollo desmenuzado, apio y fideos.',
+          swappedIngredients: ['Pollo desmenuzado', 'Fideos', 'Apio'],
+        ),
       ],
     ),
     Recipe(
@@ -219,6 +231,12 @@ class LocalRecipeDataset {
           description: 'Sustituye el aguacate y pepino por manzana fresca, nueces y queso gouda.',
           swappedIngredients: ['Manzana', 'Nueces', 'Queso gouda'],
         ),
+        RecipeVariation(
+          recipeId: 'ensalada_pollo_aguacate_pepino',
+          title: 'Con pechuga a la plancha y berro',
+          description: 'Agrega pechuga a la plancha, berro y rábanos para volverla un plato único proteico.',
+          swappedIngredients: ['Pechuga de pollo', 'Berro', 'Rábano'],
+        ),
       ],
     ),
     Recipe(
@@ -255,6 +273,12 @@ class LocalRecipeDataset {
           title: 'Desayuno Típico Saludable',
           description: 'Acompaña los frijoles con huevos al gusto, plátano cocido y chirmol.',
           swappedIngredients: ['Huevo', 'Plátano maduro', 'Tomate'],
+        ),
+        RecipeVariation(
+          recipeId: 'caldo_frijoles_colorados_verduras',
+          title: 'Sopa de Frijoles Colorados con Verduras',
+          description: 'Usa frijoles colorados en una sopa con güicoy, repollo blanco y elote.',
+          swappedIngredients: ['Frijoles colorados', 'Güicoy', 'Repollo blanco'],
         ),
       ],
     ),
@@ -425,6 +449,18 @@ class LocalRecipeDataset {
           description: 'Sustituye las lentejas por pechuga de pollo y elote tierno.',
           swappedIngredients: ['Pechuga de pollo', 'Elote', 'Hierbabuena'],
         ),
+        RecipeVariation(
+          recipeId: 'sopa_ayote_garbanzos',
+          title: 'Crema de Ayote y Garbanzos',
+          description: 'Cambia las lentejas por garbanzos sobre una crema suave de ayote y zanahoria.',
+          swappedIngredients: ['Ayote', 'Garbanzos'],
+        ),
+        RecipeVariation(
+          recipeId: 'caldo_frijoles_colorados_verduras',
+          title: 'Sopa de Frijoles Colorados con Güicoy',
+          description: 'Reemplaza las lentejas por frijoles colorados y añade repollo blanco y epazote.',
+          swappedIngredients: ['Frijoles colorados', 'Güicoy', 'Repollo blanco'],
+        ),
       ],
     ),
     Recipe(
@@ -440,6 +476,7 @@ class LocalRecipeDataset {
         NutritionalAttribute.highProtein,
         NutritionalAttribute.lowCalorieDensity,
         NutritionalAttribute.lowSodiumWholeFood,
+        NutritionalAttribute.highFiberOrVitamins,
       },
       ingredients: [
         RecipeIngredient(name: 'Filete de pescado', displayAmount: '1 lb en filetes limpios'),
@@ -461,6 +498,18 @@ class LocalRecipeDataset {
           title: 'Ceviche Vegetariano de Aguacate y Pepino',
           description: 'Opción fresca sin cocción con aguacate cremoso, pepino y cebolla morada.',
           swappedIngredients: ['Aguacate', 'Pepino', 'Tomate'],
+        ),
+        RecipeVariation(
+          recipeId: 'tilapia_plancha_tomate_limon',
+          title: 'Filete de Tilapia a la Plancha',
+          description: 'Versión sellada en sartén con tomate fresco y medias lunas de güicoy.',
+          swappedIngredients: ['Filete de tilapia', 'Güicoy', 'Tomate'],
+        ),
+        RecipeVariation(
+          recipeId: 'salmon_horno_camote_brocoli',
+          title: 'Salmón al Horno con Camote y Brócoli',
+          description: 'Cambia el pescado blanco por salmón horneado con camote y brócoli.',
+          swappedIngredients: ['Salmón', 'Camote', 'Brócoli'],
         ),
       ],
     ),
@@ -498,6 +547,12 @@ class LocalRecipeDataset {
           title: 'Omelet con Queso Gouda y Champiñones',
           description: 'Sustituye el queso de capas por queso gouda fundido y champiñones salteados.',
           swappedIngredients: ['Queso gouda', 'Champiñones'],
+        ),
+        RecipeVariation(
+          recipeId: 'huevos_revueltos_ejote_tomate',
+          title: 'Huevos Revueltos con Ejote y Queso Fresco',
+          description: 'Prepara los huevos revueltos con ejotes picados y queso fresco.',
+          swappedIngredients: ['Ejote', 'Queso fresco'],
         ),
       ],
     ),
@@ -590,6 +645,12 @@ class LocalRecipeDataset {
           description: 'Pechuga a la plancha con verduras al vapor sin arroz.',
           swappedIngredients: ['Güisquil', 'Limón'],
         ),
+        RecipeVariation(
+          recipeId: 'arroz_integral_garbanzos_espinaca',
+          title: 'Arroz Integral con Garbanzos y Espinaca',
+          description: 'Versión basada en plantas cambiando el arroz blanco y pollo por arroz integral y garbanzos.',
+          swappedIngredients: ['Arroz integral', 'Garbanzos', 'Espinaca'],
+        ),
       ],
     ),
     Recipe(
@@ -634,6 +695,12 @@ class LocalRecipeDataset {
           description: 'Huevos preparados en omelet con espinaca y queso de capas.',
           swappedIngredients: ['Espinaca'],
         ),
+        RecipeVariation(
+          recipeId: 'huevos_rancheros_frijoles',
+          title: 'Huevos Rancheros con Salsa de Tomate',
+          description: 'Cambia el plátano cocido por una salsa cocida de tomate y chile pimiento con aguacate.',
+          swappedIngredients: ['Chile pimiento', 'Aguacate'],
+        ),
       ],
     ),
     Recipe(
@@ -676,6 +743,12 @@ class LocalRecipeDataset {
           title: 'Filete de Pescado al Vapor con Limón y Cilantro',
           description: 'Plato caliente con filete de pescado cocido al vapor y cebolla morada.',
           swappedIngredients: ['Limón', 'Ajo', 'Aceite de oliva'],
+        ),
+        RecipeVariation(
+          recipeId: 'ensalada_camarones_mango_aguacate',
+          title: 'Ensalada Tropical de Camarones y Mango',
+          description: 'Agrega camarones salteados y cubos de mango sobre cama de lechuga.',
+          swappedIngredients: ['Camarones', 'Mango', 'Lechuga'],
         ),
       ],
     ),
@@ -926,6 +999,18 @@ class LocalRecipeDataset {
           title: 'Ensalada Chapina de Aguacate y Tomate',
           description: 'Versión tradicional chapina con aguacate, tomate, pepino y cilantro.',
           swappedIngredients: ['Aguacate', 'Tomate', 'Pepino'],
+        ),
+        RecipeVariation(
+          recipeId: 'ensalada_fresa_pollo_espinaca',
+          title: 'Ensalada de Espinaca, Fresa y Pollo',
+          description: 'Cambia la manzana y nueces por fresas, almendras y pollo desmenuzado sobre espinaca.',
+          swappedIngredients: ['Fresa', 'Almendras', 'Espinaca'],
+        ),
+        RecipeVariation(
+          recipeId: 'ensalada_tibia_remolacha_queso',
+          title: 'Ensalada Tibia de Remolacha y Queso Fresco',
+          description: 'Versión tibia al horno con remolacha asada, gajos de naranja y queso fresco.',
+          swappedIngredients: ['Remolacha', 'Naranja', 'Queso fresco'],
         ),
       ],
     ),

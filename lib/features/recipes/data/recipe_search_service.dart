@@ -317,56 +317,113 @@ class RecipeSearchService {
   static bool isIngredientMatch(String userNorm, String recipeNorm) {
     if (userNorm == recipeNorm) return true;
 
-    // Sub-phrase matching (e.g. "pollo" in "pechuga de pollo" or "posta de res" in "carne de res")
-    if (userNorm.contains(recipeNorm) || recipeNorm.contains(userNorm)) {
+    // Sub-phrase matching on token boundaries (e.g. "pollo" matches "pechuga de pollo"
+    // without falsely matching "repollo morado", and "res" matches "lomo de res"
+    // without matching "fresa" or "queso fresco")
+    if (_containsWordOrPhrase(userNorm, recipeNorm) ||
+        _containsWordOrPhrase(recipeNorm, userNorm)) {
       return true;
     }
 
     // Common culinary synonym bridges in Guatemalan Spanish
-    final isPoultry = (userNorm.contains('pollo') || userNorm.contains('pechuga')) &&
-        (recipeNorm.contains('pollo') || recipeNorm.contains('pechuga'));
+    final isPoultry =
+        (_containsWordOrPhrase(userNorm, 'pollo') ||
+            _containsWordOrPhrase(userNorm, 'pechuga')) &&
+        (_containsWordOrPhrase(recipeNorm, 'pollo') ||
+            _containsWordOrPhrase(recipeNorm, 'pechuga'));
     if (isPoultry) return true;
 
-    final isBeef = (userNorm.contains('res') || userNorm.contains('carne molida') || userNorm.contains('posta')) &&
-        (recipeNorm.contains('res') || recipeNorm.contains('carne molida') || recipeNorm.contains('posta'));
+    final isBeef =
+        (_containsWordOrPhrase(userNorm, 'res') ||
+            _containsWordOrPhrase(userNorm, 'carne molida') ||
+            _containsWordOrPhrase(userNorm, 'posta')) &&
+        (_containsWordOrPhrase(recipeNorm, 'res') ||
+            _containsWordOrPhrase(recipeNorm, 'carne molida') ||
+            _containsWordOrPhrase(recipeNorm, 'posta'));
     if (isBeef) return true;
 
-    final isFish = (userNorm.contains('pescado') || userNorm.contains('filete')) &&
-        (recipeNorm.contains('pescado') || recipeNorm.contains('filete'));
+    final isFish =
+        (_containsWordOrPhrase(userNorm, 'pescado') ||
+            _containsWordOrPhrase(userNorm, 'filete')) &&
+        (_containsWordOrPhrase(recipeNorm, 'pescado') ||
+            _containsWordOrPhrase(recipeNorm, 'filete'));
     if (isFish) return true;
 
-    final isEgg = (userNorm.contains('huevo') || userNorm.contains('huevos')) &&
-        (recipeNorm.contains('huevo') || recipeNorm.contains('huevos'));
+    final isEgg =
+        (_containsWordOrPhrase(userNorm, 'huevo') ||
+            _containsWordOrPhrase(userNorm, 'huevos')) &&
+        (_containsWordOrPhrase(recipeNorm, 'huevo') ||
+            _containsWordOrPhrase(recipeNorm, 'huevos'));
     if (isEgg) return true;
 
-    final isEggplant = (userNorm.contains('berenjena') || userNorm.contains('aubergine') || userNorm.contains('eggplant')) &&
-        (recipeNorm.contains('berenjena') || recipeNorm.contains('aubergine') || recipeNorm.contains('eggplant'));
+    final isEggplant =
+        (_containsWordOrPhrase(userNorm, 'berenjena') ||
+            _containsWordOrPhrase(userNorm, 'aubergine') ||
+            _containsWordOrPhrase(userNorm, 'eggplant')) &&
+        (_containsWordOrPhrase(recipeNorm, 'berenjena') ||
+            _containsWordOrPhrase(recipeNorm, 'aubergine') ||
+            _containsWordOrPhrase(recipeNorm, 'eggplant'));
     if (isEggplant) return true;
 
-    final isCassava = (userNorm.contains('yuca') || userNorm.contains('cassava') || userNorm.contains('mandioca')) &&
-        (recipeNorm.contains('yuca') || recipeNorm.contains('cassava') || recipeNorm.contains('mandioca'));
+    final isCassava =
+        (_containsWordOrPhrase(userNorm, 'yuca') ||
+            _containsWordOrPhrase(userNorm, 'cassava') ||
+            _containsWordOrPhrase(userNorm, 'mandioca')) &&
+        (_containsWordOrPhrase(recipeNorm, 'yuca') ||
+            _containsWordOrPhrase(recipeNorm, 'cassava') ||
+            _containsWordOrPhrase(recipeNorm, 'mandioca'));
     if (isCassava) return true;
 
-    final isSweetPotato = (userNorm.contains('camote') || userNorm.contains('batata') || userNorm.contains('sweet potato')) &&
-        (recipeNorm.contains('camote') || recipeNorm.contains('batata') || recipeNorm.contains('sweet potato'));
+    final isSweetPotato =
+        (_containsWordOrPhrase(userNorm, 'camote') ||
+            _containsWordOrPhrase(userNorm, 'batata') ||
+            _containsWordOrPhrase(userNorm, 'sweet potato')) &&
+        (_containsWordOrPhrase(recipeNorm, 'camote') ||
+            _containsWordOrPhrase(recipeNorm, 'batata') ||
+            _containsWordOrPhrase(recipeNorm, 'sweet potato'));
     if (isSweetPotato) return true;
 
-    final isBeetroot = (userNorm.contains('remolacha') || userNorm.contains('betabel') || userNorm.contains('beetroot')) &&
-        (recipeNorm.contains('remolacha') || recipeNorm.contains('betabel') || recipeNorm.contains('beetroot'));
+    final isBeetroot =
+        (_containsWordOrPhrase(userNorm, 'remolacha') ||
+            _containsWordOrPhrase(userNorm, 'betabel') ||
+            _containsWordOrPhrase(userNorm, 'beetroot')) &&
+        (_containsWordOrPhrase(recipeNorm, 'remolacha') ||
+            _containsWordOrPhrase(recipeNorm, 'betabel') ||
+            _containsWordOrPhrase(recipeNorm, 'beetroot'));
     if (isBeetroot) return true;
 
-    final isChickpea = (userNorm.contains('garbanzo') || userNorm.contains('garbanzos') || userNorm.contains('chickpea')) &&
-        (recipeNorm.contains('garbanzo') || recipeNorm.contains('garbanzos') || recipeNorm.contains('chickpea'));
+    final isChickpea =
+        (_containsWordOrPhrase(userNorm, 'garbanzo') ||
+            _containsWordOrPhrase(userNorm, 'garbanzos') ||
+            _containsWordOrPhrase(userNorm, 'chickpea')) &&
+        (_containsWordOrPhrase(recipeNorm, 'garbanzo') ||
+            _containsWordOrPhrase(recipeNorm, 'garbanzos') ||
+            _containsWordOrPhrase(recipeNorm, 'chickpea'));
     if (isChickpea) return true;
 
-    final isTuna = (userNorm.contains('atun') || userNorm.contains('tuna')) &&
-        (recipeNorm.contains('atun') || recipeNorm.contains('tuna'));
+    final isTuna =
+        (_containsWordOrPhrase(userNorm, 'atun') ||
+            _containsWordOrPhrase(userNorm, 'tuna')) &&
+        (_containsWordOrPhrase(recipeNorm, 'atun') ||
+            _containsWordOrPhrase(recipeNorm, 'tuna'));
     if (isTuna) return true;
 
-    final isPork = (userNorm.contains('cerdo') || userNorm.contains('pork')) &&
-        (recipeNorm.contains('cerdo') || recipeNorm.contains('pork'));
+    final isPork =
+        (_containsWordOrPhrase(userNorm, 'cerdo') ||
+            _containsWordOrPhrase(userNorm, 'pork')) &&
+        (_containsWordOrPhrase(recipeNorm, 'cerdo') ||
+            _containsWordOrPhrase(recipeNorm, 'pork'));
     if (isPork) return true;
 
     return false;
+  }
+
+  /// Checks whether [haystack] contains [needle] on token boundaries
+  /// (supporting optional Spanish plural suffix `-s` or `-es`).
+  static bool _containsWordOrPhrase(String haystack, String needle) {
+    if (needle.isEmpty || haystack.isEmpty) return false;
+    final escaped = RegExp.escape(needle);
+    final pattern = RegExp('(?:^|[^a-z0-9])$escaped(?:e?s)?(?:\$|[^a-z0-9])');
+    return pattern.hasMatch(haystack);
   }
 }

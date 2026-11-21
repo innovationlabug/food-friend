@@ -149,6 +149,22 @@ void main() {
       expect(RecipeSearchService.isIngredientMatch('remolacha', 'beetroot'), isTrue);
       expect(RecipeSearchService.isIngredientMatch('garbanzos', 'chickpea'), isTrue);
       expect(RecipeSearchService.isIngredientMatch('atun', 'tuna'), isTrue);
+      expect(
+        RecipeSearchService.isIngredientMatch('pollo', 'repollo morado'),
+        isFalse,
+      );
+      expect(
+        RecipeSearchService.isIngredientMatch('res', 'fresa'),
+        isFalse,
+      );
+      expect(
+        RecipeSearchService.isIngredientMatch('res', 'queso fresco'),
+        isFalse,
+      );
+      expect(
+        RecipeSearchService.isIngredientMatch('res', 'lomo de res'),
+        isTrue,
+      );
     });
   });
 

@@ -7,6 +7,7 @@ import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/nutrition/presentation/nutrition_tips_screen.dart';
 import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
 import 'package:food_friend/features/recipes/data/recipe_search_service.dart';
+import 'package:food_friend/features/recipes/domain/recipe_time_filter.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
 import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
@@ -911,6 +912,63 @@ void main() {
       tester.view.physicalSize = const Size(1280, 800);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('every meal category shows recipes across all three time filters',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: const [
+          'Ajo',
+          'Tomate',
+          'Avena en hojuelas',
+          'Huevo',
+          'Pechuga de pollo',
+          'Espinaca',
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      const categories = <String>[
+        'Desayuno',
+        'Almuerzo',
+        'Cena',
+        'Sopas y Caldos',
+        'Ensaladas',
+      ];
+      const filters = <RecipeTimeFilter>[
+        RecipeTimeFilter.upTo20,
+        RecipeTimeFilter.upTo40,
+        RecipeTimeFilter.upTo60,
+      ];
+
+      for (final category in categories) {
+        final categoryChip = find.descendant(
+          of: find.byType(ChoiceChip),
+          matching: find.textContaining(category),
+        );
+        await tester.ensureVisible(categoryChip);
+        await tester.tap(categoryChip);
+        await tester.pumpAndSettle();
+
+        for (final filter in filters) {
+          final filterChip = find.byKey(ValueKey('time_filter_${filter.name}'));
+          await tester.ensureVisible(filterChip);
+          await tester.tap(filterChip);
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('Ninguna receta coincide con el filtro actual'),
+            findsNothing,
+            reason: 'Category $category with filter ${filter.label} should not be empty',
+          );
+        }
+
+        // Reset time filter to all before checking next category
+        final allFilterChip = find.byKey(const ValueKey('time_filter_all'));
+        await tester.ensureVisible(allFilterChip);
+        await tester.tap(allFilterChip);
+        await tester.pumpAndSettle();
+      }
     });
   });
 }

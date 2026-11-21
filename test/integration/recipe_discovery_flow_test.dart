@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:food_friend/core/theme/app_theme.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
+import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_management_screen.dart';
@@ -435,5 +438,91 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Por comprar (1)'), findsOneWidget);
     expect(find.text('Aguacate'), findsOneWidget);
+  });
+
+  testWidgets('E2E: Offline catalog covers categories, time filters, variations, and health goals',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final storageService = IngredientStorageService();
+    final shoppingListService = ShoppingListStorageService(
+      pantryStorageService: storageService,
+    );
+    final healthGoalStorageService = HealthGoalStorageService();
+
+    // Activate all four health goals and open the full offline recipe catalog
+    await healthGoalStorageService.saveSelectedGoals({
+      HealthGoal.loseWeight,
+      HealthGoal.gainMuscle,
+      HealthGoal.reduceSodiumAndProcessed,
+      HealthGoal.increaseVitaminsAndFiber,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: RecipeSuggestionsScreen(
+          selectedIngredientNames: const [],
+          ingredientStorageService: storageService,
+          shoppingListService: shoppingListService,
+          healthGoalStorageService: healthGoalStorageService,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Switch to full catalog where empty local state shows "Ver todas las recetas"
+    final showAllBtn = find.text('Ver todas las recetas');
+    await tester.ensureVisible(showAllBtn);
+    await tester.tap(showAllBtn);
+    await tester.pumpAndSettle();
+
+    // Filter to Ensaladas <= 20 min and open a salad with variations
+    final ensaladasChip = find.descendant(
+      of: find.byType(ChoiceChip),
+      matching: find.textContaining('Ensaladas'),
+    );
+    await tester.ensureVisible(ensaladasChip);
+    await tester.tap(ensaladasChip);
+    await tester.pumpAndSettle();
+
+    final upTo20Chip = find.byKey(const ValueKey('time_filter_upTo20'));
+    await tester.ensureVisible(upTo20Chip);
+    await tester.tap(upTo20Chip);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Ensalada Fresca de Atún con Pepino y Garbanzos'),
+      findsOneWidget,
+    );
+
+    // Switch to Desayuno <= 40 min and verify a new breakfast + variations + goal card
+    final desayunoChip = find.descendant(
+      of: find.byType(ChoiceChip),
+      matching: find.textContaining('Desayuno'),
+    );
+    await tester.ensureVisible(desayunoChip);
+    await tester.tap(desayunoChip);
+    await tester.pumpAndSettle();
+
+    final upTo40Chip = find.byKey(const ValueKey('time_filter_upTo40'));
+    await tester.ensureVisible(upTo40Chip);
+    await tester.tap(upTo40Chip);
+    await tester.pumpAndSettle();
+
+    final listScrollable = find.byType(Scrollable).last;
+    await tester.drag(listScrollable, const Offset(0, 1000));
+    await tester.pumpAndSettle();
+
+    final avenaFinder = find.text('Avena Fresca con Yogur Griego, Fresa y Banano');
+    await tester.scrollUntilVisible(
+      avenaFinder,
+      200,
+      scrollable: listScrollable,
+    );
+    await tester.tap(avenaFinder);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ver variaciones (2)'), findsOneWidget);
+    expect(find.text('Alineado con tus metas de salud'), findsOneWidget);
   });
 }
