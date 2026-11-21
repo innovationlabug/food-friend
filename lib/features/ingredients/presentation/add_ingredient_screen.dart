@@ -78,6 +78,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
   late final TabController _tabController;
   late final IngredientStorageService _storageService;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   List<String> _suggestions = [];
   bool _isSaving = false;
@@ -104,6 +105,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -162,6 +164,14 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
 
       if (SettingsController.instance.autoReturnAfterAddingIngredient) {
         _goToIngredientList();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted &&
+              _tabController.index == 0 &&
+              !SettingsController.instance.autoReturnAfterAddingIngredient) {
+            _searchFocusNode.requestFocus();
+          }
+        });
       }
     }
   }
@@ -169,6 +179,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
   void _submitTextSearch() {
     final rawInput = _searchController.text.trim();
     if (rawInput.isEmpty) {
+      _searchFocusNode.requestFocus();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor escribe el nombre de un ingrediente'),
@@ -296,8 +307,10 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               Expanded(
                 child: TextFormField(
                   controller: _searchController,
+                  focusNode: _searchFocusNode,
                   autofocus: true,
                   textInputAction: TextInputAction.done,
+                  onEditingComplete: () {},
                   onFieldSubmitted: (_) => _submitTextSearch(),
                   decoration: InputDecoration(
                     labelText: 'Nombre del ingrediente',

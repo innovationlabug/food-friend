@@ -195,13 +195,13 @@ class SmartShoppingSuggestionsSection extends StatelessWidget {
         ),
       ShoppingSuggestionSource.healthGoal => (
           suggestion.matchedGoal?.iconName ?? 'nutrition',
-          colorScheme.tertiaryContainer,
-          colorScheme.onTertiaryContainer,
+          colorScheme.primaryContainer,
+          colorScheme.onPrimaryContainer,
         ),
       ShoppingSuggestionSource.nutritionTip => (
           'nutrition',
-          colorScheme.secondaryContainer,
-          colorScheme.onSecondaryContainer,
+          colorScheme.primaryContainer,
+          colorScheme.onPrimaryContainer,
         ),
     };
   }

@@ -230,6 +230,46 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Curry'), findsOneWidget);
     });
+
+    testWidgets('keeps search field focused after submitting an ingredient with Enter',
+        (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      final input = find.widgetWithText(TextFormField, 'Nombre del ingrediente');
+      await tester.tap(input);
+      await tester.enterText(input, 'frijol');
+      await tester.pumpAndSettle();
+
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      // First item added and search field cleared
+      var stored = await storageService.getIngredients();
+      expect(stored.map((e) => e.name), equals(['Frijol']));
+
+      // Search field must still hold focus so the user can type immediately
+      final editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.focusNode.hasFocus, isTrue);
+
+      // Submit a second ingredient via active text input without re-tapping
+      tester.testTextInput.updateEditingValue(
+        const TextEditingValue(
+          text: 'aguac',
+          selection: TextSelection.collapsed(offset: 5),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      stored = await storageService.getIngredients();
+      expect(stored.map((e) => e.name), equals(['Frijol', 'Aguacate']));
+      expect(
+        tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus,
+        isTrue,
+      );
+    });
   });
 }
 

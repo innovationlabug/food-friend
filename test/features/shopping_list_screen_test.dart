@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:food_friend/core/theme/app_theme.dart';
 import 'package:food_friend/core/widgets/app_svg_icon.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/amount_unit.dart';
@@ -603,6 +604,47 @@ void main() {
       expect((favRect.top - goalRect.top).abs(), lessThan(1.0));
       expect(goalRect.left, greaterThan(favRect.right));
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'renders nutrition leaf icon on Maní suggestion using primaryContainer palette instead of blueish tertiaryContainer in light and dark mode',
+        (tester) async {
+      final deps = await seedSuggestionFixtures();
+
+      for (final theme in [AppTheme.lightTheme, AppTheme.darkTheme]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            key: ValueKey(theme.brightness),
+            theme: theme,
+            home: ShoppingListScreen(
+              storageService: deps.pantry,
+              shoppingListService: deps.shopping,
+              historyService: deps.history,
+              healthGoalStorageService: deps.goals,
+              initialTab: 1,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final maniCard = find.byKey(
+          const ValueKey('shopping_suggestion_salteado_verduras_curry'),
+        );
+        await tester.ensureVisible(maniCard);
+        await tester.pumpAndSettle();
+
+        final leafFinder = find.descendant(
+          of: maniCard,
+          matching: find.byWidgetPredicate(
+            (w) => w is AppSvgIcon && w.assetName == 'nutrition',
+          ),
+        );
+        expect(leafFinder, findsOneWidget);
+
+        final leafIcon = tester.widget<AppSvgIcon>(leafFinder);
+        expect(leafIcon.color, equals(theme.colorScheme.onPrimaryContainer));
+        expect(leafIcon.color, isNot(equals(theme.colorScheme.onTertiaryContainer)));
+      }
     });
   });
 }
