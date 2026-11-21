@@ -497,6 +497,7 @@ Implement a standalone minimal app in `/demos/supermarket-sales/` to validate wh
 - Include automated or reproducible checks verifying live fetch handling, cache snapshot refresh, fallback behavior on network/block errors, and ingredient matching.
 
 ## General Rules
+- **Branch Isolation:** Before starting implementation, create and switch to a new Git branch (e.g., `demo/supermarket-sales`) and implement all changes there. At the end, commit all changes to that branch without merging or integrating any changes into `main`.
 - Before starting implementation, ask questions if you need any clarification.
 - Do not modify `SPEC.md`, `FEATURES.md`, or main Flutter app files during this feasibility spike.
 
@@ -538,5 +539,6 @@ Implement a standalone minimal app in `/demos/market-proximity/` to validate the
 - Document feasibility findings in `/demos/market-proximity/README.md` (what works cleanly in Web/mobile browsers vs. what would require native Android background permissions).
 
 ## General Rules
+- **Branch Isolation:** Before starting implementation, create and switch to a new Git branch (e.g., `demo/market-proximity`) and implement all changes there. At the end, commit all changes to that branch without merging or integrating any changes into `main`.
 - Before starting implementation, ask questions if you need any clarification.
 - Do not modify `SPEC.md`, `FEATURES.md`, or main Flutter app files during this feasibility spike.
