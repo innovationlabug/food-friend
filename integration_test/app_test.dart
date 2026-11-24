@@ -10,6 +10,8 @@ import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
 import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
+import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
+import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
 import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
 import 'package:food_friend/main.dart' as app;
 
@@ -778,5 +780,117 @@ void main() {
     // Cleanup
     await pantry.clearIngredients();
     await shopping.clearIngredients();
+  });
+
+  testWidgets(
+      'E2E integration test FEAT-4: availability replacements make recipes cookable and health-goal swaps appear in RecipeDetailScreen',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    final goalStorage = HealthGoalStorageService();
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await goalStorage.clearGoals();
+
+    // User has Ensalada Chapina ingredients except Aceite de oliva (has Aceite vegetal),
+    // plus Pechuga de pollo, Arroz integral, and Yogur natural for health-goal swaps.
+    await pantry.saveIngredients(const [
+      Ingredient(name: 'Aguacate'),
+      Ingredient(name: 'Tomate'),
+      Ingredient(name: 'Pepino'),
+      Ingredient(name: 'Cebolla morada'),
+      Ingredient(name: 'Cilantro'),
+      Ingredient(name: 'Limón'),
+      Ingredient(name: 'Aceite vegetal'),
+      Ingredient(name: 'Pechuga de pollo'),
+      Ingredient(name: 'Arroz integral'),
+    ]);
+    await goalStorage.saveSelectedGoals({HealthGoal.increaseVitaminsAndFiber});
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // Navigate to Ingredientes disponibles -> Buscar recetas
+    await tester.tap(find.text('Ingredientes disponibles').first);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Buscar recetas'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
+
+    // Filter to Ensaladas to isolate Ensalada Chapina de Aguacate y Tomate
+    final ensaladasChip = find.descendant(
+      of: find.byType(ChoiceChip),
+      matching: find.textContaining('Ensaladas'),
+    );
+    await tester.ensureVisible(ensaladasChip);
+    await tester.tap(ensaladasChip);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ensalada Chapina de Aguacate y Tomate'), findsOneWidget);
+    expect(
+      find.text('Puedes usar Aceite vegetal en lugar de Aceite de oliva'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('¡Lista para cocinar con este cambio!'),
+      findsOneWidget,
+    );
+
+    // Open Ensalada Chapina detail screen and verify replacement guidance
+    await tester.tap(find.text('Ensalada Chapina de Aguacate y Tomate'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RecipeDetailScreen), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('detail_cookable_with_replacements_banner')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Puedes usar Aceite vegetal en lugar de Aceite de oliva'),
+      findsOneWidget,
+    );
+
+    // Return to suggestions and verify Arroz con Pollo shows health-goal swap (Arroz blanco -> Arroz integral)
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    final almuerzoChip = find.descendant(
+      of: find.byType(ChoiceChip),
+      matching: find.textContaining('Almuerzo'),
+    );
+    await tester.ensureVisible(almuerzoChip);
+    await tester.tap(almuerzoChip);
+    await tester.pumpAndSettle();
+
+    final arrozConPollo = find.text('Arroz con Pollo y Verduras Casero');
+    await tester.scrollUntilVisible(
+      arrozConPollo,
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.ensureVisible(arrozConPollo);
+    await tester.pumpAndSettle();
+    await tester.tap(arrozConPollo);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('detail_health_goal_replacements_card')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Cambia Arroz blanco por Arroz integral'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Disponible en tu despensa: Arroz integral'),
+      findsOneWidget,
+    );
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await goalStorage.clearGoals();
   });
 }

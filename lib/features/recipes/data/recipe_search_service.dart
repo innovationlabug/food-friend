@@ -7,6 +7,7 @@ import '../domain/recipe_history_record.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
+import 'ingredient_replacement_service.dart';
 import 'local_recipe_dataset.dart';
 
 /// Service responsible for querying, matching, and ranking recipes
@@ -70,6 +71,11 @@ class RecipeSearchService {
             matchedIngredients: const [],
             missingIngredients: List.of(r.ingredients),
             goalMatch: HealthGoalEvaluator.evaluateRecipe(r, activeHealthGoals),
+            healthGoalReplacements:
+                IngredientReplacementService.findHealthGoalReplacements(
+              recipe: r,
+              activeHealthGoals: activeHealthGoals,
+            ),
           );
         }).toList();
         if (activeHealthGoals.isNotEmpty) {
@@ -108,7 +114,15 @@ class RecipeSearchService {
         }
       }
 
-      if (matched.length >= minMatchCount) {
+      final availabilityReplacements =
+          IngredientReplacementService.findAvailabilityReplacements(
+        missingIngredients: missing,
+        availableIngredientNames: selectedIngredientNames,
+      );
+      final effectiveMatchCount =
+          matched.length + availabilityReplacements.length;
+
+      if (effectiveMatchCount >= minMatchCount) {
         results.add(
           RecipeSearchResult(
             recipe: recipe,
@@ -117,6 +131,13 @@ class RecipeSearchService {
             goalMatch: HealthGoalEvaluator.evaluateRecipe(
               recipe,
               activeHealthGoals,
+            ),
+            availabilityReplacements: availabilityReplacements,
+            healthGoalReplacements:
+                IngredientReplacementService.findHealthGoalReplacements(
+              recipe: recipe,
+              activeHealthGoals: activeHealthGoals,
+              availableIngredientNames: selectedIngredientNames,
             ),
           ),
         );
@@ -172,7 +193,8 @@ class RecipeSearchService {
   }
 
   /// Computes a composite ranking score for a recipe based on:
-  /// - Ingredient match count and percentage
+  /// - Direct ingredient match count and percentage
+  /// - Availability-based replacement coverage (plus readiness bonus when all missing items are substitutable)
   /// - Health-goal alignment net score (positive boost minus conflict penalty)
   /// - User preference boost (Favorita: +12, Me gustó: +6)
   /// - Recency balance to encourage meal variety (recently cooked penalties: -4 for today, -2 for this week)
@@ -183,6 +205,12 @@ class RecipeSearchService {
     Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
   }) {
     double score = (result.matchCount * 10.0) + (result.matchPercentage * 5.0);
+    if (result.hasAvailabilityReplacements) {
+      score += result.availabilityReplacements.length * 6.0;
+      if (result.isCookableWithReplacements) {
+        score += 4.0;
+      }
+    }
 
     final effectiveGoalMatch =
         (result.goalMatch.hasMatch || result.goalMatch.penaltyScore > 0)
@@ -251,6 +279,12 @@ class RecipeSearchService {
           matchedIngredients: const [],
           missingIngredients: List.of(r.ingredients),
           goalMatch: HealthGoalEvaluator.evaluateRecipe(r, activeHealthGoals),
+          healthGoalReplacements:
+              IngredientReplacementService.findHealthGoalReplacements(
+            recipe: r,
+            activeHealthGoals: activeHealthGoals,
+            availableIngredientNames: selectedIngredientNames,
+          ),
         );
       }).toList();
       if (activeHealthGoals.isNotEmpty) {

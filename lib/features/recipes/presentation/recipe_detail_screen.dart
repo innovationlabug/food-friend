@@ -9,9 +9,11 @@ import '../../nutrition/data/health_goal_evaluator.dart';
 import '../../nutrition/data/health_goal_storage_service.dart';
 import '../../nutrition/domain/recipe_goal_match.dart';
 import '../../shopping_list/data/shopping_list_storage_service.dart';
+import '../data/ingredient_replacement_service.dart';
 import '../data/local_recipe_dataset.dart';
 import '../data/recipe_history_service.dart';
 import '../data/recipe_search_service.dart';
+import '../domain/ingredient_replacement.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_preference.dart';
@@ -30,6 +32,8 @@ class RecipeDetailScreen extends StatefulWidget {
     this.missingIngredients = const [],
     this.previousRecipeIds = const [],
     this.goalMatch = RecipeGoalMatch.empty,
+    this.availabilityReplacements = const [],
+    this.healthGoalReplacements = const [],
     this.historyService,
     this.shoppingListService,
     this.ingredientStorageService,
@@ -53,6 +57,8 @@ class RecipeDetailScreen extends StatefulWidget {
       missingIngredients: result.missingIngredients,
       previousRecipeIds: previousRecipeIds,
       goalMatch: result.goalMatch,
+      availabilityReplacements: result.availabilityReplacements,
+      healthGoalReplacements: result.healthGoalReplacements,
       historyService: historyService,
       shoppingListService: shoppingListService,
       ingredientStorageService: ingredientStorageService,
@@ -66,6 +72,8 @@ class RecipeDetailScreen extends StatefulWidget {
   /// IDs of recipes previously opened in this navigation branch to prevent loops.
   final List<String> previousRecipeIds;
   final RecipeGoalMatch goalMatch;
+  final List<AvailabilityReplacement> availabilityReplacements;
+  final List<HealthGoalReplacement> healthGoalReplacements;
   final RecipeHistoryService? historyService;
   final ShoppingListStorageService? shoppingListService;
   final IngredientStorageService? ingredientStorageService;
@@ -81,6 +89,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final IngredientStorageService _ingredientStorageService;
   late final HealthGoalStorageService _healthGoalStorageService;
   late RecipeGoalMatch _goalMatch;
+  late List<AvailabilityReplacement> _availabilityReplacements;
+  late List<HealthGoalReplacement> _healthGoalReplacements;
   bool _isCookedToday = false;
   int _timesCooked = 0;
   RecipePreference _preference = RecipePreference.none;
@@ -106,23 +116,41 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     _healthGoalStorageService =
         widget.healthGoalStorageService ?? HealthGoalStorageService();
     _goalMatch = widget.goalMatch;
+    _availabilityReplacements = widget.availabilityReplacements;
+    _healthGoalReplacements = widget.healthGoalReplacements;
     _loadHistoryStatus();
     _loadShoppingListStatus();
-    if (!_goalMatch.hasMatch) {
-      _loadGoalMatch();
+    if (!_goalMatch.hasMatch || _healthGoalReplacements.isEmpty) {
+      _loadGoalMatchAndSwaps();
     }
     if (widget.matchedIngredients.isEmpty && widget.missingIngredients.isEmpty) {
       _resolveIngredientsFromPantry();
     }
   }
 
-  Future<void> _loadGoalMatch() async {
+  Future<void> _loadGoalMatchAndSwaps() async {
     final goals = await _healthGoalStorageService.getSelectedGoals();
     if (!mounted || goals.isEmpty) return;
-    final evaluated = HealthGoalEvaluator.evaluateRecipe(widget.recipe, goals);
-    if (evaluated.hasMatch) {
+
+    final evaluated = !_goalMatch.hasMatch
+        ? HealthGoalEvaluator.evaluateRecipe(widget.recipe, goals)
+        : _goalMatch;
+
+    List<HealthGoalReplacement> swaps = _healthGoalReplacements;
+    if (swaps.isEmpty) {
+      final pantry = await _ingredientStorageService.getIngredients();
+      if (!mounted) return;
+      swaps = IngredientReplacementService.findHealthGoalReplacements(
+        recipe: widget.recipe,
+        activeHealthGoals: goals,
+        availableIngredientNames: pantry.map((e) => e.name).toList(),
+      );
+    }
+
+    if (evaluated.hasMatch || swaps.isNotEmpty) {
       setState(() {
         _goalMatch = evaluated;
+        _healthGoalReplacements = swaps;
       });
     }
   }
@@ -133,8 +161,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Future<void> _resolveIngredientsFromPantry() async {
     final stored = await _ingredientStorageService.getIngredients();
     if (!mounted) return;
+    final userNames = stored.map((item) => item.name).toList();
     final userInputsLower =
-        stored.map((item) => StringNormalizer.normalize(item.name)).toSet();
+        userNames.map(StringNormalizer.normalize).toSet();
 
     final matched = <RecipeIngredient>[];
     final missing = <RecipeIngredient>[];
@@ -149,9 +178,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       }
     }
 
+    final replacements =
+        IngredientReplacementService.findAvailabilityReplacements(
+      missingIngredients: missing,
+      availableIngredientNames: userNames,
+    );
+
     setState(() {
       _pantryMatched = matched;
       _pantryMissing = missing;
+      _availabilityReplacements = replacements;
       _resolvedFromPantry = true;
     });
   }
@@ -1009,6 +1045,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final replacementByMissingNorm = <String, AvailabilityReplacement>{
+      for (final rep in _availabilityReplacements)
+        rep.missingIngredient.normalizedName: rep,
+    };
+    final isCookableWithReplacements = missing.isNotEmpty &&
+        missing.every(
+          (ing) => replacementByMissingNorm.containsKey(ing.normalizedName),
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1042,6 +1086,41 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ],
         ),
         const SizedBox(height: 16),
+        if (isCookableWithReplacements) ...[
+          Container(
+            key: const ValueKey('detail_cookable_with_replacements_banner'),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.secondaryContainer.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSvgIcon(
+                  assetName: 'refresh',
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '¡Puedes cocinar este platillo hoy! Reemplaza los ingredientes faltantes con lo que ya tienes en casa.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
         if (matched.isNotEmpty) ...[
           _buildSubSectionTitle(
             context,
@@ -1083,7 +1162,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          ...missing.map((ing) => _buildIngredientRow(context, ing, isAvailable: false)),
+          ...missing.map(
+            (ing) => _buildIngredientRow(
+              context,
+              ing,
+              isAvailable: false,
+              availabilityReplacement:
+                  replacementByMissingNorm[ing.normalizedName],
+            ),
+          ),
         ],
         if (missing.isEmpty && matched.isNotEmpty) ...[
           Container(
@@ -1112,6 +1199,122 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ),
         ],
+        if (_healthGoalReplacements.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _buildHealthGoalReplacementsCard(context),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHealthGoalReplacementsCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      key: const ValueKey('detail_health_goal_replacements_card'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppSvgIcon(
+                assetName: 'sparkles',
+                size: 18,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Alternativas más saludables',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Sugerencias según tus metas de salud:',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (int i = 0; i < _healthGoalReplacements.length; i++) ...[
+            _buildHealthGoalReplacementItem(
+              context,
+              _healthGoalReplacements[i],
+            ),
+            if (i < _healthGoalReplacements.length - 1)
+              const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHealthGoalReplacementItem(
+    BuildContext context,
+    HealthGoalReplacement replacement,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: AppSvgIcon(
+            assetName: 'nutrition',
+            size: 15,
+            color: colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                replacement.message,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                replacement.reason,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
+              if (replacement.availableAlternativesInPantry.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Text(
+                  'Disponible en tu despensa: ${replacement.availableAlternativesInPantry.join(', ')}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -1145,6 +1348,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     BuildContext context,
     RecipeIngredient ingredient, {
     required bool isAvailable,
+    AvailabilityReplacement? availabilityReplacement,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -1166,70 +1370,102 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 : colorScheme.outlineVariant.withValues(alpha: 0.25),
           ),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            AppSvgIcon(
-              assetName: isAvailable ? 'check_circle' : 'circle',
-              size: 18,
-              color: isAvailable ? colorScheme.primary : colorScheme.outline,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          ingredient.name,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: isAvailable
-                                ? colorScheme.onSurface
-                                : colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: constraints.maxWidth * 0.42,
-                        ),
-                        child: Text(
-                          ingredient.displayAmount,
-                          textAlign: TextAlign.end,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            if (!isAvailable) ...[
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 36,
-                height: 36,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  style: IconButton.styleFrom(
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  tooltip: inShoppingList
-                      ? 'En lista de compras'
-                      : 'Agregar a lista de compras',
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                  icon: AppSvgIcon(
-                    assetName: inShoppingList ? 'check' : 'shopping_cart',
-                    size: 18,
-                    color: colorScheme.primary,
-                  ),
-                  onPressed: () => _addMissingToShoppingList(ingredient),
+            Row(
+              children: [
+                AppSvgIcon(
+                  assetName: isAvailable ? 'check_circle' : 'circle',
+                  size: 18,
+                  color: isAvailable ? colorScheme.primary : colorScheme.outline,
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              ingredient.name,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: isAvailable
+                                    ? colorScheme.onSurface
+                                    : colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: constraints.maxWidth * 0.42,
+                            ),
+                            child: Text(
+                              ingredient.displayAmount,
+                              textAlign: TextAlign.end,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                if (!isAvailable) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      style: IconButton.styleFrom(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      tooltip: inShoppingList
+                          ? 'En lista de compras'
+                          : 'Agregar a lista de compras',
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      icon: AppSvgIcon(
+                        assetName: inShoppingList ? 'check' : 'shopping_cart',
+                        size: 18,
+                        color: colorScheme.primary,
+                      ),
+                      onPressed: () => _addMissingToShoppingList(ingredient),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (!isAvailable && availabilityReplacement != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: AppSvgIcon(
+                      assetName: 'refresh',
+                      size: 14,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      availabilityReplacement.message,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ],

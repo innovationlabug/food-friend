@@ -806,4 +806,116 @@ void main() {
       );
     });
   });
+
+  group('FEAT-4: Availability & Health-Goal Replacements in RecipeDetailScreen', () {
+    const pastaCremaRecipe = Recipe(
+      id: 'detail_swap_test',
+      title: 'Pasta con Crema y Aceite de Oliva',
+      category: 'Almuerzo',
+      prepTimeMinutes: 10,
+      cookTimeMinutes: 15,
+      servings: 2,
+      ingredients: [
+        RecipeIngredient(name: 'Espagueti', displayAmount: '200 g'),
+        RecipeIngredient(name: 'Aceite de oliva', displayAmount: '1 cda'),
+        RecipeIngredient(name: 'Crema pura', displayAmount: '1/2 taza'),
+      ],
+      instructions: ['Cocinar el espagueti y mezclar con aceite y crema.'],
+    );
+
+    testWidgets(
+        'displays availability replacements from pantry and healthier swaps for active health goals',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final goalStorage = HealthGoalStorageService(preferences: prefs);
+
+      await pantry.saveIngredients(const [
+        Ingredient(name: 'Espagueti'),
+        Ingredient(name: 'Aceite vegetal'),
+        Ingredient(name: 'Yogur natural'),
+      ]);
+      await goalStorage.saveSelectedGoals({HealthGoal.loseWeight});
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen(
+            recipe: pastaCremaRecipe,
+            ingredientStorageService: pantry,
+            healthGoalStorageService: goalStorage,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Readiness banner when all missing ingredients have pantry substitutes
+      expect(
+        find.byKey(const ValueKey('detail_cookable_with_replacements_banner')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          '¡Puedes cocinar este platillo hoy! Reemplaza los ingredientes faltantes con lo que ya tienes en casa.',
+        ),
+        findsOneWidget,
+      );
+
+      // Specific availability swap messages on missing rows
+      expect(
+        find.text('Puedes usar Aceite vegetal en lugar de Aceite de oliva'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Puedes usar Yogur natural en lugar de Crema pura'),
+        findsOneWidget,
+      );
+
+      // Health-goal replacement section
+      expect(
+        find.byKey(const ValueKey('detail_health_goal_replacements_card')),
+        findsOneWidget,
+      );
+      expect(find.text('Alternativas más saludables'), findsOneWidget);
+      expect(
+        find.text('Cambia Crema pura por Yogur natural o Aguacate'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Disponible en tu despensa: Yogur natural'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'hides health-goal replacement card when no health goals are active',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final pantry = IngredientStorageService(preferences: prefs);
+      final goalStorage = HealthGoalStorageService(preferences: prefs);
+
+      await pantry.saveIngredients(const [
+        Ingredient(name: 'Espagueti'),
+      ]);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen(
+            recipe: pastaCremaRecipe,
+            ingredientStorageService: pantry,
+            healthGoalStorageService: goalStorage,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('detail_cookable_with_replacements_banner')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('detail_health_goal_replacements_card')),
+        findsNothing,
+      );
+    });
+  });
 }

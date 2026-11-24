@@ -90,9 +90,9 @@ Users currently build their `"Por comprar"` list entirely from scratch or right 
 
 ---
 
-## - [ ] FEAT-4: Intelligent Ingredient Replacements for Availability & Health Goals
+## - [x] FEAT-4: Intelligent Ingredient Replacements for Availability & Health Goals
 - **Source:** `PLANNING.md` (*Iteration 3 — Recipe suggestions*) & `SPEC.md` (*Next week plan*)
-- **Status:** Open (`iteration-3`)
+- **Status:** Completed (`iteration-3`)
 - **Suggested Branch:** `feat/ingredient-replacements`
 
 ### Product Problem
@@ -109,10 +109,10 @@ Users currently build their `"Por comprar"` list entirely from scratch or right 
    - Display non-intrusive healthier replacement suggestions inside the Recipe Detail view and recipe cards when aligned with the user's health goals.
 
 ### Acceptance Criteria (Definition of Done)
-- [ ] `RecipeSearchService` identifies recipes that can be cooked by replacing a missing ingredient with a compatible available ingredient from `"Mis ingredientes"`, ranking and labeling the suggested swap clearly in Spanish.
-- [ ] `RecipeDetailScreen` displays specific, practical ingredient replacement suggestions both for missing ingredients (using available pantry items) and for active health goals (using healthier alternatives).
-- [ ] All substitution rules run deterministically on device with zero extra LLM calls.
-- [ ] Unit and widget tests verify availability-based substitution matching and health-goal replacement suggestions.
+- [x] `RecipeSearchService` identifies recipes that can be cooked by replacing a missing ingredient with a compatible available ingredient from `"Mis ingredientes"`, ranking and labeling the suggested swap clearly in Spanish.
+- [x] `RecipeDetailScreen` displays specific, practical ingredient replacement suggestions both for missing ingredients (using available pantry items) and for active health goals (using healthier alternatives).
+- [x] All substitution rules run deterministically on device with zero extra LLM calls.
+- [x] Unit and widget tests verify availability-based substitution matching and health-goal replacement suggestions.
 
 ---
 

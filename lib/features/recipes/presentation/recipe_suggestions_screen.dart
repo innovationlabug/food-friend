@@ -5,7 +5,6 @@ import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
-import '../../nutrition/data/health_goal_evaluator.dart';
 import '../../nutrition/data/health_goal_storage_service.dart';
 import '../../nutrition/domain/health_goal.dart';
 import '../../nutrition/presentation/nutrition_tips_screen.dart';
@@ -274,59 +273,16 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     final activeGoals = await _healthGoalStorageService.getSelectedGoals();
     if (!mounted) return;
 
-    final all = _searchService
-        .getAllRecipes()
-        .where((r) => history[r.id]?.preference != RecipePreference.never)
-        .map((r) {
-      final matched = <String>{};
-      final missing = <String>{};
-      for (final ing in r.ingredients) {
-        if (_selectedIngredientNames.any(
-            (u) => RecipeSearchService.isIngredientMatch(u.toLowerCase(), ing.normalizedName))) {
-          matched.add(ing.name);
-        } else {
-          missing.add(ing.name);
-        }
-      }
+    final all = _searchService.searchRecipes(
+      selectedIngredientNames: _selectedIngredientNames,
+      minMatchCount: 0,
+      history: history,
+      activeHealthGoals: activeGoals,
+    );
 
-      return RecipeSearchResult(
-        recipe: r,
-        matchedIngredients: r.ingredients.where((i) => matched.contains(i.name)).toList(),
-        missingIngredients: r.ingredients.where((i) => missing.contains(i.name)).toList(),
-        goalMatch: HealthGoalEvaluator.evaluateRecipe(r, activeGoals),
-      );
-    }).toList();
-
-    // Sort by preference, match score, health-goal alignment, then title
-    all.sort((a, b) {
-      final recA = history[a.recipe.id];
-      final recB = history[b.recipe.id];
-      final isDislikedA = recA?.preference == RecipePreference.disliked;
-      final isDislikedB = recB?.preference == RecipePreference.disliked;
-      if (isDislikedA != isDislikedB) {
-        return isDislikedA ? 1 : -1;
-      }
-
-      if (activeGoals.isNotEmpty) {
-        final scoreA = RecipeSearchService.calculateScore(
-          a,
-          recA,
-          activeHealthGoals: activeGoals,
-        );
-        final scoreB = RecipeSearchService.calculateScore(
-          b,
-          recB,
-          activeHealthGoals: activeGoals,
-        );
-        final scoreCompare = scoreB.compareTo(scoreA);
-        if (scoreCompare != 0) return scoreCompare;
-      } else {
-        final c = b.matchCount.compareTo(a.matchCount);
-        if (c != 0) return c;
-      }
-
-      return a.recipe.title.compareTo(b.recipe.title);
-    });
+    if (activeGoals.isEmpty && _selectedIngredientNames.isEmpty) {
+      all.sort((a, b) => a.recipe.title.compareTo(b.recipe.title));
+    }
 
     setState(() {
       _activeHealthGoals = activeGoals;
@@ -990,10 +946,10 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: result.hasAllIngredients
+          color: result.canCookNow
               ? colorScheme.primary.withValues(alpha: 0.6)
               : colorScheme.outlineVariant.withValues(alpha: 0.5),
-          width: result.hasAllIngredients ? 1.5 : 1.0,
+          width: result.canCookNow ? 1.5 : 1.0,
         ),
       ),
       child: InkWell(
@@ -1106,16 +1062,20 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              if (result.missingIngredients.isNotEmpty) ...[
+              if (result.trulyMissingIngredients.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text(
-                  'Te falta: ${result.missingIngredients.map((i) => i.name).join(', ')}',
+                  'Te falta: ${result.trulyMissingIngredients.map((i) => i.name).join(', ')}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.outline,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+              ],
+              if (result.hasAvailabilityReplacements) ...[
+                const SizedBox(height: 8),
+                _buildAvailabilitySwapCallout(context, result),
               ],
               if (result.goalMatch.hasMatch) ...[
                 const SizedBox(height: 10),
@@ -1124,9 +1084,120 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                   goalMatch: result.goalMatch,
                 ),
               ],
+              if (result.hasHealthGoalReplacements) ...[
+                const SizedBox(height: 8),
+                _buildHealthGoalSwapCallout(context, result),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAvailabilitySwapCallout(
+    BuildContext context,
+    RecipeSearchResult result,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final replacements = result.availabilityReplacements;
+    final primaryText = replacements.length == 1
+        ? replacements.first.message
+        : '${replacements.first.message} (+${replacements.length - 1} '
+            '${replacements.length - 1 == 1 ? 'reemplazo' : 'reemplazos'})';
+
+    return Container(
+      key: ValueKey('availability_swap_${result.recipe.id}'),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: AppSvgIcon(
+              assetName: 'refresh',
+              size: 15,
+              color: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  primaryText,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+                if (result.isCookableWithReplacements) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    replacements.length == 1
+                        ? '¡Lista para cocinar con este cambio!'
+                        : '¡Lista para cocinar con estos cambios!',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHealthGoalSwapCallout(
+    BuildContext context,
+    RecipeSearchResult result,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final swap = result.healthGoalReplacements.first;
+
+    return Container(
+      key: ValueKey('health_swap_${result.recipe.id}'),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: AppSvgIcon(
+              assetName: 'sparkles',
+              size: 14,
+              color: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              swap.cardMessage,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

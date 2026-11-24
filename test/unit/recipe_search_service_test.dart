@@ -631,4 +631,109 @@ void main() {
       expect(results.last.recipe.id, equals('disliked_light'));
     });
   });
+
+  group('FEAT-4: Availability & Health-Goal Ingredient Replacements in Search', () {
+    test('identifies and ranks recipes cookable via pantry substitutions above incomplete partial matches',
+        () {
+      final service = RecipeSearchService();
+
+      const mozzarellaRecipe = Recipe(
+        id: 'pizza_casera',
+        title: 'Tostadas de Tomate y Mozzarella',
+        ingredients: [
+          RecipeIngredient(name: 'Tomate', displayAmount: '2 unidades'),
+          RecipeIngredient(name: 'Queso mozzarella', displayAmount: '4 oz'),
+        ],
+        instructions: ['Hornear.'],
+      );
+
+      const incompletePartialRecipe = Recipe(
+        id: 'estofado_incompleto',
+        title: 'Estofado Complejo',
+        ingredients: [
+          RecipeIngredient(name: 'Tomate', displayAmount: '2 unidades'),
+          RecipeIngredient(name: 'Vino tinto', displayAmount: '1 taza'),
+          RecipeIngredient(name: 'Laurel', displayAmount: '2 hojas'),
+          RecipeIngredient(name: 'Tomillo', displayAmount: '1 ramita'),
+          RecipeIngredient(name: 'Canela en raja', displayAmount: '1 raja'),
+        ],
+        instructions: ['Cocer lentamente.'],
+      );
+
+      final results = service.searchRecipes(
+        selectedIngredientNames: const ['Tomate', 'Queso de capas'],
+        recipePool: const [incompletePartialRecipe, mozzarellaRecipe],
+      );
+
+      expect(results.length, 2);
+      expect(results.first.recipe.id, 'pizza_casera');
+      expect(results.first.hasAllIngredients, isFalse);
+      expect(results.first.isCookableWithReplacements, isTrue);
+      expect(results.first.canCookNow, isTrue);
+      expect(results.first.effectiveMatchCount, 2);
+      expect(results.first.trulyMissingIngredients, isEmpty);
+      expect(
+        results.first.availabilityReplacements.first.message,
+        'Puedes usar Queso de capas en lugar de Queso mozzarella',
+      );
+    });
+
+    test('discovers recipes even when the only matching ingredient is a compatible substitute',
+        () {
+      final service = RecipeSearchService();
+      const oliveOilRecipe = Recipe(
+        id: 'ensalada_oliva',
+        title: 'Ensalada al Oliva',
+        ingredients: [
+          RecipeIngredient(name: 'Lechuga', displayAmount: '1 cabeza'),
+          RecipeIngredient(name: 'Aceite de oliva', displayAmount: '1 cda'),
+        ],
+        instructions: ['Mezclar.'],
+      );
+
+      final results = service.searchRecipes(
+        selectedIngredientNames: const ['Aceite vegetal'],
+        recipePool: const [oliveOilRecipe],
+      );
+
+      expect(results.length, 1);
+      expect(results.first.matchCount, 0);
+      expect(results.first.effectiveMatchCount, 1);
+      expect(
+        results.first.availabilityReplacements.first.message,
+        'Puedes usar Aceite vegetal en lugar de Aceite de oliva',
+      );
+    });
+
+    test('populates healthGoalReplacements on search results when health goals are active',
+        () {
+      final service = RecipeSearchService();
+      const curryCrema = Recipe(
+        id: 'curry_crema_test',
+        title: 'Pollo al Curry Cremoso',
+        ingredients: [
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+          RecipeIngredient(name: 'Crema pura', displayAmount: '1/2 taza'),
+        ],
+        instructions: ['Cocinar.'],
+      );
+
+      final results = service.searchRecipes(
+        selectedIngredientNames: const ['Pechuga de pollo', 'Yogur natural'],
+        recipePool: const [curryCrema],
+        activeHealthGoals: const {HealthGoal.loseWeight},
+      );
+
+      expect(results.length, 1);
+      expect(results.first.hasHealthGoalReplacements, isTrue);
+      expect(
+        results.first.healthGoalReplacements.first.message,
+        'Cambia Crema pura por Yogur natural o Aguacate',
+      );
+      expect(
+        results.first.healthGoalReplacements.first.availableAlternativesInPantry,
+        equals(['Yogur natural']),
+      );
+    });
+  });
 }

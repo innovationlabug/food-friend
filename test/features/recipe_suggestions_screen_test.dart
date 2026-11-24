@@ -7,6 +7,10 @@ import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/nutrition/presentation/nutrition_tips_screen.dart';
 import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
 import 'package:food_friend/features/recipes/data/recipe_search_service.dart';
+import 'package:food_friend/features/recipes/domain/recipe.dart';
+import 'package:food_friend/features/recipes/domain/recipe_history_record.dart';
+import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
+import 'package:food_friend/features/recipes/domain/recipe_search_result.dart';
 import 'package:food_friend/features/recipes/domain/recipe_time_filter.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
@@ -971,4 +975,100 @@ void main() {
       }
     });
   });
+
+  group('FEAT-4: Ingredient Replacements on RecipeSuggestionsScreen', () {
+    testWidgets(
+        'renders availability replacement and health-goal swap callouts cleanly across mobile and desktop viewports',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final goalStorage = HealthGoalStorageService(preferences: prefs);
+      await goalStorage.saveSelectedGoals({
+        HealthGoal.loseWeight,
+        HealthGoal.increaseVitaminsAndFiber,
+      });
+
+      const testRecipe = Recipe(
+        id: 'pasta_swap_card',
+        title: 'Pollo en Crema y Aceite',
+        category: 'Almuerzo',
+        prepTimeMinutes: 10,
+        cookTimeMinutes: 15,
+        servings: 2,
+        ingredients: [
+          RecipeIngredient(name: 'Pechuga de pollo', displayAmount: '1 lb'),
+          RecipeIngredient(name: 'Aceite de oliva', displayAmount: '1 cda'),
+          RecipeIngredient(name: 'Crema pura', displayAmount: '1/2 taza'),
+        ],
+        instructions: ['Cocinar el pollo y mezclar con aceite y crema.'],
+      );
+
+      final searchService = _SinglePoolRecipeSearchService(const [testRecipe]);
+
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: const ['Pechuga de pollo', 'Aceite vegetal', 'Yogur natural'],
+        searchService: searchService,
+        healthGoalStorageService: goalStorage,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.byKey(const ValueKey('availability_swap_pasta_swap_card')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Puedes usar Aceite vegetal en lugar de Aceite de oliva'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('¡Lista para cocinar con estos cambios!'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('health_swap_pasta_swap_card')),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Sugerencia saludable: Cambia Crema pura por Yogur natural o Aguacate'),
+        findsOneWidget,
+      );
+
+      // Verify desktop viewport renders cleanly with zero overflows
+      tester.view.physicalSize = const Size(1280, 800);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  });
+}
+
+class _SinglePoolRecipeSearchService extends RecipeSearchService {
+  _SinglePoolRecipeSearchService(this._pool);
+
+  final List<Recipe> _pool;
+
+  @override
+  List<Recipe> getAllRecipes() => _pool;
+
+  @override
+  List<RecipeSearchResult> searchRecipes({
+    required List<String> selectedIngredientNames,
+    List<Recipe>? recipePool,
+    int minMatchCount = 1,
+    Map<String, RecipeHistoryRecord>? history,
+    int? maxTotalTimeMinutes,
+    Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
+  }) {
+    return super.searchRecipes(
+      selectedIngredientNames: selectedIngredientNames,
+      recipePool: recipePool ?? _pool,
+      minMatchCount: minMatchCount,
+      history: history,
+      maxTotalTimeMinutes: maxTotalTimeMinutes,
+      activeHealthGoals: activeHealthGoals,
+    );
+  }
 }
