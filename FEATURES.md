@@ -116,9 +116,9 @@ Users currently build their `"Por comprar"` list entirely from scratch or right 
 
 ---
 
-## - [ ] FEAT-5: Feasibility Validation & Notifications for Local Supermarket Ingredient Sales
+## - [x] FEAT-5: Feasibility Validation & Notifications for Local Supermarket Ingredient Sales
 - **Source:** `PLANNING.md` (*Iteration 3 — Ingredient sales notifications*) & `SPEC.md` (*Next week plan*)
-- **Status:** Open (`iteration-3`)
+- **Status:** Completed (`iteration-3`)
 - **Suggested Branch:** `feat/supermarket-sales-notifications`
 
 ### Product Problem
@@ -135,10 +135,10 @@ Users in Guatemala want to optimize their food budget by knowing when ingredient
    - Structure the supermarket model so future iterations can track the user's favorite market or supermarket.
 
 ### Acceptance Criteria (Definition of Done)
-- [ ] Technical feasibility of fetching local supermarket sales is documented, and `/api/sales` serves cached/scheduled sale data in `GTQ` (`Q`) without triggering live scraping on every client request.
-- [ ] The client app cross-references `/api/sales` (or offline fallback data) with the user's frequently used ingredients (`timesUsed`) and `"Por comprar"` list.
-- [ ] Users receive clear Spanish sale notifications/banners for relevant ingredients with prices formatted in Guatemalan Quetzales (`Q`).
-- [ ] Unit, widget, and backend endpoint tests verify server-side caching/fallback behavior and personalized sale matching.
+- [x] Technical feasibility of fetching local supermarket sales is documented, and `/api/sales` serves cached/scheduled sale data in `GTQ` (`Q`) without triggering live scraping on every client request.
+- [x] The client app cross-references `/api/sales` (or offline fallback data) with the user's frequently used ingredients (`timesUsed`) and `"Por comprar"` list.
+- [x] Users receive clear Spanish sale notifications/banners for relevant ingredients with prices formatted in Guatemalan Quetzales (`Q`).
+- [x] Unit, widget, and backend endpoint tests verify server-side caching/fallback behavior and personalized sale matching.
 
 ---
 

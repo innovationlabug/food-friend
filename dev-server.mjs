@@ -4,6 +4,8 @@ import recipeHandler from './api/recipes.ts';
 import healthHandler from './api/health.ts';
 import detectFridgeHandler from './api/detect-fridge.ts';
 import parseReceiptHandler from './api/parse-receipt.ts';
+import salesHandler from './api/sales.ts';
+import refreshSalesHandler from './api/refresh-sales.ts';
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
@@ -78,6 +80,10 @@ const server = http.createServer(async (req, res) => {
       await detectFridgeHandler(vReq, vRes);
     } else if (pathname === '/api/parse-receipt' || pathname === '/api/parse-receipt/') {
       await parseReceiptHandler(vReq, vRes);
+    } else if (pathname === '/api/sales' || pathname === '/api/sales/') {
+      await salesHandler(vReq, vRes);
+    } else if (pathname === '/api/refresh-sales' || pathname === '/api/refresh-sales/') {
+      await refreshSalesHandler(vReq, vRes);
     } else if (pathname === '/api/health' || pathname === '/api/health/') {
       await healthHandler(vReq, vRes);
     } else {

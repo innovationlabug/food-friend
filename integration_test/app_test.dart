@@ -731,4 +731,50 @@ void main() {
     await history.clearHistory();
     await goalStorage.clearGoals();
   });
+
+  testWidgets(
+      'E2E integration test FEAT-5: detects matched supermarket deals in GTQ, shows sales banner on Home & Por comprar, and adds deal item to Por comprar',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+
+    await pantry.saveIngredients([
+      const Ingredient(name: 'Pollo', timesUsed: 4),
+    ]);
+    await shopping.saveIngredients([
+      const Ingredient(name: 'Aceite de oliva'),
+    ]);
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // HomeScreen shows compact Spanish sales alert banner for matched items
+    expect(find.byKey(const ValueKey('sales_alert_banner')), findsOneWidget);
+    expect(find.text('Ver ofertas'), findsOneWidget);
+
+    // Open SupermarketDealsScreen from the banner
+    await tester.tap(find.text('Ver ofertas'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ofertas del supermercado'), findsOneWidget);
+    expect(find.text('Milanesa Pollo Rey'), findsOneWidget);
+    expect(find.text('Q 17.55'), findsOneWidget);
+    expect(find.text('Q 23.45'), findsOneWidget);
+
+    // Add matched frequent ingredient (Pollo) to Por comprar
+    await tester.tap(find.widgetWithText(FilledButton, 'Agregar').first);
+    await tester.pumpAndSettle();
+
+    final updatedList = await shopping.getIngredients();
+    expect(
+      updatedList.any((item) => item.name.toLowerCase() == 'pollo'),
+      isTrue,
+    );
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+  });
 }

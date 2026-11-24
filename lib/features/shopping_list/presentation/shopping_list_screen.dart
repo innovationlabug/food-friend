@@ -10,6 +10,10 @@ import '../../nutrition/data/health_goal_storage_service.dart';
 import '../../recipes/data/external_recipe_service.dart';
 import '../../recipes/data/recipe_history_service.dart';
 import '../../recipes/presentation/recipe_suggestions_screen.dart';
+import '../../sales/data/sales_matcher_service.dart';
+import '../../sales/data/sales_service.dart';
+import '../../sales/presentation/supermarket_deals_screen.dart';
+import '../../sales/presentation/widgets/sales_alert_banner.dart';
 import '../data/shopping_list_storage_service.dart';
 import '../data/shopping_suggestion_service.dart';
 import '../domain/shopping_suggestion.dart';
@@ -26,6 +30,8 @@ class ShoppingListScreen extends StatefulWidget {
     this.historyService,
     this.healthGoalStorageService,
     this.suggestionService,
+    this.salesService,
+    this.salesMatcherService,
     this.initialTab = 0,
   });
 
@@ -47,6 +53,12 @@ class ShoppingListScreen extends StatefulWidget {
   /// Optional smart shopping suggestion engine for testing.
   final ShoppingSuggestionService? suggestionService;
 
+  /// Optional sales service for testing supermarket offers.
+  final SalesService? salesService;
+
+  /// Optional sales matcher service for testing supermarket offer matching.
+  final SalesMatcherService? salesMatcherService;
+
   /// Initial tab index: 0 = Mis ingredientes, 1 = Por comprar.
   final int initialTab;
 
@@ -62,11 +74,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
   late final RecipeHistoryService _historyService;
   late final HealthGoalStorageService _healthGoalStorageService;
   late final ShoppingSuggestionService _suggestionService;
+  late final SalesService _salesService;
+  late final SalesMatcherService _salesMatcherService;
 
   List<Ingredient> _ingredients = [];
   List<Ingredient> _shoppingListItems = [];
   List<ShoppingSuggestion> _suggestions = [];
   ShoppingSuggestionsContext? _suggestionsContext;
+  SalesMatchReport? _salesReport;
   final Set<String> _selectedIngredientNames = {};
   bool _isLoading = true;
   int _activeTabIndex = 0;
@@ -87,6 +102,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
           shoppingListService: _shoppingListService,
           historyService: _historyService,
           healthGoalStorageService: _healthGoalStorageService,
+        );
+    _salesService = widget.salesService ?? SalesService();
+    _salesMatcherService = widget.salesMatcherService ??
+        SalesMatcherService(
+          salesService: _salesService,
+          ingredientStorageService: _storageService,
+          shoppingListService: _shoppingListService,
+          historyService: _historyService,
         );
     _activeTabIndex = widget.initialTab.clamp(0, 1);
     _tabController = TabController(
@@ -122,17 +145,20 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
       _storageService.getIngredients(),
       _shoppingListService.getIngredients(),
       _suggestionService.loadContext(),
+      _salesMatcherService.loadAndMatch(),
     ]);
 
     final items = results[0] as List<Ingredient>;
     final toBuy = results[1] as List<Ingredient>;
     final contextSnapshot = results[2] as ShoppingSuggestionsContext;
+    final salesReport = results[3] as SalesMatchReport;
 
     if (mounted) {
       setState(() {
         _ingredients = items;
         _shoppingListItems = toBuy;
         _suggestionsContext = contextSnapshot;
+        _salesReport = salesReport;
         _suggestions = _computeSuggestions(items, toBuy, contextSnapshot);
         // Default newly loaded available ingredients to selected
         for (final item in items) {
@@ -170,6 +196,33 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
       _shoppingListItems,
       _suggestionsContext,
     );
+    final currentSales = _salesReport;
+    final contextSnapshot = _suggestionsContext;
+    if (currentSales != null && contextSnapshot != null) {
+      _salesReport = _salesMatcherService.matchDeals(
+        deals: currentSales.allDeals.map((d) => d.deal).toList(),
+        pantryIngredients: _ingredients,
+        shoppingListIngredients: _shoppingListItems,
+        recipes: contextSnapshot.recipes,
+        history: contextSnapshot.history,
+        favoriteSupermarketId: currentSales.favoriteSupermarketId,
+      );
+    }
+  }
+
+  Future<void> _openSupermarketDeals() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SupermarketDealsScreen(
+          salesService: _salesService,
+          salesMatcherService: _salesMatcherService,
+          shoppingListService: _shoppingListService,
+        ),
+      ),
+    );
+    if (mounted) {
+      await _loadIngredients();
+    }
   }
 
   Future<void> _openAddIngredientScreen() async {
@@ -614,9 +667,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
   Widget _buildShoppingEmptyWithSuggestionsState(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final salesReport = _salesReport;
 
     return ListView(
       children: [
+        if (salesReport != null && salesReport.hasMatches) ...[
+          SalesAlertBanner(
+            report: salesReport,
+            onTapViewDeals: _openSupermarketDeals,
+          ),
+          const SizedBox(height: 16),
+        ],
         Card(
           margin: EdgeInsets.zero,
           child: Padding(
@@ -818,9 +879,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
   Widget _buildShoppingListView(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final salesReport = _salesReport;
 
     return ListView(
       children: [
+        if (salesReport != null && salesReport.hasMatches) ...[
+          SalesAlertBanner(
+            report: salesReport,
+            onTapViewDeals: _openSupermarketDeals,
+          ),
+          const SizedBox(height: 14),
+        ],
         Padding(
           padding: const EdgeInsets.only(bottom: 10, top: 2),
           child: Row(
@@ -861,6 +930,18 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
           SmartShoppingSuggestionsSection(
             suggestions: _suggestions,
             onAddIngredient: _addSuggestedIngredient,
+          ),
+        ],
+        if (salesReport != null && !salesReport.hasMatches) ...[
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _openSupermarketDeals,
+            icon: AppSvgIcon(
+              assetName: 'store',
+              size: 18,
+              color: colorScheme.primary,
+            ),
+            label: const Text('Explorar ofertas del supermercado'),
           ),
         ],
         const SizedBox(height: 16),

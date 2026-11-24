@@ -13,6 +13,7 @@ import 'features/recipes/data/local_recipe_dataset.dart';
 import 'features/recipes/presentation/recipe_detail_screen.dart';
 import 'features/recipes/presentation/recipe_management_screen.dart';
 import 'features/recipes/presentation/recipe_suggestions_screen.dart';
+import 'features/sales/presentation/supermarket_deals_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/shopping_list/presentation/shopping_list_screen.dart';
 
@@ -61,6 +62,8 @@ class _FoodFriendAppState extends State<FoodFriendApp> {
         return const RecipeManagementScreen();
       case 'nutrition':
         return const NutritionTipsScreen();
+      case 'sales':
+        return const SupermarketDealsScreen();
       case 'settings':
         return const SettingsScreen();
       default:

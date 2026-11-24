@@ -14,13 +14,21 @@ import '../../nutrition/domain/nutrition_tip.dart';
 import '../../nutrition/presentation/nutrition_tips_screen.dart';
 import '../../recipes/presentation/recipe_management_screen.dart';
 import '../../recipes/presentation/recipe_suggestions_screen.dart';
+import '../../sales/data/sales_matcher_service.dart';
+import '../../sales/presentation/supermarket_deals_screen.dart';
+import '../../sales/presentation/widgets/sales_alert_banner.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 
 /// Main landing shell screen for Food Friend.
 /// Displays all primary navigation panels simultaneously with dynamic sizing
 /// driven by whether the user already has ingredients in their pantry.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.salesMatcherService,
+  });
+
+  final SalesMatcherService? salesMatcherService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -32,8 +40,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       IngredientStorageService();
   final HealthGoalStorageService _healthGoalStorageService =
       HealthGoalStorageService();
+  late final SalesMatcherService _salesMatcherService =
+      widget.salesMatcherService ?? SalesMatcherService();
 
   NutritionReport? _nutritionReport;
+  SalesMatchReport? _salesReport;
   Set<HealthGoal> _activeGoals = <HealthGoal>{};
   int _ingredientCount = 0;
 
@@ -69,12 +80,14 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       _ingredientStorageService.getIngredients(),
       _healthGoalStorageService.getSelectedGoals(),
       SettingsController.instance.load(),
+      _salesMatcherService.loadAndMatch(),
     ]);
     if (!mounted) return;
     setState(() {
       _nutritionReport = results[0] as NutritionReport;
       _ingredientCount = (results[1] as List).length;
       _activeGoals = results[2] as Set<HealthGoal>;
+      _salesReport = results[4] as SalesMatchReport;
     });
   }
 
@@ -181,12 +194,25 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final canFitInViewport = constraints.maxHeight >= 480;
+                  final salesReport = _salesReport;
+                  final hasSalesAlert = salesReport != null && salesReport.hasMatches;
+                  final canFitInViewport =
+                      constraints.maxHeight >= (hasSalesAlert ? 640 : 480);
                   if (canFitInViewport) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildHeroHeader(context),
+                        if (hasSalesAlert) ...[
+                          const SizedBox(height: 10),
+                          SalesAlertBanner(
+                            report: salesReport,
+                            compact: true,
+                            onTapViewDeals: () => _pushAndRefresh(
+                              const SupermarketDealsScreen(),
+                            ),
+                          ),
+                        ],
                         SizedBox(height: context.isMobile ? 12 : 18),
                         Expanded(
                           child: _buildDynamicPanelGrid(
@@ -204,6 +230,16 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildHeroHeader(context),
+                        if (hasSalesAlert) ...[
+                          const SizedBox(height: 10),
+                          SalesAlertBanner(
+                            report: salesReport,
+                            compact: true,
+                            onTapViewDeals: () => _pushAndRefresh(
+                              const SupermarketDealsScreen(),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         _buildDynamicPanelGrid(
                           context,
@@ -490,11 +526,13 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            title,
-                            style: titleStyle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          Flexible(
+                            child: Text(
+                              title,
+                              style: titleStyle,
+                              maxLines: constraints.maxHeight < 100 ? 1 : 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           if (showDescription) ...[
                             SizedBox(height: tightHeight ? 2 : 4),
