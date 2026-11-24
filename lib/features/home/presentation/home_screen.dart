@@ -204,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       children: [
                         _buildHeroHeader(context),
                         if (hasSalesAlert) ...[
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           SalesAlertBanner(
                             report: salesReport,
                             compact: true,
@@ -213,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                             ),
                           ),
                         ],
-                        SizedBox(height: context.isMobile ? 12 : 18),
+                        SizedBox(height: context.isMobile ? 10 : 14),
                         Expanded(
                           child: _buildDynamicPanelGrid(
                             context,

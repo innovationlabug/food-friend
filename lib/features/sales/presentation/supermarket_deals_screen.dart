@@ -168,8 +168,6 @@ class _SupermarketDealsScreenState extends State<SupermarketDealsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSummaryHeader(theme, colorScheme, report),
-        const SizedBox(height: 12),
         _buildFilterControls(colorScheme, report),
         const SizedBox(height: 12),
         Expanded(
@@ -178,69 +176,6 @@ class _SupermarketDealsScreenState extends State<SupermarketDealsScreen> {
               : _buildDealsList(context, deals),
         ),
       ],
-    );
-  }
-
-  Widget _buildSummaryHeader(
-    ThemeData theme,
-    ColorScheme colorScheme,
-    SalesMatchReport report,
-  ) {
-    final title = report.hasMatches
-        ? '${report.matchedDeals.length} ofertas para ti'
-        : 'Ofertas en supermercados';
-    final subtitle = report.hasMatches
-        ? 'Ahorro potencial estimado: ${report.formattedTotalSavings}'
-        : 'Agrega ingredientes a "Por comprar" o cocina recetas para recibir alertas personalizadas.';
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: AppSvgIcon(
-                assetName: 'store',
-                size: 22,
-                color: colorScheme.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -267,13 +202,6 @@ class _SupermarketDealsScreenState extends State<SupermarketDealsScreen> {
           InputChip(
             selected: _selectedStoreId == store.id,
             label: Text(store.name),
-            avatar: AppSvgIcon(
-              assetName: store.isFavorite ? 'heart' : 'store',
-              size: 16,
-              color: store.isFavorite
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-            ),
             onSelected: (selected) {
               setState(() {
                 _selectedStoreId = selected ? store.id : null;
@@ -366,6 +294,10 @@ class _SupermarketDealsScreenState extends State<SupermarketDealsScreen> {
     final primaryReason =
         matchedDeal.reasons.isNotEmpty ? matchedDeal.reasons.first.label : null;
 
+    final secondaryPriceStyle = theme.textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
+
     return Card(
       key: ValueKey('supermarket_deal_${deal.id}'),
       margin: EdgeInsets.zero,
@@ -386,32 +318,13 @@ class _SupermarketDealsScreenState extends State<SupermarketDealsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    AppSvgIcon(
-                      assetName: 'store',
-                      size: 16,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        deal.supermarketName,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      '-${deal.discountPercent}%',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: colorScheme.error,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                Text(
+                  deal.supermarketName,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -437,43 +350,41 @@ class _SupermarketDealsScreenState extends State<SupermarketDealsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      deal.formattedSalePrice,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            deal.formattedSalePrice,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
                             deal.formattedRegularPrice,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                            style: secondaryPriceStyle?.copyWith(
                               decoration: TextDecoration.lineThrough,
                             ),
                           ),
+                          Text(
+                            'Ahorras ${deal.formattedSavings}',
+                            style: secondaryPriceStyle,
+                          ),
                         ],
                       ),
-                      Text(
-                        'Ahorras ${deal.formattedSavings}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(height: 12),
                 matchedDeal.isInShoppingList
                     ? FilledButton.tonalIcon(
                         onPressed: null,
@@ -487,7 +398,7 @@ class _SupermarketDealsScreenState extends State<SupermarketDealsScreen> {
                           size: 16,
                           color: colorScheme.onPrimary,
                         ),
-                        label: const Text('Agregar'),
+                        label: const Text('Agregar a lista de compras'),
                       ),
               ],
             ),

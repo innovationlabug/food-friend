@@ -43,7 +43,7 @@ export const CURATED_FALLBACK_DEALS: SupermarketDealRecord[] = [
   {
     id: 'fallback-walmart-aceite-1',
     supermarketId: 'walmart',
-    supermarketName: 'Walmart Guatemala',
+    supermarketName: 'Walmart',
     productName: 'Aceite de Oliva Great Value Extra Virgen - 502 ml',
     brand: 'GREAT VALUE',
     category: 'Abarrotes / Aceites de cocina',
@@ -71,7 +71,7 @@ export const CURATED_FALLBACK_DEALS: SupermarketDealRecord[] = [
   {
     id: 'fallback-walmart-frijol-1',
     supermarketId: 'walmart',
-    supermarketName: 'Walmart Guatemala',
+    supermarketName: 'Walmart',
     productName: 'Frijol negro La Chula volteados - 1000 g',
     brand: 'LA CHULA',
     category: 'Abarrotes / Frijoles',
@@ -99,7 +99,7 @@ export const CURATED_FALLBACK_DEALS: SupermarketDealRecord[] = [
   {
     id: 'fallback-walmart-queso-1',
     supermarketId: 'walmart',
-    supermarketName: 'Walmart Guatemala',
+    supermarketName: 'Walmart',
     productName: 'Queso Trebolac Panela - 220 g',
     brand: 'TREBOLAC',
     category: 'Lácteos / Queso Fresco',
@@ -113,7 +113,7 @@ export const CURATED_FALLBACK_DEALS: SupermarketDealRecord[] = [
   {
     id: 'fallback-walmart-leche-1',
     supermarketId: 'walmart',
-    supermarketName: 'Walmart Guatemala',
+    supermarketName: 'Walmart',
     productName: 'Leche Semidescremada Dos Pinos Delactomy 3 Pack',
     brand: 'DOS PINOS',
     category: 'Lácteos / Leche',
@@ -155,7 +155,7 @@ export const CURATED_FALLBACK_DEALS: SupermarketDealRecord[] = [
   {
     id: 'fallback-walmart-tomate-1',
     supermarketId: 'walmart',
-    supermarketName: 'Walmart Guatemala',
+    supermarketName: 'Walmart',
     productName: 'Tomate Killios Pelado Entero - 800 g',
     brand: 'KILLIOS',
     category: 'Abarrotes / Vegetales Enlatados',

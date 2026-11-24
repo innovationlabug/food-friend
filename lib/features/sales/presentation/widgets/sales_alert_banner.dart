@@ -25,9 +25,13 @@ class SalesAlertBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final count = report.matchedDeals.length;
-    final title = count == 1
-        ? '1 oferta en tus ingredientes'
-        : '$count ofertas en tus ingredientes';
+    final title = compact
+        ? (count == 1
+            ? '1 oferta en tus ingredientes frecuentes'
+            : '$count ofertas en tus ingredientes frecuentes')
+        : (count == 1
+            ? '1 oferta en tus ingredientes'
+            : '$count ofertas en tus ingredientes');
 
     final subtitle = report.shoppingListMatchesCount > 0
         ? '${report.shoppingListMatchesCount} en Por comprar • Ahorra hasta ${report.formattedTotalSavings}'
@@ -39,34 +43,34 @@ class SalesAlertBanner extends StatelessWidget {
       elevation: 0,
       color: colorScheme.primaryContainer.withValues(alpha: 0.55),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(compact ? 12 : 14),
         side: BorderSide(
           color: colorScheme.primary.withValues(alpha: 0.35),
         ),
       ),
       child: InkWell(
         onTap: onTapViewDeals,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(compact ? 12 : 14),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 14,
-            vertical: compact ? 10 : 12,
+            horizontal: compact ? 10 : 14,
+            vertical: compact ? 6 : 12,
           ),
           child: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(compact ? 7 : 9),
+                padding: EdgeInsets.all(compact ? 6 : 9),
                 decoration: BoxDecoration(
                   color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(compact ? 8 : 10),
                 ),
                 child: AppSvgIcon(
                   assetName: 'store',
-                  size: compact ? 18 : 20,
+                  size: compact ? 16 : 20,
                   color: colorScheme.onPrimary,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: compact ? 10 : 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,7 +79,7 @@ class SalesAlertBanner extends StatelessWidget {
                     Text(
                       title,
                       style: (compact
-                              ? theme.textTheme.titleSmall
+                              ? theme.textTheme.bodyMedium
                               : theme.textTheme.titleMedium)
                           ?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -84,15 +88,17 @@ class SalesAlertBanner extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                    if (!compact) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: compact ? 1 : 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -101,7 +107,14 @@ class SalesAlertBanner extends StatelessWidget {
                 onPressed: onTapViewDeals,
                 style: FilledButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  minimumSize: compact ? Size.zero : null,
+                  tapTargetSize: compact
+                      ? MaterialTapTargetSize.shrinkWrap
+                      : MaterialTapTargetSize.padded,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 10 : 12,
+                    vertical: compact ? 6 : 8,
+                  ),
                 ),
                 child: const Text('Ver ofertas'),
               ),

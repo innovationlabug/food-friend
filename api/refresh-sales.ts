@@ -45,7 +45,7 @@ interface SupermarketConfig {
 
 const SUPERMARKETS: SupermarketConfig[] = [
   { id: 'latorre', name: 'La Torre', baseUrl: 'https://www.latorre.com.gt' },
-  { id: 'walmart', name: 'Walmart Guatemala', baseUrl: 'https://www.walmart.com.gt' },
+  { id: 'walmart', name: 'Walmart', baseUrl: 'https://www.walmart.com.gt' },
 ];
 
 const STAPLE_INGREDIENT_QUERIES = [

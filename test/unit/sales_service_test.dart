@@ -65,7 +65,7 @@ void main() {
               {
                 'id': 'live-1',
                 'supermarketId': 'walmart',
-                'supermarketName': 'Walmart Guatemala',
+                'supermarketName': 'Walmart',
                 'productName': 'Aceite de Oliva Great Value - 502 ml',
                 'regularPriceGtq': 36.25,
                 'salePriceGtq': 18.13,
@@ -82,7 +82,7 @@ void main() {
       final service = SalesService(client: mockClient);
       final first = await service.fetchDeals();
       expect(first.deals.length, 1);
-      expect(first.deals.first.supermarketName, 'Walmart Guatemala');
+      expect(first.deals.first.supermarketName, 'Walmart');
       expect(first.isFallback, isFalse);
       expect(httpCalls, 1);
 

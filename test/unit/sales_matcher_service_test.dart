@@ -21,7 +21,7 @@ void main() {
       SupermarketDeal(
         id: 'deal-aceite',
         supermarketId: 'walmart',
-        supermarketName: 'Walmart Guatemala',
+        supermarketName: 'Walmart',
         productName: 'Aceite de Oliva Great Value Extra Virgen',
         category: 'Abarrotes / Aceites',
         regularPriceGtq: 36.25,

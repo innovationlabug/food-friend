@@ -143,7 +143,7 @@ test('FEAT-5 /api/refresh-sales: rejects unsupported methods with 405', async ()
 test('FEAT-5 scraper: filters out non-food categories and zero-price items', () => {
   const store = {
     id: 'walmart',
-    name: 'Walmart Guatemala',
+    name: 'Walmart',
     baseUrl: 'https://www.walmart.com.gt',
   };
 

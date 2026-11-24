@@ -764,7 +764,9 @@ void main() {
     expect(find.text('Q 23.45'), findsOneWidget);
 
     // Add matched frequent ingredient (Pollo) to Por comprar
-    await tester.tap(find.widgetWithText(FilledButton, 'Agregar').first);
+    await tester.tap(
+      find.widgetWithText(FilledButton, 'Agregar a lista de compras').first,
+    );
     await tester.pumpAndSettle();
 
     final updatedList = await shopping.getIngredients();

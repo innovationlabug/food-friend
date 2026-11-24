@@ -68,10 +68,14 @@ class SupermarketDeal {
         ? toInt(json['discountPercent'])
         : (reg > 0 && reg > sale ? (((reg - sale) / reg) * 100).round() : 0);
 
+    final rawStoreName = json['supermarketName']?.toString() ?? 'Supermercado';
+    final normalizedStoreName =
+        rawStoreName == 'Walmart Guatemala' ? 'Walmart' : rawStoreName;
+
     return SupermarketDeal(
       id: json['id']?.toString() ?? '',
       supermarketId: json['supermarketId']?.toString() ?? '',
-      supermarketName: json['supermarketName']?.toString() ?? 'Supermercado',
+      supermarketName: normalizedStoreName,
       productName: json['productName']?.toString() ?? '',
       brand: json['brand']?.toString() ?? '',
       category: json['category']?.toString() ?? '',

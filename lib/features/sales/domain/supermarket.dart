@@ -42,6 +42,6 @@ class Supermarket {
   /// Default directory of supported Guatemalan supermarket chains.
   static const List<Supermarket> knownSupermarkets = [
     Supermarket(id: 'latorre', name: 'La Torre'),
-    Supermarket(id: 'walmart', name: 'Walmart Guatemala'),
+    Supermarket(id: 'walmart', name: 'Walmart'),
   ];
 }
