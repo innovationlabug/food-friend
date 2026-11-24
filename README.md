@@ -1,5 +1,7 @@
 # Food Friend
 
+**Aplicación Web en vivo:** [https://food-friend-nine.vercel.app/](https://food-friend-nine.vercel.app/)
+
 **Food Friend** es un asistente inteligente de cocina, compras y nutrición diseñado para hogares en Guatemala y Latinoamérica. Permite administrar los ingredientes disponibles en casa, organizar una lista de compras independiente, descubrir recetas saludables con variaciones culinarias y recibir consejos nutricionales personalizados a partir de las comidas preparadas, operando de forma rápida, privada y con soporte sin conexión (*Offline-First*) en **Web** y **Android**.
 
 ---
@@ -81,7 +83,7 @@ Resumen comparativo basado en [`COMPETITIVE_ANALYSIS.md`](COMPETITIVE_ANALYSIS.m
 | **Seguimiento y alertas de fechas de vencimiento** | Disponible en *KitchenPal* | Modelo de datos preparado (`expirationDate`); interfaz de alertas programada | **Pendiente** |
 | **Filtros por tiempo máximo de cocción** | Disponible en *SuperCook* | Tiempos mostrados en cada receta; filtro por minutos programado | **Pendiente** |
 | **Notificaciones por cercanía (*GPS* local) a mercados** | No disponible en competidores | Planeado con procesamiento estrictamente local en el dispositivo | **Pendiente** |
-| **Detección de ofertas locales vía *web scraping*** | No disponible en Guatemala | Planeado para cadenas de supermercados locales | **Pendiente** |
+| **Detección de ofertas locales vía *web scraping*** | No disponible en Guatemala | Ofertas programadas en Vercel (`/api/sales` + Vercel Blob) para La Torre y Walmart GT con precios en `GTQ` | **Implementado** |
 
 ---
 
@@ -99,6 +101,7 @@ npm install
 Cree un archivo `.env.local` en la raíz a partir de `.env.example`:
 ```env
 GEMINI_API_KEY=tu_clave_de_google_ai_studio
+BLOB_READ_WRITE_TOKEN=tu_token_de_vercel_blob
 PORT=3000
 ```
 
@@ -117,7 +120,7 @@ flutter test
 ```
 
 ### 5. Desplegar en Producción
-- **Web y *Serverless Functions* (Vercel):** Importe el repositorio en Vercel (el archivo `vercel.json` y `scripts/build-vercel.sh` compilan Flutter Web y publican `/api/*` automáticamente) o ejecute `npx vercel --prod`. Configure `GEMINI_API_KEY` en las variables de entorno del proyecto.
+- **Web y *Serverless Functions* (Vercel):** Disponible en [https://food-friend-nine.vercel.app/](https://food-friend-nine.vercel.app/). Importe el repositorio en Vercel (el archivo `vercel.json` y `scripts/build-vercel.sh` compilan Flutter Web, publican `/api/*` y programan el *cron* diario `/api/refresh-sales` automáticamente) o ejecute `npx vercel --prod`. Configure `GEMINI_API_KEY` y `BLOB_READ_WRITE_TOKEN` en las variables de entorno del proyecto.
 - **Android (`APK`):** Ejecute `flutter build apk --release` para generar el instalador en `build/app/outputs/flutter-apk/app-release.apk`.
 
 ---
