@@ -577,6 +577,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return Container(
+      key: const ValueKey('recipe_goal_alignment_card'),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer.withValues(alpha: 0.35),
@@ -609,28 +610,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
           const SizedBox(height: 8),
           for (int i = 0; i < _goalMatch.reasons.length; i++) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: AppSvgIcon(
-                    assetName: _goalMatch.reasons[i].goal.iconName,
-                    size: 15,
-                    color: colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _goalMatch.reasons[i].message,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-              ],
+            Text(
+              _goalMatch.reasons[i].message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+                height: 1.35,
+              ),
             ),
             if (i < _goalMatch.reasons.length - 1) const SizedBox(height: 6),
           ],

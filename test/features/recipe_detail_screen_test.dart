@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:food_friend/core/widgets/app_svg_icon.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
 import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
@@ -802,6 +803,17 @@ void main() {
       );
       expect(
         find.text('El güisquil contiene pocas calorías y aporta fibra'),
+        findsOneWidget,
+      );
+
+      // Only one icon max in the health-goal alignment card even with multiple reasons
+      final goalCard = find.byKey(const ValueKey('recipe_goal_alignment_card'));
+      expect(goalCard, findsOneWidget);
+      expect(
+        find.descendant(
+          of: goalCard,
+          matching: find.byWidgetPredicate((w) => w is AppSvgIcon || w is Icon),
+        ),
         findsOneWidget,
       );
     });
