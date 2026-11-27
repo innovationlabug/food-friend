@@ -3,6 +3,7 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/ingredients/data/ingredient_storage_service.dart';
 import '../../features/ingredients/presentation/add_ingredient_screen.dart';
 import '../../features/nutrition/presentation/nutrition_tips_screen.dart';
+import '../../features/recipes/presentation/multi_day_planner_screen.dart';
 import '../../features/recipes/presentation/recipe_management_screen.dart';
 import '../../features/recipes/presentation/recipe_suggestions_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
@@ -20,6 +21,7 @@ enum AppDestination {
   shoppingList,
   addIngredients,
   recipeSuggestions,
+  multiDayPlanner,
   recipeManagement,
   nutritionTips,
 }
@@ -174,6 +176,11 @@ class AppNavigationDrawer extends StatelessWidget {
       targetScreen = RecipeSuggestionsScreen(
         selectedIngredientNames: ingredients.map((i) => i.name).toList(),
       );
+    } else if (destination == AppDestination.multiDayPlanner) {
+      final ingredients = await IngredientStorageService().getIngredients();
+      targetScreen = MultiDayPlannerScreen(
+        initialIngredientNames: ingredients.map((i) => i.name).toList(),
+      );
     } else {
       targetScreen = switch (destination) {
         AppDestination.home => const HomeScreen(),
@@ -183,6 +190,7 @@ class AppNavigationDrawer extends StatelessWidget {
         AppDestination.recipeSuggestions => const RecipeSuggestionsScreen(
             selectedIngredientNames: [],
           ),
+        AppDestination.multiDayPlanner => const MultiDayPlannerScreen(),
         AppDestination.recipeManagement => const RecipeManagementScreen(),
         AppDestination.nutritionTips => const NutritionTipsScreen(),
       };
@@ -212,12 +220,16 @@ class AppNavigationDrawer extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return NavigationDrawer(
-      selectedIndex: _selectedIndex,
-      onDestinationSelected: (index) => _navigateTo(context, index),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 16, 8),
+    return NavigationDrawerTheme(
+      data: theme.navigationDrawerTheme.copyWith(
+        tileHeight: 44,
+      ),
+      child: NavigationDrawer(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) => _navigateTo(context, index),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 16, 6),
           child: Row(
             children: [
               Container(
@@ -323,6 +335,19 @@ class AppNavigationDrawer extends StatelessWidget {
         ),
         NavigationDrawerDestination(
           icon: AppSvgIcon(
+            assetName: 'calendar',
+            size: 20,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          selectedIcon: AppSvgIcon(
+            assetName: 'calendar',
+            size: 20,
+            color: colorScheme.onSecondaryContainer,
+          ),
+          label: _drawerLabel('Planificador de comidas'),
+        ),
+        NavigationDrawerDestination(
+          icon: AppSvgIcon(
             assetName: 'book',
             size: 20,
             color: colorScheme.onSurfaceVariant,
@@ -377,7 +402,7 @@ class AppNavigationDrawer extends StatelessWidget {
         ),
         const Divider(height: 1, indent: 24, endIndent: 24),
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
+          padding: const EdgeInsets.fromLTRB(24, 6, 24, 8),
           child: ListenableBuilder(
             listenable: ThemeController.instance,
             builder: (context, _) {
@@ -392,7 +417,7 @@ class AppNavigationDrawer extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   SegmentedButton<ThemeMode>(
                     showSelectedIcon: false,
                     segments: const [
@@ -420,6 +445,7 @@ class AppNavigationDrawer extends StatelessWidget {
           ),
         ),
       ],
+    ),
     );
   }
 }

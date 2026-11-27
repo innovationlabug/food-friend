@@ -10,6 +10,7 @@ import 'features/ingredients/presentation/fridge_scanner_screen.dart';
 import 'features/ingredients/presentation/receipt_scanner_screen.dart';
 import 'features/nutrition/presentation/nutrition_tips_screen.dart';
 import 'features/recipes/data/local_recipe_dataset.dart';
+import 'features/recipes/presentation/multi_day_planner_screen.dart';
 import 'features/recipes/presentation/recipe_detail_screen.dart';
 import 'features/recipes/presentation/recipe_management_screen.dart';
 import 'features/recipes/presentation/recipe_suggestions_screen.dart';
@@ -56,6 +57,8 @@ class _FoodFriendAppState extends State<FoodFriendApp> {
         return const ReceiptScannerScreen();
       case 'recipes':
         return const RecipeSuggestionsScreen(selectedIngredientNames: ['Pollo', 'Tomate', 'Cebolla']);
+      case 'planner':
+        return const MultiDayPlannerScreen(initialIngredientNames: ['Pollo', 'Tomate', 'Cebolla']);
       case 'detail':
         return RecipeDetailScreen(recipe: LocalRecipeDataset.instance.recipes.first);
       case 'recipe_management':

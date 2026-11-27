@@ -12,6 +12,7 @@ import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
 import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
+import 'package:food_friend/features/recipes/presentation/multi_day_planner_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
 import 'package:food_friend/features/shopping_list/data/shopping_list_storage_service.dart';
@@ -947,5 +948,103 @@ void main() {
     // Cleanup
     await pantry.clearIngredients();
     await priceStorage.clearPrices();
+  });
+
+  testWidgets(
+      'E2E integration test FEAT-9: plans 2–7 cooking days with variations, prioritizes shared pantry ingredients, and adds missing items to Por comprar without duplicates',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final shopping = ShoppingListStorageService(pantryStorageService: pantry);
+    final history = RecipeHistoryService(ingredientStorageService: pantry);
+    final goalStorage = HealthGoalStorageService();
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
+    await goalStorage.clearGoals();
+
+    await pantry.saveIngredients(const [
+      Ingredient(name: 'Pollo'),
+      Ingredient(name: 'Tomate'),
+      Ingredient(name: 'Cebolla blanca'),
+      Ingredient(name: 'Ajo'),
+      Ingredient(name: 'Güisquil'),
+      Ingredient(name: 'Papa'),
+    ]);
+    await goalStorage.saveSelectedGoals({
+      HealthGoal.gainMuscle,
+      HealthGoal.loseWeight,
+    });
+    await history.setPreference('hilachas_res', RecipePreference.never);
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    // Navigate to Available Ingredients -> Buscar recetas -> Planificar 2–7 días
+    await tester.tap(find.text('Ingredientes disponibles').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Buscar recetas'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('open_multi_day_planner_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MultiDayPlannerScreen), findsOneWidget);
+    expect(find.text('Planificador de comidas'), findsOneWidget);
+    expect(find.text('¿Para cuántos días quieres cocinar?'), findsOneWidget);
+
+    // Select 5 days
+    await tester.tap(find.byKey(const ValueKey('day_count_chip_5')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Plan de 5 días con variaciones'), findsOneWidget);
+    expect(find.textContaining('Ingredientes compartidos:'), findsOneWidget);
+    expect(find.text('Hilachas de Res Saludables'), findsNothing);
+
+    final outerScrollable = find.byType(Scrollable).first;
+    for (int d = 1; d <= 5; d++) {
+      final dayFinder = find.byKey(ValueKey('meal_plan_day_$d'));
+      await tester.scrollUntilVisible(
+        dayFinder,
+        250,
+        scrollable: outerScrollable,
+      );
+      expect(dayFinder, findsOneWidget);
+    }
+
+    // Add consolidated missing ingredients to Por comprar in one tap
+    final addMissingBtn = find.byKey(const ValueKey('add_all_plan_missing_button'));
+    await tester.scrollUntilVisible(
+      addMissingBtn,
+      250,
+      scrollable: outerScrollable,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(addMissingBtn);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Todos los faltantes están en Lista de compras'),
+      findsOneWidget,
+    );
+
+    final queuedItems = await shopping.getIngredients();
+    expect(queuedItems, isNotEmpty);
+    final uniqueNames = queuedItems.map((i) => i.name.toLowerCase()).toSet();
+    expect(uniqueNames.length, equals(queuedItems.length));
+
+    // Verify items appear in Lista de compras via navigation drawer
+    await tester.tap(find.byTooltip('Menú de navegación'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lista de compras'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Por comprar (${queuedItems.length})'), findsOneWidget);
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await shopping.clearIngredients();
+    await history.clearHistory();
+    await goalStorage.clearGoals();
   });
 }

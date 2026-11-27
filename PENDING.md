@@ -37,8 +37,8 @@ A consolidated checklist of remaining items across [SPEC.md](file:///c:/Users/lu
   - Marked as out of scope in `SPEC.md`, `FEATURES.md`, `PLANNING.md`, and `README.md` (per Issue #2).
 - [ ] **Slowly consumed ingredients — amount & expiration tracking (`SPEC.md` `[PENDING]`):**
   - [ ] Add UI and logic to view/edit `amountValue`, `amountUnit`, `expirationDate`, and `isBestBefore` (fields already exist in `Ingredient` model) for spices, sauces, and pantry staples, plus low-stock / expiration alerts.
-- [ ] **Multi-day cooking planner (`SPEC.md` / `FEAT-9`):**
-  - [ ] Allow the user to indicate how many days they want to cook for and suggest a multi-day meal/variation plan (planned in `FEATURES.md` under `FEAT-9`).
+- [x] **Multi-day cooking planner (`SPEC.md` / `FEAT-9`):**
+  - [x] Allow the user to indicate how many days they want to cook for and suggest a multi-day meal/variation plan (implemented in `FEATURES.md` under `FEAT-9`).
 - [ ] **Real Android device testing (`SPEC.md` *Next week plan*):**
   - [ ] Build and test camera, gallery, local storage, and responsive layouts on physical Android phones.
 

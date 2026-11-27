@@ -23,6 +23,7 @@ import '../data/recipe_search_service.dart';
 import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
 import '../domain/recipe_time_filter.dart';
+import 'multi_day_planner_screen.dart';
 import 'recipe_detail_screen.dart';
 
 /// Screen presenting recipe suggestions generated from the user's selected ingredients.
@@ -410,6 +411,29 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
           'Recetas sugeridas',
           overflow: TextOverflow.ellipsis,
         ),
+        actions: [
+          if (MediaQuery.sizeOf(context).width >= 480)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton.icon(
+                key: const ValueKey('open_multi_day_planner_button'),
+                onPressed: () => _openMultiDayPlanner(),
+                icon: AppSvgIcon(
+                  assetName: 'calendar',
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                label: const Text('Planificar días'),
+              ),
+            )
+          else
+            IconButton(
+              key: const ValueKey('open_multi_day_planner_button'),
+              tooltip: 'Planificar varios días',
+              icon: const AppSvgIcon(assetName: 'calendar', size: 22),
+              onPressed: () => _openMultiDayPlanner(),
+            ),
+        ],
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -651,6 +675,30 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _openMultiDayPlanner({int initialDaysCount = 3}) async {
+    final previousPantryNorms = _pantryIngredients
+        .map((item) => StringNormalizer.normalize(item.name))
+        .toSet();
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MultiDayPlannerScreen(
+          initialIngredientNames: _selectedIngredientNames,
+          initialDaysCount: initialDaysCount,
+          initialCategory: _selectedCategory,
+          initialTimeFilter: _selectedTimeFilter,
+          ingredientStorageService: _ingredientStorageService,
+          shoppingListService: _shoppingListService,
+          historyService: _historyService,
+          healthGoalStorageService: _healthGoalStorageService,
+          priceStorageService: _priceStorageService,
+          salesService: _salesService,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    await _refreshAfterRecipeDetail(previousPantryNorms);
   }
 
   Future<void> _openNutritionGoals() async {
@@ -1372,6 +1420,17 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                   ),
                   label: const Text('Ver todas las recetas'),
                 ),
+                const SizedBox(height: 4),
+                TextButton.icon(
+                  key: const ValueKey('empty_multi_day_planner_button'),
+                  onPressed: () => _openMultiDayPlanner(),
+                  icon: AppSvgIcon(
+                    assetName: 'calendar',
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  label: const Text('Planificar varios días'),
+                ),
               ] else ...[
                 FilledButton.icon(
                   onPressed: _showAllLocalRecipes,
@@ -1391,6 +1450,17 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                     color: colorScheme.primary,
                   ),
                   label: const Text('Ir a mis ingredientes'),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  key: const ValueKey('empty_multi_day_planner_button'),
+                  onPressed: () => _openMultiDayPlanner(),
+                  icon: AppSvgIcon(
+                    assetName: 'calendar',
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  label: const Text('Planificar varios días'),
                 ),
               ],
             ],
