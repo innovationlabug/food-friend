@@ -223,9 +223,9 @@ Although `SPEC.md` notes that the app has been deployed to Vercel, `README.md` h
 
 ---
 
-## - [ ] FEAT-9: Multi-Day Cooking Planner & Variation Scheduling
+## - [x] FEAT-9: Multi-Day Cooking Planner & Variation Scheduling
 - **Source:** `SPEC.md` (*Key functionalities* — "User may indicate how many days they want to cook for, and the app can give them suggestions on variations") & `PLANNING.md` (*Iteration 0 / Week 2* — "Recipe variations in case the user wants to cook for many meals at a time")
-- **Status:** Open (`iteration-3`)
+- **Status:** Completed (`iteration-3`)
 - **Suggested Branch:** `feat/multi-day-cooking-planner`
 
 ### Product Problem
@@ -244,7 +244,7 @@ In `SPEC.md`, users cooking for multiple days (e.g., planning lunches or dinners
    - Allow one-tap addition of missing ingredients directly to `"Por comprar"` without creating duplicates.
 
 ### Acceptance Criteria (Definition of Done)
-- [ ] Users can select how many days they want to cook for (`2–7` days) and view a structured day-by-day meal and variation plan in Spanish.
-- [ ] The planner prioritizes shared pantry ingredients across days while rotating recipes/variations to avoid consecutive repetition, respecting `Nunca` exclusions and active health goals.
-- [ ] Missing ingredients across the multi-day plan are aggregated and can be added to `"Por comprar"` in one tap without duplicates.
-- [ ] All UI text is in Spanish using Material 3 + SVG icons (no emojis or pseudo-metadata badges), runs deterministically on device with zero extra LLM calls, and is covered by unit, widget, and integration tests.
+- [x] Users can select how many days they want to cook for (`2–7` days) and view a structured day-by-day meal and variation plan in Spanish.
+- [x] The planner prioritizes shared pantry ingredients across days while rotating recipes/variations to avoid consecutive repetition, respecting `Nunca` exclusions and active health goals.
+- [x] Missing ingredients across the multi-day plan are aggregated and can be added to `"Por comprar"` in one tap without duplicates.
+- [x] All UI text is in Spanish using Material 3 + SVG icons (no emojis or pseudo-metadata badges), runs deterministically on device with zero extra LLM calls, and is covered by unit, widget, and integration tests.

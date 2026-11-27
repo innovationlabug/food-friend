@@ -8,6 +8,9 @@ import 'package:food_friend/features/nutrition/data/health_goal_storage_service.
 import 'package:food_friend/features/nutrition/domain/health_goal.dart';
 import 'package:food_friend/features/pricing/data/ingredient_price_storage_service.dart';
 import 'package:food_friend/features/recipes/data/external_recipe_service.dart';
+import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
+import 'package:food_friend/features/recipes/domain/recipe_preference.dart';
+import 'package:food_friend/features/recipes/presentation/multi_day_planner_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_management_screen.dart';
 import 'package:food_friend/features/recipes/presentation/recipe_suggestions_screen.dart';
@@ -572,5 +575,77 @@ void main() {
     expect(find.byKey(const ValueKey('takeout_cost_per_serving_text')), findsOneWidget);
     expect(find.byKey(const ValueKey('home_savings_summary_text')), findsOneWidget);
     expect(find.text('Calidad nutricional en casa'), findsOneWidget);
+  });
+
+  testWidgets(
+      'E2E Flow FEAT-9: plans 2-7 days from RecipeSuggestionsScreen, rotates variations, and adds missing items to Por comprar',
+      (WidgetTester tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    final pantry = IngredientStorageService(preferences: prefs);
+    final shopping = ShoppingListStorageService(
+      preferences: prefs,
+      pantryStorageService: pantry,
+    );
+    final history = RecipeHistoryService(
+      preferences: prefs,
+      ingredientStorageService: pantry,
+    );
+    final goalStorage = HealthGoalStorageService(preferences: prefs);
+
+    await pantry.saveIngredients(const [
+      Ingredient(name: 'Pollo'),
+      Ingredient(name: 'Tomate'),
+      Ingredient(name: 'Cebolla blanca'),
+      Ingredient(name: 'Ajo'),
+      Ingredient(name: 'Güisquil'),
+      Ingredient(name: 'Papa'),
+    ]);
+    await goalStorage.saveSelectedGoals({
+      HealthGoal.gainMuscle,
+      HealthGoal.loseWeight,
+    });
+    await history.setPreference('hilachas_res', RecipePreference.never);
+
+    await tester.pumpWidget(const FoodFriendApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ingredientes disponibles').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Buscar recetas'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RecipeSuggestionsScreen), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('open_multi_day_planner_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MultiDayPlannerScreen), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('day_count_chip_5')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Plan de 5 días con variaciones'), findsOneWidget);
+    expect(find.text('Hilachas de Res Saludables'), findsNothing);
+
+    final outerScrollable = find.byType(Scrollable).first;
+    final addMissingBtn = find.byKey(const ValueKey('add_all_plan_missing_button'));
+    await tester.scrollUntilVisible(
+      addMissingBtn,
+      250,
+      scrollable: outerScrollable,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(addMissingBtn);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Todos los faltantes están en Lista de compras'),
+      findsOneWidget,
+    );
+
+    final queued = await shopping.getIngredients();
+    expect(queued, isNotEmpty);
+    expect(
+      queued.map((i) => i.name.toLowerCase()).toSet().length,
+      equals(queued.length),
+    );
   });
 }
