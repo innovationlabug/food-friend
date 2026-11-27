@@ -355,7 +355,7 @@ class BaselineGtqPriceCatalog {
       }
       return (
         label: 'Desayuno típico o con huevos a domicilio',
-        costPerServingGtq: 42.00,
+        costPerServingGtq: 48.00,
       );
     }
 
@@ -363,18 +363,18 @@ class BaselineGtqPriceCatalog {
       if (_matchesAny(ingText, ['camaron', 'salmon'])) {
         return (
           label: 'Ensalada con mariscos a domicilio',
-          costPerServingGtq: 68.00,
+          costPerServingGtq: 65.00,
         );
       }
       if (_matchesAny(ingText, ['pollo', 'pechuga', 'atun'])) {
         return (
           label: 'Ensalada con pollo o atún a domicilio',
-          costPerServingGtq: 58.00,
+          costPerServingGtq: 54.00,
         );
       }
       return (
         label: 'Ensalada fresca o ceviche a domicilio',
-        costPerServingGtq: 48.00,
+        costPerServingGtq: 45.00,
       );
     }
 
@@ -382,12 +382,12 @@ class BaselineGtqPriceCatalog {
       if (_matchesAny(ingText, ['pollo', 'pechuga', 'pescado', 'tilapia'])) {
         return (
           label: 'Caldo o sopa con proteína a domicilio',
-          costPerServingGtq: 52.00,
+          costPerServingGtq: 48.00,
         );
       }
       return (
         label: 'Sopa o crema casera a domicilio',
-        costPerServingGtq: 44.00,
+        costPerServingGtq: 38.00,
       );
     }
 
@@ -395,21 +395,21 @@ class BaselineGtqPriceCatalog {
     if (_matchesAny(ingText, ['salmon', 'camaron', 'robalo'])) {
       return (
         label: 'Plato de mariscos o salmón a domicilio',
-        costPerServingGtq: 82.00,
+        costPerServingGtq: 115.00,
       );
     }
     if (_matchesAny(title, ['pasta']) ||
         _matchesAny(ingText, ['pasta', 'espagueti', 'fideos'])) {
       return (
         label: 'Plato de pasta a domicilio',
-        costPerServingGtq: 55.00,
+        costPerServingGtq: 75.00,
       );
     }
     if (_matchesAny(title, ['pepian', 'hilachas', 'salpicon', 'guiso']) ||
         _matchesAny(title, ['arroz con pollo', 'tortitas de ejote'])) {
       return (
         label: 'Plato típico guatemalteco a domicilio',
-        costPerServingGtq: 56.00,
+        costPerServingGtq: 69.00,
       );
     }
     if (_matchesAny(ingText, [
@@ -421,32 +421,32 @@ class BaselineGtqPriceCatalog {
     ])) {
       return (
         label: 'Plato de res o cerdo a domicilio',
-        costPerServingGtq: 64.00,
+        costPerServingGtq: 89.00,
       );
     }
     if (_matchesAny(ingText, ['filete de pescado', 'tilapia', 'atun'])) {
       return (
         label: 'Plato de pescado a domicilio',
-        costPerServingGtq: 62.00,
+        costPerServingGtq: 75.00,
       );
     }
     if (_matchesAny(ingText, ['pollo', 'pechuga'])) {
       return (
         label: 'Plato de pollo a domicilio',
-        costPerServingGtq: 58.00,
+        costPerServingGtq: 79.00,
       );
     }
     if (_matchesAny(ingText, ['frijoles', 'garbanzos', 'lentejas', 'huevo']) ||
         _matchesAny(title, ['salteado de verduras'])) {
       return (
         label: 'Plato vegetariano o tazón a domicilio',
-        costPerServingGtq: 46.00,
+        costPerServingGtq: 51.00,
       );
     }
 
     return (
       label: 'Plato similar a domicilio',
-      costPerServingGtq: 54.00,
+      costPerServingGtq: 60.00,
     );
   }
 
