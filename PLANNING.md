@@ -192,7 +192,7 @@ This is the updated plan for the third iteration.
     - Give the user notifications on sales. The user will be notified if some ingredient they often use is in sale at some local supermarket.
     - If implemented, on later iterations we will add improvements like recognizing the user's favorite market or supermarket.
 
-- Market and supermarket notifications.
+- Market and supermarket notifications. *(Dropped / Will not be implemented — out of scope per Issue #2.)*
     - First, validate if feasible: Is it possible to get the user location when they are using the app and use it for notifications?
     - Notify the user when they have pending ingredients and they are near a market or supermarket. Have a list of markets and supermarkets stored in the app and notify the user when they are near one.
     - If implemented, on later iterations we will add improvements like recognizing the user's favorite market or supermarket.

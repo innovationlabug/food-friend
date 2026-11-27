@@ -142,47 +142,48 @@ Users in Guatemala want to optimize their food budget by knowing when ingredient
 
 ---
 
-## - [ ] FEAT-6: Feasibility Validation & GPS Proximity Notifications for Markets and Supermarkets
+## ~~FEAT-6: Feasibility Validation & GPS Proximity Notifications for Markets and Supermarkets~~ *(Dropped / Will Not Be Implemented)*
 - **Source:** `PLANNING.md` (*Iteration 3 — Market and supermarket notifications*) & `SPEC.md` (*Next week plan*)
-- **Status:** Open (`iteration-3`)
-- **Suggested Branch:** `feat/market-proximity-notifications`
+- **Status:** Dropped — Will not be implemented (Out of Scope per Issue #2)
+- **Suggested Branch:** `N/A`
+
+> **Scope Decision:** GPS proximity notifications will **not** be implemented. Background location permissions and multi-chain store geofencing work poorly on Web and are outside the project scope. Marked as dropped so it does not appear as pending in future revisions.
 
 ### Product Problem
 Users frequently forget they have pending items on their shopping list (`"Por comprar"`) when passing near a municipal market or supermarket, resulting in missed shopping trips or unplanned expenses.
 
-### Scope & Deliverables
+### Scope & Deliverables *(Archived / Not Planned)*
 1. **Flutter Location & Notification Feasibility Validation:**
-   - Validate obtaining foreground device GPS coordinates in Flutter across Web and Android while strictly keeping all GPS data local on the user's device (never transmitting user coordinates to external servers or LLMs, in accordance with `AGENTS.md` and `SPEC.md`).
+   - Validate obtaining foreground device GPS coordinates in Flutter across Web and Android while strictly keeping all GPS data local on the user's device.
 2. **Local Dataset of Guatemalan Markets & Supermarkets:**
-   - Bundle a local, extensible directory of major Guatemalan supermarkets and municipal markets (name, type, latitude, longitude, and zone/municipality) structured to support favorite store recognition in future iterations.
+   - Bundle a local, extensible directory of major Guatemalan supermarkets and municipal markets.
 3. **Proximity Detection & Pending Shopping List Alert:**
-   - When the user has pending items in `"Por comprar"` and opts into location checks while using the app (plus a simulation/test trigger for indoor demonstration and testing), calculate Haversine distance locally against the stored markets/supermarkets.
-   - When within proximity threshold (e.g., $\le 500\text{ m}$), notify the user in Spanish indicating which market/supermarket is nearby and how many pending items they have in `"Por comprar"`, linking directly to their Shopping List.
+   - Calculate Haversine distance locally and notify the user when within proximity threshold with pending items in `"Por comprar"`.
 
 ### Acceptance Criteria (Definition of Done)
-- [ ] GPS location retrieval and proximity calculation run 100% locally on the user's device with graceful permission handling and opt-in privacy controls in Spanish.
-- [ ] The app includes a local dataset of Guatemalan markets and supermarkets and detects when the user is near a store while having pending items in `"Por comprar"`.
-- [ ] A Spanish notification/alert banner is triggered when near a market/supermarket with pending shopping items (and stays silent when `"Por comprar"` is empty), with a manual simulation mode available for testing/demos.
-- [ ] Unit and widget tests verify Haversine distance calculations, empty vs. non-empty shopping list conditions, and permission denial fallbacks.
+- [-] *(Dropped)* GPS location retrieval and proximity calculation run 100% locally on the user's device.
+- [-] *(Dropped)* Local dataset of Guatemalan markets and supermarkets with proximity detection.
+- [-] *(Dropped)* Spanish notification/alert banner when near a market/supermarket with pending shopping items.
+- [-] *(Dropped)* Unit and widget tests for Haversine distance calculations and permission denial fallbacks.
 
 ---
 
-## - [ ] FEAT-7: Scoped Supermarket Price Lookup, Home Savings vs. Takeout & Practical Substitutions
+## - [ ] FEAT-7: Scoped Supermarket Price Lookup, Home Savings & Nutrition vs. Takeout & Practical Substitutions
 - **Source Issue:** [#2 — Acotar scraping parcial de supermercados y sumar ahorro vs. pedir comida + sustituciones prácticas](https://github.com/innovationlabug/food-friend/issues/2)
-- **Status:** Open (`enhancement`)
+- **Status:** In Progress (`enhancement`)
 - **Suggested Branch:** `feat/scoped-prices-savings-substitutions`
 
 ### Product Problem
-Previous planning included broad supermarket scraping and GPS proximity alerts near markets. Covering every supermarket chain and adding background location permissions will not fit before the December 9 milestone and works poorly on Web. Instead, the scope should be narrowed to a realistic partial price lookup and connected to two high-value daily decisions: estimating money saved cooking at home versus ordering takeout/delivery, and resolving missing or less-healthy ingredients locally.
+Previous planning included broad supermarket scraping and GPS proximity alerts near markets. Covering every supermarket chain and adding background location permissions will not fit before the December 9 milestone and works poorly on Web. Instead, the scope should be narrowed to a realistic partial price lookup and connected to two high-value daily decisions: estimating money saved and nutritional quality gained by cooking at home versus ordering takeout/delivery, and resolving missing or less-healthy ingredients locally.
 
 ### Scope & Deliverables
 1. **Scoped Partial Supermarket Price / Deals Lookup:**
    - Implement price/deal lookup for **a single Guatemalan supermarket chain** (e.g., La Torre or Walmart Guatemala) covering a focused subset of staple ingredients or items currently in `"Por comprar"`.
    - Route external requests cleanly (via `/api/*` if needed) with a resilient local fallback if the external site changes or fails to respond.
    - **Out of Scope:** GPS proximity notifications and multi-chain full-catalog scraping.
-2. **Home Cooking Cost vs. Takeout/Delivery Comparison (`GTQ`):**
-   - Use prices in Guatemalan Quetzales (`GTQ` / `Q`) sourced from parsed receipts, partial scraping, or a local baseline price table.
-   - Display a simple estimated cost per serving prepared at home compared against typical fast-food or delivery costs on recipes.
+2. **Home Cooking Cost & Nutritional Comparison vs. Takeout/Delivery (`GTQ` + Nutrition):**
+   - **Economic Comparison (`GTQ`):** Use prices in Guatemalan Quetzales (`GTQ` / `Q`) sourced from parsed receipts, partial scraping, or a local baseline price table to display an estimated cost per serving (`Q / porción`) prepared at home compared against typical fast-food or delivery costs on recipes.
+   - **Nutritional Comparison:** Extend the home-vs-takeout comparison beyond cost to highlight nutritional quality differences (e.g., lower sodium/ultraprocessed fat, higher fiber/vitamins, or better protein quality compared to typical fast-food/delivery equivalents) using deterministic local recipe/ingredient attributes with zero extra LLM calls.
 3. **Local Practical Ingredient Substitutions:**
    - In the recipe detail screen, display direct replacement options when the user is missing 1 ingredient or when a dish includes a processed/high-fat ingredient (e.g., substituting `crema` with `yogur natural` or `aguacate`, or `embutidos` with `huevo` or `frijol`).
    - Resolve substitutions locally using deterministic rules/mappings without extra LLM calls.
@@ -190,11 +191,11 @@ Previous planning included broad supermarket scraping and GPS proximity alerts n
    - Update `SPEC.md` to reflect the reduced scope (removing GPS alerts and documenting single-chain partial scraping).
 
 ### Acceptance Criteria (Definition of Done)
-- [ ] `SPEC.md` is updated to reflect the scoped-down supermarket lookup and removal of GPS proximity alerts.
-- [ ] Users can view real or fallback `GTQ` prices/deals for items in `"Por comprar"` or basic staples from the single scoped supermarket without the app crashing or blocking if the external source fails.
-- [ ] Recipes display a clear, clutter-free `GTQ` cost-per-serving estimate vs. ordering food/delivery.
-- [ ] Recipe detail surfaces practical local substitutions for single missing ingredients or healthier swaps without making LLM calls.
-- [ ] Unit, widget, and backend/proxy tests verify fallback behavior, `GTQ` calculations, and substitution matching.
+- [x] `SPEC.md` is updated to reflect the scoped-down supermarket lookup and removal of GPS proximity alerts.
+- [x] Users can view real or fallback `GTQ` prices/deals for items in `"Por comprar"` or basic staples from the single scoped supermarket without the app crashing or blocking if the external source fails.
+- [ ] Recipes display a clear, clutter-free `GTQ` cost-per-serving estimate and nutritional quality comparison vs. ordering takeout/delivery.
+- [x] Recipe detail surfaces practical local substitutions for single missing ingredients or healthier swaps without making LLM calls.
+- [ ] Unit, widget, and backend/proxy tests verify fallback behavior, `GTQ` calculations, nutritional comparison, and substitution matching.
 
 ---
 
@@ -216,6 +217,34 @@ Although `SPEC.md` notes that the app has been deployed to Vercel, `README.md` h
    - Document in `docs/feedback/` which ingredients were recognized accurately, where detection failed (recycled containers, unlabeled market produce, POS receipt abbreviations), user feedback on recipes/shopping, and concrete product fixes applied before **December 9**.
 
 ### Acceptance Criteria (Definition of Done)
-- [ ] Any user can open the working app directly from the main link at the top of `README.md` on both desktop and mobile browsers, and all repo URLs point to `innovationlabug/food-friend`.
-- [ ] Production Vercel deployment handles client routes and `/api/*` endpoints end-to-end without CORS, environment, or proxy errors.
+- [x] Any user can open the working app directly from the main link at the top of `README.md` on both desktop and mobile browsers, and all repo URLs point to `innovationlabug/food-friend`.
+- [x] Production Vercel deployment handles client routes and `/api/*` endpoints end-to-end without CORS, environment, or proxy errors.
 - [ ] `docs/feedback/` contains documented evidence from at least 5 real household tests (real kitchens + real receipts) along with concrete product improvements applied as a result.
+
+---
+
+## - [ ] FEAT-9: Multi-Day Cooking Planner & Variation Scheduling
+- **Source:** `SPEC.md` (*Key functionalities* — "User may indicate how many days they want to cook for, and the app can give them suggestions on variations") & `PLANNING.md` (*Iteration 0 / Week 2* — "Recipe variations in case the user wants to cook for many meals at a time")
+- **Status:** Open (`iteration-3`)
+- **Suggested Branch:** `feat/multi-day-cooking-planner`
+
+### Product Problem
+In `SPEC.md`, users cooking for multiple days (e.g., planning lunches or dinners for 3 to 7 days) want to reuse overlapping pantry ingredients without getting bored of eating the exact same dish every day. Currently, `RecipeDetailScreen` provides a `"Ver variaciones"` viewer for an individual recipe, but there is no multi-day selector or planner that lets the user specify how many days they want to cook for and receive a varied multi-day meal/variation plan.
+
+### Scope & Deliverables
+1. **Multi-Day Cooking Selector (`2–7 días`):**
+   - Add a Spanish day-count selector (e.g., `2`, `3`, `5`, `7` días) in the Recipes / Meal Planning flow so the user can indicate how many days they want to cook for.
+   - Adapt cleanly across mobile and desktop viewports using Material 3 and SVG icons (no emojis or pseudo-metadata badges).
+2. **Ingredient-Sharing & Variation-Driven Plan Generator:**
+   - Generate a deterministic, offline-capable day-by-day Spanish cooking plan (`Día 1`, `Día 2`, ..., `Día N`) from the local recipe catalog and recipe variations.
+   - Prioritize dishes and variations that share core ingredients from `"Mis ingredientes"` to reduce waste and shopping cost, while rotating recipes/variations so the same dish is not repeated consecutively.
+   - Respect user preferences (`Favorita`, `Me gustó`, excluding `Nunca`) and active health goals (`FEAT-2`).
+3. **Consolidated Missing Ingredients & Shopping List Integration:**
+   - Compute the deduplicated list of missing ingredients across the generated multi-day plan.
+   - Allow one-tap addition of missing ingredients directly to `"Por comprar"` without creating duplicates.
+
+### Acceptance Criteria (Definition of Done)
+- [ ] Users can select how many days they want to cook for (`2–7` days) and view a structured day-by-day meal and variation plan in Spanish.
+- [ ] The planner prioritizes shared pantry ingredients across days while rotating recipes/variations to avoid consecutive repetition, respecting `Nunca` exclusions and active health goals.
+- [ ] Missing ingredients across the multi-day plan are aggregated and can be added to `"Por comprar"` in one tap without duplicates.
+- [ ] All UI text is in Spanish using Material 3 + SVG icons (no emojis or pseudo-metadata badges), runs deterministically on device with zero extra LLM calls, and is covered by unit, widget, and integration tests.

@@ -81,8 +81,8 @@ Resumen comparativo basado en [`COMPETITIVE_ANALYSIS.md`](COMPETITIVE_ANALYSIS.m
 | **Consejos nutricionales basados en comidas reales** | Calculadoras pasivas de calorías | Alertas de embutidos, vitaminas faltantes y proteínas completas (arroz + frijol) | **Implementado** |
 | **Operación *Offline-First* y sin cuenta obligatoria** | Exigen conexión permanente e inicio de sesión | Catálogo, recetario, historial y nutrición 100% funcionales sin red | **Implementado** |
 | **Seguimiento y alertas de fechas de vencimiento** | Disponible en *KitchenPal* | Modelo de datos preparado (`expirationDate`); interfaz de alertas programada | **Pendiente** |
-| **Filtros por tiempo máximo de cocción** | Disponible en *SuperCook* | Tiempos mostrados en cada receta; filtro por minutos programado | **Pendiente** |
-| **Notificaciones por cercanía (*GPS* local) a mercados** | No disponible en competidores | Planeado con procesamiento estrictamente local en el dispositivo | **Pendiente** |
+| **Filtros por tiempo máximo de cocción** | Disponible en *SuperCook* | Filtros por tiempo total (`≤ 20 min`, `≤ 40 min`, `≤ 60 min`, `Todos`) combinables con categoría | **Implementado** |
+| **Notificaciones por cercanía (*GPS* local) a mercados** | No disponible en competidores | Fuera del alcance actual; no se implementará | **No implementado (Descartado)** |
 | **Detección de ofertas locales vía *web scraping*** | No disponible en Guatemala | Ofertas programadas en Vercel (`/api/sales` + Vercel Blob) para La Torre y Walmart GT con precios en `GTQ` | **Implementado** |
 
 ---
@@ -91,7 +91,7 @@ Resumen comparativo basado en [`COMPETITIVE_ANALYSIS.md`](COMPETITIVE_ANALYSIS.m
 
 ### 1. Instalar Dependencias
 ```powershell
-git clone https://github.com/luiscu/food-friend.git
+git clone https://github.com/innovationlabug/food-friend.git
 cd food-friend
 flutter pub get
 npm install

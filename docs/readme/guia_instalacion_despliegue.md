@@ -27,7 +27,7 @@ Asegúrese de contar con las siguientes herramientas instaladas en su equipo:
 
 ### 2.1. Clonar el Repositorio
 ```powershell
-git clone https://github.com/luiscu/food-friend.git
+git clone https://github.com/innovationlabug/food-friend.git
 cd food-friend
 ```
 

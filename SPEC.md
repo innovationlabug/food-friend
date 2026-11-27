@@ -27,10 +27,9 @@ Our target user are adults in Guatemala adopting healthy lifestyles through heal
 - App will recognize which are the user's favorite ingredients and help keep track how much they have left and when do they expire (for spices, sauces, and other slowly consumed ingredients).
     - Ingredients track `timesUsed` (starts at 0) and `lastUsed` internally to identify favorites and monitor slowly consumed ingredients. The user will almost never interact directly with this information.
 - App will use the recipe history to help the user plan their shopping.
-- If the user gives GPS access to the app, the app will notify them when they are near some market or supermarket and they are low on some ingredient.
-    - Validate first: Since we will use some multi-platform tool such as Flutter, check if we can access the device GPS.
+- ~~If the user gives GPS access to the app, the app will notify them when they are near some market or supermarket and they are low on some ingredient.~~ *(Out of scope / Will not be implemented per Issue #2.)*
 - App will notify the user when there is some sale in some important cooking ingredient.
-    - Validate first: Check if we can reliable get info on food sales from supermarket web pages.
+    - Implemented as a scoped server-side/cached lookup (`/api/sales` + `/api/refresh-sales` with curated `GTQ` fallback) for La Torre and Walmart Guatemala.
 
 ### Nutrition assistant
 - App will use the recipe history to suggest improvements in user diet. For example, help them complement the vitamins they might be lacking based on their fruit and vegetables consumption.
@@ -165,5 +164,4 @@ In the first iterations, while we validate user interest in the project we will 
 - Validate if feasible: Notification on ingredients' sales.
   - Can we reliable get information from local supermarket webpages to implement this feature?
 
-- Validate if feasible: Notify the user when they are near some market or supermarket and they have pending items on their shopping list.
-  - Can we get GPS info and send these notifications from Flutter?
+- ~~Validate if feasible: Notify the user when they are near some market or supermarket and they have pending items on their shopping list.~~ *(Dropped / Will not be implemented — out of scope.)*
