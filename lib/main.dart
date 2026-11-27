@@ -9,6 +9,7 @@ import 'features/ingredients/presentation/add_ingredient_screen.dart';
 import 'features/ingredients/presentation/fridge_scanner_screen.dart';
 import 'features/ingredients/presentation/receipt_scanner_screen.dart';
 import 'features/nutrition/presentation/nutrition_tips_screen.dart';
+import 'features/onboarding/presentation/mode_selection_screen.dart';
 import 'features/recipes/data/local_recipe_dataset.dart';
 import 'features/recipes/presentation/multi_day_planner_screen.dart';
 import 'features/recipes/presentation/recipe_detail_screen.dart';
@@ -24,7 +25,8 @@ void main() {
 }
 
 /// Food Friend root application widget.
-/// Configures Material 3 theming, Spanish localization, and the main home shell.
+/// Configures Material 3 theming, Spanish localization, first-launch mode
+/// selection, and the main home shell.
 class FoodFriendApp extends StatefulWidget {
   const FoodFriendApp({super.key});
 
@@ -34,12 +36,13 @@ class FoodFriendApp extends StatefulWidget {
 
 class _FoodFriendAppState extends State<FoodFriendApp> {
   final ThemeController _themeController = ThemeController.instance;
+  final SettingsController _settingsController = SettingsController.instance;
 
   @override
   void initState() {
     super.initState();
     _themeController.load();
-    SettingsController.instance.load();
+    _settingsController.load();
   }
 
   Widget _getInitialScreen() {
@@ -56,9 +59,13 @@ class _FoodFriendAppState extends State<FoodFriendApp> {
       case 'receipt':
         return const ReceiptScannerScreen();
       case 'recipes':
-        return const RecipeSuggestionsScreen(selectedIngredientNames: ['Pollo', 'Tomate', 'Cebolla']);
+        return const RecipeSuggestionsScreen(
+          selectedIngredientNames: ['Pollo', 'Tomate', 'Cebolla'],
+        );
       case 'planner':
-        return const MultiDayPlannerScreen(initialIngredientNames: ['Pollo', 'Tomate', 'Cebolla']);
+        return const MultiDayPlannerScreen(
+          initialIngredientNames: ['Pollo', 'Tomate', 'Cebolla'],
+        );
       case 'detail':
         return RecipeDetailScreen(recipe: LocalRecipeDataset.instance.recipes.first);
       case 'recipe_management':
@@ -69,7 +76,17 @@ class _FoodFriendAppState extends State<FoodFriendApp> {
         return const SupermarketDealsScreen();
       case 'settings':
         return const SettingsScreen();
+      case 'onboarding':
+        return const ModeSelectionScreen();
       default:
+        if (!_settingsController.isLoaded) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (!_settingsController.hasCompletedModeSelection) {
+          return ModeSelectionScreen(controller: _settingsController);
+        }
         return const HomeScreen();
     }
   }
@@ -77,7 +94,7 @@ class _FoodFriendAppState extends State<FoodFriendApp> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _themeController,
+      listenable: Listenable.merge([_themeController, _settingsController]),
       builder: (context, _) {
         return MaterialApp(
           title: 'Food Friend',
@@ -102,4 +119,3 @@ class _FoodFriendAppState extends State<FoodFriendApp> {
     );
   }
 }
-

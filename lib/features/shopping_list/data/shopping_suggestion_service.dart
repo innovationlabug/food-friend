@@ -31,7 +31,7 @@ class ShoppingSuggestionsContext {
   final List<Recipe> recipes;
   final Map<String, RecipeHistoryRecord> history;
   final Set<HealthGoal> activeHealthGoals;
-  final NutritionReport nutritionReport;
+  final NutritionReport? nutritionReport;
 }
 
 /// Deterministic gap-analysis engine that surfaces "almost-ready" recipes in
@@ -85,19 +85,38 @@ class ShoppingSuggestionService {
   static const int frequentCookThreshold = 2;
 
   /// Loads recipe pool, history, active health goals, and nutrition report.
-  Future<ShoppingSuggestionsContext> loadContext() async {
+  Future<ShoppingSuggestionsContext> loadContext({
+    bool includeHistory = true,
+    bool includeHealthGoals = true,
+  }) async {
     final results = await Future.wait<dynamic>([
-      _historyService.getAllKnownRecipes(),
-      _historyService.getHistory(),
-      _healthGoalStorageService.getSelectedGoals(),
-      _nutritionService.generateReport(),
+      if (includeHistory)
+        _historyService.getAllKnownRecipes()
+      else
+        Future<List<Recipe>>.value(LocalRecipeDataset.instance.recipes),
+      if (includeHistory)
+        _historyService.getHistory()
+      else
+        Future<Map<String, RecipeHistoryRecord>>.value(
+          const <String, RecipeHistoryRecord>{},
+        ),
+      if (includeHealthGoals)
+        _healthGoalStorageService.getSelectedGoals()
+      else
+        Future<Set<HealthGoal>>.value(<HealthGoal>{}),
+      if (includeHealthGoals)
+        _nutritionService.generateReport(
+          includeCookingHistory: includeHistory,
+        )
+      else
+        Future<NutritionReport?>.value(null),
     ]);
 
     return ShoppingSuggestionsContext(
       recipes: results[0] as List<Recipe>,
       history: results[1] as Map<String, RecipeHistoryRecord>,
       activeHealthGoals: results[2] as Set<HealthGoal>,
-      nutritionReport: results[3] as NutritionReport,
+      nutritionReport: results[3] as NutritionReport?,
     );
   }
 

@@ -29,11 +29,20 @@ class NutritionService {
 
   /// Loads persisted health goals and recipe cooking history to produce a
   /// structured [NutritionReport].
-  Future<NutritionReport> generateReport({DateTime? now}) async {
+  Future<NutritionReport> generateReport({
+    DateTime? now,
+    bool includeCookingHistory = true,
+  }) async {
     final referenceNow = now ?? DateTime.now();
     final results = await Future.wait<dynamic>([
-      _historyService.getHistory(),
-      _historyService.getAllKnownRecipes(),
+      if (includeCookingHistory)
+        _historyService.getHistory()
+      else
+        Future<Map<String, dynamic>>.value(const <String, dynamic>{}),
+      if (includeCookingHistory)
+        _historyService.getAllKnownRecipes()
+      else
+        Future<List<Recipe>>.value(LocalRecipeDataset.instance.recipes),
       _healthGoalStorageService.getSelectedGoals(),
     ]);
     final history = results[0] as Map<String, dynamic>;

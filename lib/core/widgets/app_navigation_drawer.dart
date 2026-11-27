@@ -123,7 +123,25 @@ class AppNavigationDrawer extends StatelessWidget {
   /// Whether the drawer is currently displayed on [SettingsScreen].
   final bool isSettingsScreen;
 
-  int? get _selectedIndex => currentDestination?.index;
+  List<AppDestination> _visibleDestinations(SettingsController settings) {
+    return [
+      AppDestination.home,
+      AppDestination.availableIngredients,
+      AppDestination.shoppingList,
+      AppDestination.addIngredients,
+      AppDestination.recipeSuggestions,
+      if (settings.enableMultiDayPlanner) AppDestination.multiDayPlanner,
+      if (settings.enableRecipeManagement) AppDestination.recipeManagement,
+      if (settings.enableNutritionAndGoals) AppDestination.nutritionTips,
+    ];
+  }
+
+  int? _selectedIndexFor(List<AppDestination> visibleDestinations) {
+    final current = currentDestination;
+    if (current == null) return null;
+    final idx = visibleDestinations.indexOf(current);
+    return idx >= 0 ? idx : null;
+  }
 
   SettingsSection get _effectiveSettingsSection {
     if (settingsSection != null) return settingsSection!;
@@ -149,8 +167,10 @@ class AppNavigationDrawer extends StatelessWidget {
     );
   }
 
-  Future<void> _navigateTo(BuildContext context, int index) async {
-    final destination = AppDestination.values[index];
+  Future<void> _navigateTo(
+    BuildContext context,
+    AppDestination destination,
+  ) async {
     final navigator = Navigator.of(context);
     // Close the drawer first
     navigator.pop();
@@ -215,163 +235,117 @@ class AppNavigationDrawer extends StatelessWidget {
     );
   }
 
+  ({String iconName, String label}) _destinationMeta(AppDestination destination) {
+    return switch (destination) {
+      AppDestination.home => (iconName: 'home', label: 'Inicio'),
+      AppDestination.availableIngredients => (
+          iconName: 'restaurant',
+          label: 'Ingredientes disponibles',
+        ),
+      AppDestination.shoppingList => (
+          iconName: 'shopping_cart',
+          label: 'Lista de compras',
+        ),
+      AppDestination.addIngredients => (
+          iconName: 'plus',
+          label: 'Agregar ingredientes',
+        ),
+      AppDestination.recipeSuggestions => (
+          iconName: 'sparkles',
+          label: '¿Qué cocino hoy?',
+        ),
+      AppDestination.multiDayPlanner => (
+          iconName: 'calendar',
+          label: 'Planificador de comidas',
+        ),
+      AppDestination.recipeManagement => (
+          iconName: 'book',
+          label: 'Gestión de recetas',
+        ),
+      AppDestination.nutritionTips => (
+          iconName: 'nutrition',
+          label: 'Consejos de Nutrición',
+        ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return NavigationDrawerTheme(
-      data: theme.navigationDrawerTheme.copyWith(
-        tileHeight: 44,
-      ),
-      child: NavigationDrawer(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => _navigateTo(context, index),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 16, 6),
-          child: Row(
+    return ListenableBuilder(
+      listenable: SettingsController.instance,
+      builder: (context, _) {
+        final visibleDestinations =
+            _visibleDestinations(SettingsController.instance);
+
+        return NavigationDrawerTheme(
+          data: theme.navigationDrawerTheme.copyWith(
+            tileHeight: 44,
+          ),
+          child: NavigationDrawer(
+            selectedIndex: _selectedIndexFor(visibleDestinations),
+            onDestinationSelected: (index) =>
+                _navigateTo(context, visibleDestinations[index]),
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: AppSvgIcon(
-                  assetName: 'restaurant',
-                  size: 20,
-                  color: colorScheme.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 16, 6),
+                child: Row(
                   children: [
-                    Text(
-                      'Food Friend',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: AppSvgIcon(
+                        assetName: 'restaurant',
+                        size: 20,
+                        color: colorScheme.onPrimaryContainer,
                       ),
                     ),
-                    Text(
-                      'Menú principal',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Food Friend',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Menú principal',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-        const Divider(height: 1, indent: 24, endIndent: 24),
-        NavigationDrawerDestination(
-          icon: AppSvgIcon(
-            assetName: 'home',
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          selectedIcon: AppSvgIcon(
-            assetName: 'home',
-            size: 20,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          label: _drawerLabel('Inicio'),
-        ),
-        NavigationDrawerDestination(
-          icon: AppSvgIcon(
-            assetName: 'restaurant',
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          selectedIcon: AppSvgIcon(
-            assetName: 'restaurant',
-            size: 20,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          label: _drawerLabel('Ingredientes disponibles'),
-        ),
-        NavigationDrawerDestination(
-          icon: AppSvgIcon(
-            assetName: 'shopping_cart',
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          selectedIcon: AppSvgIcon(
-            assetName: 'shopping_cart',
-            size: 20,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          label: _drawerLabel('Lista de compras'),
-        ),
-        NavigationDrawerDestination(
-          icon: AppSvgIcon(
-            assetName: 'plus',
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          selectedIcon: AppSvgIcon(
-            assetName: 'plus',
-            size: 20,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          label: _drawerLabel('Agregar ingredientes'),
-        ),
-        NavigationDrawerDestination(
-          icon: AppSvgIcon(
-            assetName: 'sparkles',
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          selectedIcon: AppSvgIcon(
-            assetName: 'sparkles',
-            size: 20,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          label: _drawerLabel('¿Qué cocino hoy?'),
-        ),
-        NavigationDrawerDestination(
-          icon: AppSvgIcon(
-            assetName: 'calendar',
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          selectedIcon: AppSvgIcon(
-            assetName: 'calendar',
-            size: 20,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          label: _drawerLabel('Planificador de comidas'),
-        ),
-        NavigationDrawerDestination(
-          icon: AppSvgIcon(
-            assetName: 'book',
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          selectedIcon: AppSvgIcon(
-            assetName: 'book',
-            size: 20,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          label: _drawerLabel('Gestión de recetas'),
-        ),
-        NavigationDrawerDestination(
-          icon: AppSvgIcon(
-            assetName: 'nutrition',
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          selectedIcon: AppSvgIcon(
-            assetName: 'nutrition',
-            size: 20,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          label: _drawerLabel('Consejos de Nutrición'),
-        ),
+              const Divider(height: 1, indent: 24, endIndent: 24),
+              for (final destination in visibleDestinations)
+                () {
+                  final meta = _destinationMeta(destination);
+                  return NavigationDrawerDestination(
+                    icon: AppSvgIcon(
+                      assetName: meta.iconName,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    selectedIcon: AppSvgIcon(
+                      assetName: meta.iconName,
+                      size: 20,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                    label: _drawerLabel(meta.label),
+                  );
+                }(),
         const Divider(height: 1, indent: 24, endIndent: 24),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -446,6 +420,8 @@ class AppNavigationDrawer extends StatelessWidget {
         ),
       ],
     ),
+    );
+      },
     );
   }
 }

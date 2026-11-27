@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
@@ -13,6 +14,7 @@ import '../../pricing/data/recipe_cost_calculator.dart';
 import '../../pricing/domain/recipe_comparison.dart';
 import '../../sales/data/fallback_sales_data.dart';
 import '../../sales/data/sales_service.dart';
+import '../../sales/domain/supermarket_deal.dart';
 import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../data/ingredient_replacement_service.dart';
 import '../data/local_recipe_dataset.dart';
@@ -138,25 +140,54 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     _goalMatch = widget.goalMatch;
     _availabilityReplacements = widget.availabilityReplacements;
     _healthGoalReplacements = widget.healthGoalReplacements;
+    final settings = SettingsController.instance;
     _homeVsTakeoutComparison = RecipeCostCalculator.compareRecipe(
       widget.recipe,
-      deals: FallbackSalesData.deals,
+      deals: settings.enableSupermarketDeals
+          ? FallbackSalesData.deals
+          : const <SupermarketDeal>[],
     );
-    _loadHistoryStatus();
-    _loadShoppingListStatus();
-    _loadPricingComparison();
-    if (!_goalMatch.hasMatch || _healthGoalReplacements.isEmpty) {
-      _loadGoalMatchAndSwaps();
-    }
+    SettingsController.instance.addListener(_onSettingsChanged);
+    _refreshFeatureDependentState();
     if (widget.matchedIngredients.isEmpty && widget.missingIngredients.isEmpty) {
       _resolveIngredientsFromPantry();
     }
   }
 
+  void _onSettingsChanged() {
+    if (!mounted) return;
+    _refreshFeatureDependentState();
+    if (widget.matchedIngredients.isEmpty && widget.missingIngredients.isEmpty) {
+      _resolveIngredientsFromPantry();
+    }
+    setState(() {});
+  }
+
+  Future<void> _refreshFeatureDependentState() async {
+    await SettingsController.instance.load();
+    if (!mounted) return;
+    _loadHistoryStatus();
+    _loadShoppingListStatus();
+    _loadPricingComparison();
+    _loadGoalMatchAndSwaps();
+  }
+
+  @override
+  void dispose() {
+    SettingsController.instance.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
   Future<void> _loadPricingComparison() async {
+    final settings = SettingsController.instance;
+    if (!settings.enableGtqPricing) return;
+
     final results = await Future.wait<dynamic>([
       _priceStorageService.getPrices(),
-      _salesService.getCachedOrFallbackDeals(),
+      if (settings.enableSupermarketDeals)
+        _salesService.getCachedOrFallbackDeals()
+      else
+        Future<List<SupermarketDeal>>.value(const <SupermarketDeal>[]),
     ]);
     if (!mounted) return;
     final savedPrices = results[0] as Map<String, dynamic>;
@@ -171,6 +202,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Future<void> _loadGoalMatchAndSwaps() async {
+    final settings = SettingsController.instance;
+    if (!settings.enableNutritionAndGoals) {
+      if (mounted) {
+        setState(() {
+          _goalMatch = RecipeGoalMatch.empty;
+          _healthGoalReplacements = const [];
+        });
+      }
+      return;
+    }
+
     final goals = await _healthGoalStorageService.getSelectedGoals();
     if (!mounted || goals.isEmpty) return;
 
@@ -178,8 +220,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ? HealthGoalEvaluator.evaluateRecipe(widget.recipe, goals)
         : _goalMatch;
 
-    List<HealthGoalReplacement> swaps = _healthGoalReplacements;
-    if (swaps.isEmpty) {
+    List<HealthGoalReplacement> swaps = settings.enableIngredientReplacements
+        ? _healthGoalReplacements
+        : const [];
+    if (settings.enableIngredientReplacements && swaps.isEmpty) {
       final pantry = await _ingredientStorageService.getIngredients();
       if (!mounted) return;
       swaps = IngredientReplacementService.findHealthGoalReplacements(
@@ -220,11 +264,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       }
     }
 
-    final replacements =
-        IngredientReplacementService.findAvailabilityReplacements(
-      missingIngredients: missing,
-      availableIngredientNames: userNames,
-    );
+    final replacements = SettingsController.instance.enableIngredientReplacements
+        ? IngredientReplacementService.findAvailabilityReplacements(
+            missingIngredients: missing,
+            availableIngredientNames: userNames,
+          )
+        : const <AvailabilityReplacement>[];
 
     setState(() {
       _pantryMatched = matched;
@@ -310,6 +355,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Future<void> _loadHistoryStatus() async {
+    if (!SettingsController.instance.enableRecipeManagement) {
+      if (!mounted) return;
+      setState(() {
+        _timesCooked = 0;
+        _isCookedToday = false;
+        _preference = RecipePreference.none;
+        _isLoadingHistory = false;
+      });
+      return;
+    }
     final record = await _historyService.getRecord(widget.recipe.id);
     if (!mounted) return;
     setState(() {
@@ -322,24 +377,28 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Future<void> _handleCookedTap() async {
     final messenger = ScaffoldMessenger.of(context);
-    if (_isCookedToday) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Esta receta ya fue registrada como cocinada hoy.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+    final trackHistory = SettingsController.instance.enableRecipeManagement;
+
+    if (trackHistory) {
+      if (_isCookedToday) {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Esta receta ya fue registrada como cocinada hoy.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      final updated = await _historyService.recordCooked(widget.recipe);
+      if (!mounted) return;
+
+      setState(() {
+        _timesCooked = updated.timesCooked;
+        _isCookedToday = true;
+      });
     }
-
-    final updated = await _historyService.recordCooked(widget.recipe);
-    if (!mounted) return;
-
-    setState(() {
-      _timesCooked = updated.timesCooked;
-      _isCookedToday = true;
-    });
 
     final pantry = await _ingredientStorageService.getIngredients();
     if (!mounted) return;
@@ -488,14 +547,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 _buildHeader(context),
                 const SizedBox(height: 16),
                 _buildMetadataRow(context),
-                if (_goalMatch.hasMatch) ...[
+                if (SettingsController.instance.enableNutritionAndGoals &&
+                    _goalMatch.hasMatch) ...[
                   const SizedBox(height: 12),
                   _buildGoalAlignmentCard(context),
                 ],
                 const SizedBox(height: 16),
                 _buildActionButtons(context),
-                const SizedBox(height: 16),
-                HomeVsTakeoutCard(comparison: _homeVsTakeoutComparison),
+                if (SettingsController.instance.enableGtqPricing) ...[
+                  const SizedBox(height: 16),
+                  HomeVsTakeoutCard(comparison: _homeVsTakeoutComparison),
+                ],
                 const SizedBox(height: 24),
                 if (isDesktop)
                   Row(
@@ -703,8 +765,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           const SizedBox(height: 12),
           _buildVariationsButton(context),
         ],
-        const SizedBox(height: 16),
-        _buildPreferencesSection(context),
+        if (SettingsController.instance.enableRecipeManagement) ...[
+          const SizedBox(height: 16),
+          _buildPreferencesSection(context),
+        ],
       ],
     );
   }
@@ -783,8 +847,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   Widget _buildCookedButton(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final trackHistory = SettingsController.instance.enableRecipeManagement;
 
-    if (_isCookedToday) {
+    if (trackHistory && _isCookedToday) {
       return FilledButton.tonalIcon(
         onPressed: _handleCookedTap,
         icon: AppSvgIcon(
@@ -817,7 +882,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         color: colorScheme.primary,
       ),
       label: Text(
-        _timesCooked > 0 ? 'Lo cociné ($_timesCooked veces)' : 'Lo cociné',
+        trackHistory && _timesCooked > 0
+            ? 'Lo cociné ($_timesCooked veces)'
+            : 'Lo cociné',
         style: theme.textTheme.labelLarge?.copyWith(
           fontWeight: FontWeight.bold,
           color: colorScheme.primary,
@@ -1078,10 +1145,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final replacementByMissingNorm = <String, AvailabilityReplacement>{
-      for (final rep in _availabilityReplacements)
-        rep.missingIngredient.normalizedName: rep,
-    };
+    final settings = SettingsController.instance;
+    final replacementByMissingNorm = settings.enableIngredientReplacements
+        ? <String, AvailabilityReplacement>{
+            for (final rep in _availabilityReplacements)
+              rep.missingIngredient.normalizedName: rep,
+          }
+        : const <String, AvailabilityReplacement>{};
     final isCookableWithReplacements = missing.isNotEmpty &&
         missing.every(
           (ing) => replacementByMissingNorm.containsKey(ing.normalizedName),
@@ -1232,7 +1302,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ),
         ],
-        if (_healthGoalReplacements.isNotEmpty) ...[
+        if (settings.enableIngredientReplacements &&
+            settings.enableNutritionAndGoals &&
+            _healthGoalReplacements.isNotEmpty) ...[
           const SizedBox(height: 16),
           _buildHealthGoalReplacementsCard(context),
         ],

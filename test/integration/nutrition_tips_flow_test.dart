@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:food_friend/core/settings/settings_controller.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
 import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
@@ -17,7 +18,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      SettingsController.hasCompletedModeSelectionKey: true,
+    });
+    SettingsController.instance.resetToDefaults();
   });
 
   testWidgets(

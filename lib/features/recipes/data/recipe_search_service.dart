@@ -2,6 +2,7 @@ import '../../../core/utils/string_normalizer.dart';
 import '../../ingredients/domain/ingredient.dart';
 import '../../nutrition/data/health_goal_evaluator.dart';
 import '../../nutrition/domain/health_goal.dart';
+import '../domain/ingredient_replacement.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_history_record.dart';
 import '../domain/recipe_ingredient.dart';
@@ -46,6 +47,8 @@ class RecipeSearchService {
     Map<String, RecipeHistoryRecord>? history,
     int? maxTotalTimeMinutes,
     Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
+    bool includeAvailabilityReplacements = true,
+    bool includeHealthGoalReplacements = true,
   }) {
     final rawPool = recipePool ?? _dataset.recipes;
     final pool = rawPool.where((recipe) {
@@ -71,11 +74,12 @@ class RecipeSearchService {
             matchedIngredients: const [],
             missingIngredients: List.of(r.ingredients),
             goalMatch: HealthGoalEvaluator.evaluateRecipe(r, activeHealthGoals),
-            healthGoalReplacements:
-                IngredientReplacementService.findHealthGoalReplacements(
-              recipe: r,
-              activeHealthGoals: activeHealthGoals,
-            ),
+            healthGoalReplacements: includeHealthGoalReplacements
+                ? IngredientReplacementService.findHealthGoalReplacements(
+                    recipe: r,
+                    activeHealthGoals: activeHealthGoals,
+                  )
+                : const [],
           );
         }).toList();
         if (activeHealthGoals.isNotEmpty) {
@@ -114,11 +118,12 @@ class RecipeSearchService {
         }
       }
 
-      final availabilityReplacements =
-          IngredientReplacementService.findAvailabilityReplacements(
-        missingIngredients: missing,
-        availableIngredientNames: selectedIngredientNames,
-      );
+      final availabilityReplacements = includeAvailabilityReplacements
+          ? IngredientReplacementService.findAvailabilityReplacements(
+              missingIngredients: missing,
+              availableIngredientNames: selectedIngredientNames,
+            )
+          : const <AvailabilityReplacement>[];
       final effectiveMatchCount =
           matched.length + availabilityReplacements.length;
 
@@ -133,12 +138,13 @@ class RecipeSearchService {
               activeHealthGoals,
             ),
             availabilityReplacements: availabilityReplacements,
-            healthGoalReplacements:
-                IngredientReplacementService.findHealthGoalReplacements(
-              recipe: recipe,
-              activeHealthGoals: activeHealthGoals,
-              availableIngredientNames: selectedIngredientNames,
-            ),
+            healthGoalReplacements: includeHealthGoalReplacements
+                ? IngredientReplacementService.findHealthGoalReplacements(
+                    recipe: recipe,
+                    activeHealthGoals: activeHealthGoals,
+                    availableIngredientNames: selectedIngredientNames,
+                  )
+                : const [],
           ),
         );
       }
@@ -264,11 +270,15 @@ class RecipeSearchService {
     List<String> selectedIngredientNames, {
     int limit = 5,
     Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
+    bool includeAvailabilityReplacements = true,
+    bool includeHealthGoalReplacements = true,
   }) {
     final results = searchRecipes(
       selectedIngredientNames: selectedIngredientNames,
       minMatchCount: 1,
       activeHealthGoals: activeHealthGoals,
+      includeAvailabilityReplacements: includeAvailabilityReplacements,
+      includeHealthGoalReplacements: includeHealthGoalReplacements,
     );
 
     if (results.isEmpty) {
@@ -279,12 +289,13 @@ class RecipeSearchService {
           matchedIngredients: const [],
           missingIngredients: List.of(r.ingredients),
           goalMatch: HealthGoalEvaluator.evaluateRecipe(r, activeHealthGoals),
-          healthGoalReplacements:
-              IngredientReplacementService.findHealthGoalReplacements(
-            recipe: r,
-            activeHealthGoals: activeHealthGoals,
-            availableIngredientNames: selectedIngredientNames,
-          ),
+          healthGoalReplacements: includeHealthGoalReplacements
+              ? IngredientReplacementService.findHealthGoalReplacements(
+                  recipe: r,
+                  activeHealthGoals: activeHealthGoals,
+                  availableIngredientNames: selectedIngredientNames,
+                )
+              : const [],
         );
       }).toList();
       if (activeHealthGoals.isNotEmpty) {

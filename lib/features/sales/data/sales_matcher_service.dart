@@ -91,13 +91,24 @@ class SalesMatcherService {
 
   /// Loads current pantry, shopping list, favorite recipes, and deals, then
   /// computes [SalesMatchReport].
-  Future<SalesMatchReport> loadAndMatch({bool forceRefresh = false}) async {
+  Future<SalesMatchReport> loadAndMatch({
+    bool forceRefresh = false,
+    bool includeHistory = true,
+  }) async {
     final results = await Future.wait<dynamic>([
       _salesService.fetchDeals(forceRefresh: forceRefresh),
       _ingredientStorageService.getIngredients(),
       _shoppingListService.getIngredients(),
-      _historyService.getAllKnownRecipes(),
-      _historyService.getHistory(),
+      if (includeHistory)
+        _historyService.getAllKnownRecipes()
+      else
+        Future<List<Recipe>>.value(const <Recipe>[]),
+      if (includeHistory)
+        _historyService.getHistory()
+      else
+        Future<Map<String, RecipeHistoryRecord>>.value(
+          const <String, RecipeHistoryRecord>{},
+        ),
       _salesService.getFavoriteSupermarketId(),
     ]);
 

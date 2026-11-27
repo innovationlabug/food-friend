@@ -40,10 +40,10 @@ void main() {
 
       expect(find.byType(SettingsScreen), findsOneWidget);
 
-      final homeHeaderPos = tester.getTopLeft(find.text('Pantalla principal'));
+      final modeHeaderPos = tester.getTopLeft(find.text('Modo y funciones'));
       final ingredientsHeaderPos =
           tester.getTopLeft(find.text('Lista y registro de ingredientes'));
-      expect(homeHeaderPos.dy, lessThan(ingredientsHeaderPos.dy));
+      expect(modeHeaderPos.dy, lessThan(ingredientsHeaderPos.dy));
     });
 
     testWidgets(
@@ -63,10 +63,10 @@ void main() {
 
       expect(find.byType(SettingsScreen), findsOneWidget);
 
-      final homeHeaderPos = tester.getTopLeft(find.text('Pantalla principal'));
+      final modeHeaderPos = tester.getTopLeft(find.text('Modo y funciones'));
       final ingredientsHeaderPos =
           tester.getTopLeft(find.text('Lista y registro de ingredientes'));
-      expect(ingredientsHeaderPos.dy, lessThan(homeHeaderPos.dy));
+      expect(ingredientsHeaderPos.dy, lessThan(modeHeaderPos.dy));
     });
 
     testWidgets(
@@ -86,16 +86,16 @@ void main() {
 
       expect(find.byType(SettingsScreen), findsOneWidget);
 
-      final homeHeaderPos = tester.getTopLeft(find.text('Pantalla principal'));
+      final modeHeaderPos = tester.getTopLeft(find.text('Modo y funciones'));
       final ingredientsHeaderPos =
           tester.getTopLeft(find.text('Lista y registro de ingredientes'));
-      expect(ingredientsHeaderPos.dy, lessThan(homeHeaderPos.dy));
+      expect(ingredientsHeaderPos.dy, lessThan(modeHeaderPos.dy));
     });
   });
 
-  group('Main screen hide panels settings', () {
+  group('Optional feature toggles settings', () {
     testWidgets(
-        'toggling hide panels hides Nutrition tips and Recipe management on HomeScreen',
+        'toggling Nutrition and Recipe Management off hides them on HomeScreen',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -113,14 +113,23 @@ void main() {
       await tester.tap(find.text('Configuración'));
       await tester.pumpAndSettle();
 
-      // Toggle both hide switches ON
-      await tester.tap(find.text('Ocultar Consejos de Nutrición'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Ocultar Gestión de recetas'));
+      // Toggle Recipe Management and Nutrition off
+      final recipeMgmtTile = find.text('Gestión de recetas, historial y favoritas');
+      await tester.ensureVisible(recipeMgmtTile);
+      await tester.tap(recipeMgmtTile);
       await tester.pumpAndSettle();
 
-      expect(SettingsController.instance.hideNutritionTipsPanel, isTrue);
-      expect(SettingsController.instance.hideRecipeManagementPanel, isTrue);
+      final nutritionTile = find.text('Consejos de nutrición y metas de salud');
+      await tester.ensureVisible(nutritionTile);
+      await tester.tap(nutritionTile);
+      await tester.pumpAndSettle();
+
+      expect(SettingsController.instance.enableNutritionAndGoals, isFalse);
+      expect(SettingsController.instance.enableRecipeManagement, isFalse);
+      expect(
+        SettingsController.instance.experienceMode,
+        ExperienceMode.custom,
+      );
 
       // Return to HomeScreen
       await tester.tap(find.byType(BackButton));

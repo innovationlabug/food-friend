@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
@@ -20,6 +21,7 @@ import '../../shopping_list/presentation/shopping_list_screen.dart';
 import '../data/external_recipe_service.dart';
 import '../data/recipe_history_service.dart';
 import '../data/recipe_search_service.dart';
+import '../domain/recipe_history_record.dart';
 import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
 import '../domain/recipe_time_filter.dart';
@@ -198,7 +200,23 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         widget.priceStorageService ?? IngredientPriceStorageService();
     _salesService = widget.salesService ?? SalesService();
     _selectedIngredientNames = List<String>.from(widget.selectedIngredientNames);
+    SettingsController.instance.addListener(_onSettingsChanged);
     _performDiscovery();
+  }
+
+  void _onSettingsChanged() {
+    if (!mounted) return;
+    if (_showingAllRecipes) {
+      _showAllLocalRecipes();
+    } else {
+      _performDiscovery();
+    }
+  }
+
+  @override
+  void dispose() {
+    SettingsController.instance.removeListener(_onSettingsChanged);
+    super.dispose();
   }
 
   Future<void> _performDiscovery() async {
@@ -206,11 +224,27 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
       _isLoading = true;
     });
 
+    await SettingsController.instance.load();
+    final settings = SettingsController.instance;
+
     final pantryFuture = _ingredientStorageService.getIngredients();
-    final historyFuture = _historyService.getHistory();
-    final goalsFuture = _healthGoalStorageService.getSelectedGoals();
-    final pricesFuture = _priceStorageService.getPrices();
-    final dealsFuture = _salesService.getCachedOrFallbackDeals();
+    final historyFuture = settings.enableRecipeManagement
+        ? _historyService.getHistory()
+        : Future<Map<String, RecipeHistoryRecord>>.value(
+            const <String, RecipeHistoryRecord>{},
+          );
+    final goalsFuture = settings.enableNutritionAndGoals
+        ? _healthGoalStorageService.getSelectedGoals()
+        : Future<Set<HealthGoal>>.value(<HealthGoal>{});
+    final pricesFuture = settings.enableGtqPricing
+        ? _priceStorageService.getPrices()
+        : Future<Map<String, IngredientPriceEntry>>.value(
+            const <String, IngredientPriceEntry>{},
+          );
+    final dealsFuture =
+        (settings.enableGtqPricing && settings.enableSupermarketDeals)
+            ? _salesService.getCachedOrFallbackDeals()
+            : Future<List<SupermarketDeal>>.value(const <SupermarketDeal>[]);
     final pantry = await pantryFuture;
     final history = await historyFuture;
     final activeGoals = await goalsFuture;
@@ -237,14 +271,22 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     final response = await _externalService.discoverRecipes(
       selectedIngredients: _selectedIngredientNames,
       localSearchService: _searchService,
-      history: history,
+      history: settings.enableRecipeManagement ? history : null,
       activeHealthGoals: activeGoals,
+      enableExternalAi: settings.enableAiRecipes,
+      includeAvailabilityReplacements: settings.enableIngredientReplacements,
+      includeHealthGoalReplacements:
+          settings.enableIngredientReplacements && settings.enableNutritionAndGoals,
     );
 
     if (mounted) {
-      final filteredResults = response.results
-          .where((r) => history[r.recipe.id]?.preference != RecipePreference.never)
-          .toList();
+      final filteredResults = settings.enableRecipeManagement
+          ? response.results
+              .where(
+                (r) => history[r.recipe.id]?.preference != RecipePreference.never,
+              )
+              .toList()
+          : response.results;
 
       setState(() {
         _pantryIngredients = pantry;
@@ -303,17 +345,32 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   }
 
   Future<void> _showAllLocalRecipes() async {
-    final history = await _historyService.getHistory();
-    final activeGoals = await _healthGoalStorageService.getSelectedGoals();
-    final savedPrices = await _priceStorageService.getPrices();
-    final cachedDeals = await _salesService.getCachedOrFallbackDeals();
+    await SettingsController.instance.load();
+    final settings = SettingsController.instance;
+
+    final history = settings.enableRecipeManagement
+        ? await _historyService.getHistory()
+        : const <String, RecipeHistoryRecord>{};
+    final activeGoals = settings.enableNutritionAndGoals
+        ? await _healthGoalStorageService.getSelectedGoals()
+        : const <HealthGoal>{};
+    final savedPrices = settings.enableGtqPricing
+        ? await _priceStorageService.getPrices()
+        : const <String, IngredientPriceEntry>{};
+    final cachedDeals =
+        (settings.enableGtqPricing && settings.enableSupermarketDeals)
+            ? await _salesService.getCachedOrFallbackDeals()
+            : const <SupermarketDeal>[];
     if (!mounted) return;
 
     final all = _searchService.searchRecipes(
       selectedIngredientNames: _selectedIngredientNames,
       minMatchCount: 0,
-      history: history,
+      history: settings.enableRecipeManagement ? history : null,
       activeHealthGoals: activeGoals,
+      includeAvailabilityReplacements: settings.enableIngredientReplacements,
+      includeHealthGoalReplacements:
+          settings.enableIngredientReplacements && settings.enableNutritionAndGoals,
     );
 
     if (activeGoals.isEmpty && _selectedIngredientNames.isEmpty) {
@@ -354,11 +411,16 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
           ),
         );
       } else {
+        final settings = SettingsController.instance;
         final newResults = _searchService.searchRecipes(
           selectedIngredientNames: _selectedIngredientNames,
           recipePool: newRecipes,
           minMatchCount: 0,
-          activeHealthGoals: _activeHealthGoals,
+          activeHealthGoals:
+              settings.enableNutritionAndGoals ? _activeHealthGoals : const {},
+          includeAvailabilityReplacements: settings.enableIngredientReplacements,
+          includeHealthGoalReplacements: settings.enableIngredientReplacements &&
+              settings.enableNutritionAndGoals,
         );
 
         setState(() {
@@ -412,27 +474,28 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          if (MediaQuery.sizeOf(context).width >= 480)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton.icon(
-                key: const ValueKey('open_multi_day_planner_button'),
-                onPressed: () => _openMultiDayPlanner(),
-                icon: AppSvgIcon(
-                  assetName: 'calendar',
-                  size: 18,
-                  color: Theme.of(context).colorScheme.primary,
+          if (SettingsController.instance.enableMultiDayPlanner)
+            if (MediaQuery.sizeOf(context).width >= 480)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: TextButton.icon(
+                  key: const ValueKey('open_multi_day_planner_button'),
+                  onPressed: () => _openMultiDayPlanner(),
+                  icon: AppSvgIcon(
+                    assetName: 'calendar',
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  label: const Text('Planificar días'),
                 ),
-                label: const Text('Planificar días'),
+              )
+            else
+              IconButton(
+                key: const ValueKey('open_multi_day_planner_button'),
+                tooltip: 'Planificar varios días',
+                icon: const AppSvgIcon(assetName: 'calendar', size: 22),
+                onPressed: () => _openMultiDayPlanner(),
               ),
-            )
-          else
-            IconButton(
-              key: const ValueKey('open_multi_day_planner_button'),
-              tooltip: 'Planificar varios días',
-              icon: const AppSvgIcon(assetName: 'calendar', size: 22),
-              onPressed: () => _openMultiDayPlanner(),
-            ),
         ],
       ),
       body: SafeArea(
@@ -484,7 +547,8 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         _buildCategoryFilters(context),
         const SizedBox(height: 8),
         _buildTimeFilters(context),
-        if (_activeHealthGoals.isNotEmpty) ...[
+        if (SettingsController.instance.enableNutritionAndGoals &&
+            _activeHealthGoals.isNotEmpty) ...[
           const SizedBox(height: 8),
           _buildActiveGoalsBar(context),
         ],
@@ -494,8 +558,10 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
               ? _buildEmptyFilteredState(context)
               : _buildResultsList(context, filtered),
         ),
-        const SizedBox(height: 8),
-        _buildAiGenerationButton(context),
+        if (SettingsController.instance.enableAiRecipes) ...[
+          const SizedBox(height: 8),
+          _buildAiGenerationButton(context),
+        ],
       ],
     );
   }
@@ -1020,17 +1086,21 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final recipe = result.recipe;
-    final costComparison = RecipeCostCalculator.compareRecipe(
-      recipe,
-      savedPrices: _savedPrices,
-      deals: _cachedDeals,
-    );
+    final settings = SettingsController.instance;
+    final showGtqPricing = settings.enableGtqPricing;
+    final costComparison = showGtqPricing
+        ? RecipeCostCalculator.compareRecipe(
+            recipe,
+            savedPrices: _savedPrices,
+            deals: settings.enableSupermarketDeals ? _cachedDeals : const [],
+          )
+        : null;
 
     final metaDetails = <String>[];
     if (recipe.category != null) metaDetails.add(recipe.category!);
     if (recipe.totalTimeMinutes != null) metaDetails.add('${recipe.totalTimeMinutes} min');
     if (recipe.servings != null) metaDetails.add('${recipe.servings} porciones');
-    if (recipe.ingredients.isNotEmpty) {
+    if (showGtqPricing && costComparison != null && recipe.ingredients.isNotEmpty) {
       metaDetails.add('~${costComparison.formattedHomePerServing} / porción');
     }
 
@@ -1168,18 +1238,21 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              if (result.hasAvailabilityReplacements) ...[
+              if (settings.enableIngredientReplacements &&
+                  result.hasAvailabilityReplacements) ...[
                 const SizedBox(height: 8),
                 _buildAvailabilitySwapCallout(context, result),
               ],
-              if (result.goalMatch.hasMatch) ...[
+              if (settings.enableNutritionAndGoals && result.goalMatch.hasMatch) ...[
                 const SizedBox(height: 10),
                 GoalTooltipBanner(
                   tooltipKey: ValueKey('goal_tooltip_${recipe.id}'),
                   goalMatch: result.goalMatch,
                 ),
               ],
-              if (result.hasHealthGoalReplacements) ...[
+              if (settings.enableIngredientReplacements &&
+                  settings.enableNutritionAndGoals &&
+                  result.hasHealthGoalReplacements) ...[
                 const SizedBox(height: 8),
                 _buildHealthGoalSwapCallout(context, result),
               ],
@@ -1420,17 +1493,19 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                   ),
                   label: const Text('Ver todas las recetas'),
                 ),
-                const SizedBox(height: 4),
-                TextButton.icon(
-                  key: const ValueKey('empty_multi_day_planner_button'),
-                  onPressed: () => _openMultiDayPlanner(),
-                  icon: AppSvgIcon(
-                    assetName: 'calendar',
-                    size: 18,
-                    color: colorScheme.primary,
+                if (SettingsController.instance.enableMultiDayPlanner) ...[
+                  const SizedBox(height: 4),
+                  TextButton.icon(
+                    key: const ValueKey('empty_multi_day_planner_button'),
+                    onPressed: () => _openMultiDayPlanner(),
+                    icon: AppSvgIcon(
+                      assetName: 'calendar',
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                    label: const Text('Planificar varios días'),
                   ),
-                  label: const Text('Planificar varios días'),
-                ),
+                ],
               ] else ...[
                 FilledButton.icon(
                   onPressed: _showAllLocalRecipes,
@@ -1451,17 +1526,19 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                   ),
                   label: const Text('Ir a mis ingredientes'),
                 ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  key: const ValueKey('empty_multi_day_planner_button'),
-                  onPressed: () => _openMultiDayPlanner(),
-                  icon: AppSvgIcon(
-                    assetName: 'calendar',
-                    size: 18,
-                    color: colorScheme.primary,
+                if (SettingsController.instance.enableMultiDayPlanner) ...[
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    key: const ValueKey('empty_multi_day_planner_button'),
+                    onPressed: () => _openMultiDayPlanner(),
+                    icon: AppSvgIcon(
+                      assetName: 'calendar',
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                    label: const Text('Planificar varios días'),
                   ),
-                  label: const Text('Planificar varios días'),
-                ),
+                ],
               ],
             ],
           ),

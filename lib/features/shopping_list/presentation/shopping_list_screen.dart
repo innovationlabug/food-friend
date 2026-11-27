@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
@@ -7,8 +8,10 @@ import '../../ingredients/data/ingredient_storage_service.dart';
 import '../../ingredients/domain/ingredient.dart';
 import '../../ingredients/presentation/add_ingredient_screen.dart';
 import '../../nutrition/data/health_goal_storage_service.dart';
+import '../../nutrition/domain/health_goal.dart';
 import '../../recipes/data/external_recipe_service.dart';
 import '../../recipes/data/recipe_history_service.dart';
+import '../../recipes/domain/recipe_history_record.dart';
 import '../../recipes/presentation/recipe_suggestions_screen.dart';
 import '../../sales/data/sales_matcher_service.dart';
 import '../../sales/data/sales_service.dart';
@@ -118,11 +121,18 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
       initialIndex: _activeTabIndex,
     );
     _tabController.addListener(_onTabChanged);
+    SettingsController.instance.addListener(_onSettingsChanged);
+    _loadIngredients();
+  }
+
+  void _onSettingsChanged() {
+    if (!mounted) return;
     _loadIngredients();
   }
 
   @override
   void dispose() {
+    SettingsController.instance.removeListener(_onSettingsChanged);
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
@@ -141,17 +151,32 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
       _isLoading = true;
     });
 
+    await SettingsController.instance.load();
+    final settings = SettingsController.instance;
+
     final results = await Future.wait<dynamic>([
       _storageService.getIngredients(),
       _shoppingListService.getIngredients(),
-      _suggestionService.loadContext(),
-      _salesMatcherService.loadAndMatch(),
+      if (settings.enableSmartShoppingSuggestions ||
+          settings.enableSupermarketDeals)
+        _suggestionService.loadContext(
+          includeHistory: settings.enableRecipeManagement,
+          includeHealthGoals: settings.enableNutritionAndGoals,
+        )
+      else
+        Future<ShoppingSuggestionsContext?>.value(null),
+      if (settings.enableSupermarketDeals)
+        _salesMatcherService.loadAndMatch(
+          includeHistory: settings.enableRecipeManagement,
+        )
+      else
+        Future<SalesMatchReport?>.value(null),
     ]);
 
     final items = results[0] as List<Ingredient>;
     final toBuy = results[1] as List<Ingredient>;
-    final contextSnapshot = results[2] as ShoppingSuggestionsContext;
-    final salesReport = results[3] as SalesMatchReport;
+    final contextSnapshot = results[2] as ShoppingSuggestionsContext?;
+    final salesReport = results[3] as SalesMatchReport?;
 
     if (mounted) {
       setState(() {
@@ -177,20 +202,28 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     List<Ingredient> shoppingList,
     ShoppingSuggestionsContext? contextSnapshot,
   ) {
-    if (contextSnapshot == null) {
+    final settings = SettingsController.instance;
+    if (!settings.enableSmartShoppingSuggestions || contextSnapshot == null) {
       return const <ShoppingSuggestion>[];
     }
     return _suggestionService.generateSuggestions(
       pantryIngredients: pantry,
       shoppingListIngredients: shoppingList,
       recipes: contextSnapshot.recipes,
-      history: contextSnapshot.history,
-      activeHealthGoals: contextSnapshot.activeHealthGoals,
-      nutritionReport: contextSnapshot.nutritionReport,
+      history: settings.enableRecipeManagement
+          ? contextSnapshot.history
+          : const <String, RecipeHistoryRecord>{},
+      activeHealthGoals: settings.enableNutritionAndGoals
+          ? contextSnapshot.activeHealthGoals
+          : const <HealthGoal>{},
+      nutritionReport: settings.enableNutritionAndGoals
+          ? contextSnapshot.nutritionReport
+          : null,
     );
   }
 
   void _recomputeSuggestions() {
+    final settings = SettingsController.instance;
     _suggestions = _computeSuggestions(
       _ingredients,
       _shoppingListItems,
@@ -198,13 +231,21 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
     );
     final currentSales = _salesReport;
     final contextSnapshot = _suggestionsContext;
+    if (!settings.enableSupermarketDeals) {
+      _salesReport = null;
+      return;
+    }
     if (currentSales != null && contextSnapshot != null) {
       _salesReport = _salesMatcherService.matchDeals(
         deals: currentSales.allDeals.map((d) => d.deal).toList(),
         pantryIngredients: _ingredients,
         shoppingListIngredients: _shoppingListItems,
-        recipes: contextSnapshot.recipes,
-        history: contextSnapshot.history,
+        recipes: settings.enableRecipeManagement
+            ? contextSnapshot.recipes
+            : const [],
+        history: settings.enableRecipeManagement
+            ? contextSnapshot.history
+            : const <String, RecipeHistoryRecord>{},
         favoriteSupermarketId: currentSales.favoriteSupermarketId,
       );
     }
@@ -667,7 +708,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
   Widget _buildShoppingEmptyWithSuggestionsState(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final salesReport = _salesReport;
+    final settings = SettingsController.instance;
+    final salesReport = settings.enableSupermarketDeals ? _salesReport : null;
 
     return ListView(
       children: [
@@ -726,11 +768,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
             ),
           ),
         ),
-        const SizedBox(height: 20),
-        SmartShoppingSuggestionsSection(
-          suggestions: _suggestions,
-          onAddIngredient: _addSuggestedIngredient,
-        ),
+        if (settings.enableSmartShoppingSuggestions) ...[
+          const SizedBox(height: 20),
+          SmartShoppingSuggestionsSection(
+            suggestions: _suggestions,
+            onAddIngredient: _addSuggestedIngredient,
+          ),
+        ],
         const SizedBox(height: 80),
       ],
     );
@@ -879,7 +923,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
   Widget _buildShoppingListView(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final salesReport = _salesReport;
+    final settings = SettingsController.instance;
+    final salesReport = settings.enableSupermarketDeals ? _salesReport : null;
 
     return ListView(
       children: [
@@ -925,14 +970,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen>
           itemBuilder: (context, index) =>
               _buildShoppingListItemCard(context, _shoppingListItems[index]),
         ),
-        if (_suggestions.isNotEmpty) ...[
+        if (settings.enableSmartShoppingSuggestions && _suggestions.isNotEmpty) ...[
           const SizedBox(height: 20),
           SmartShoppingSuggestionsSection(
             suggestions: _suggestions,
             onAddIngredient: _addSuggestedIngredient,
           ),
         ],
-        if (salesReport != null && !salesReport.hasMatches) ...[
+        if (settings.enableSupermarketDeals &&
+            salesReport != null &&
+            !salesReport.hasMatches) ...[
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: _openSupermarketDeals,

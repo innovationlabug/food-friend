@@ -1084,6 +1084,8 @@ class _SinglePoolRecipeSearchService extends RecipeSearchService {
     Map<String, RecipeHistoryRecord>? history,
     int? maxTotalTimeMinutes,
     Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
+    bool includeAvailabilityReplacements = true,
+    bool includeHealthGoalReplacements = true,
   }) {
     return super.searchRecipes(
       selectedIngredientNames: selectedIngredientNames,
@@ -1092,6 +1094,8 @@ class _SinglePoolRecipeSearchService extends RecipeSearchService {
       history: history,
       maxTotalTimeMinutes: maxTotalTimeMinutes,
       activeHealthGoals: activeHealthGoals,
+      includeAvailabilityReplacements: includeAvailabilityReplacements,
+      includeHealthGoalReplacements: includeHealthGoalReplacements,
     );
   }
 }

@@ -75,19 +75,30 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }
 
   Future<void> _loadHomeData() async {
-    final results = await Future.wait([
-      _nutritionService.generateReport(),
+    await SettingsController.instance.load();
+    final settings = SettingsController.instance;
+
+    final results = await Future.wait<dynamic>([
       _ingredientStorageService.getIngredients(),
-      _healthGoalStorageService.getSelectedGoals(),
-      SettingsController.instance.load(),
-      _salesMatcherService.loadAndMatch(),
+      if (settings.enableNutritionAndGoals)
+        _nutritionService.generateReport()
+      else
+        Future<NutritionReport?>.value(null),
+      if (settings.enableNutritionAndGoals)
+        _healthGoalStorageService.getSelectedGoals()
+      else
+        Future<Set<HealthGoal>>.value(<HealthGoal>{}),
+      if (settings.enableSupermarketDeals)
+        _salesMatcherService.loadAndMatch()
+      else
+        Future<SalesMatchReport?>.value(null),
     ]);
     if (!mounted) return;
     setState(() {
-      _nutritionReport = results[0] as NutritionReport;
-      _ingredientCount = (results[1] as List).length;
+      _ingredientCount = (results[0] as List).length;
+      _nutritionReport = results[1] as NutritionReport?;
       _activeGoals = results[2] as Set<HealthGoal>;
-      _salesReport = results[4] as SalesMatchReport;
+      _salesReport = results[3] as SalesMatchReport?;
     });
   }
 
@@ -195,7 +206,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final salesReport = _salesReport;
-                  final hasSalesAlert = salesReport != null && salesReport.hasMatches;
+                  final hasSalesAlert =
+                      SettingsController.instance.enableSupermarketDeals &&
+                          salesReport != null &&
+                          salesReport.hasMatches;
                   final canFitInViewport =
                       constraints.maxHeight >= (hasSalesAlert ? 640 : 480);
                   if (canFitInViewport) {
@@ -295,8 +309,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }) {
     final gap = context.isMobile ? 10.0 : 16.0;
     final settings = SettingsController.instance;
-    final hideRecipeManagement = settings.hideRecipeManagementPanel;
-    final hideNutritionTips = settings.hideNutritionTipsPanel;
+    final hideRecipeManagement = !settings.enableRecipeManagement;
+    final hideNutritionTips = !settings.enableNutritionAndGoals;
 
     // Dynamic vertical proportions:
     // - No ingredients: emphasize Ingredients & Shopping List.

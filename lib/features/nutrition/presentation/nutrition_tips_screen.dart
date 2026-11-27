@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
@@ -96,9 +97,12 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
       _isLoading = true;
     });
 
+    await SettingsController.instance.load();
+    final includeHistory = SettingsController.instance.enableRecipeManagement;
+
     final results = await Future.wait<dynamic>([
       _healthGoalStorageService.getSelectedGoals(),
-      _nutritionService.generateReport(),
+      _nutritionService.generateReport(includeCookingHistory: includeHistory),
       _shoppingListService.getIngredients(),
     ]);
 
@@ -119,7 +123,9 @@ class _NutritionTipsScreenState extends State<NutritionTipsScreen> {
 
   Future<void> _toggleGoal(HealthGoal goal) async {
     final updatedGoals = await _healthGoalStorageService.toggleGoal(goal);
-    final updatedReport = await _nutritionService.generateReport();
+    final updatedReport = await _nutritionService.generateReport(
+      includeCookingHistory: SettingsController.instance.enableRecipeManagement,
+    );
     if (!mounted) return;
 
     setState(() {

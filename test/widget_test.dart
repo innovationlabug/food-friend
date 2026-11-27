@@ -1,14 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:food_friend/core/settings/settings_controller.dart';
 import 'package:food_friend/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Renders initial Spanish shell and navigation cards smoke test',
+  testWidgets('Shows first-launch mode selection then renders Spanish Home shell',
       (WidgetTester tester) async {
-    // Build FoodFriendApp and settle animations/assets
+    SharedPreferences.setMockInitialValues({});
+    SettingsController.instance.resetToDefaults();
+
     await tester.pumpWidget(const FoodFriendApp());
     await tester.pumpAndSettle();
 
-    // Verify key titles and Spanish copy are rendered
+    // First-launch mode selection is shown
+    expect(find.text('Elige cómo quieres usar la aplicación'), findsOneWidget);
+    expect(find.text('Simple'), findsOneWidget);
+    expect(find.text('Completa'), findsOneWidget);
+    expect(find.text('Personalizada'), findsOneWidget);
+
+    await tester.tap(find.text('Completa'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+
+    // Verify key titles and Spanish copy are rendered on HomeScreen
     expect(find.text('Food Friend'), findsOneWidget);
     expect(find.text('Bienvenido a Food Friend'), findsOneWidget);
     expect(find.text('Ingredientes disponibles'), findsOneWidget);

@@ -12,7 +12,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      SettingsController.hasCompletedModeSelectionKey: true,
+    });
     SettingsController.instance.resetToDefaults();
     ThemeController.instance.resetToLight();
   });
@@ -30,7 +32,7 @@ void main() {
     expect(find.text('Consejos de Nutrición'), findsOneWidget);
     expect(find.text('Gestión de recetas'), findsOneWidget);
 
-    // 2. Open Settings from HomeScreen drawer -> Pantalla principal is on top
+    // 2. Open Settings from HomeScreen drawer -> Modo y funciones is on top
     await tester.tap(find.byTooltip('Menú de navegación'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Configuración'));
@@ -38,14 +40,18 @@ void main() {
 
     expect(find.byType(SettingsScreen), findsOneWidget);
     expect(
-      tester.getTopLeft(find.text('Pantalla principal')).dy,
+      tester.getTopLeft(find.text('Modo y funciones')).dy,
       lessThan(
         tester.getTopLeft(find.text('Lista y registro de ingredientes')).dy,
       ),
     );
 
-    // Hide Consejos de Nutrición panel
-    await tester.tap(find.text('Ocultar Consejos de Nutrición'));
+    // Disable Consejos de nutrición y metas de salud
+    final nutritionToggle =
+        find.text('Consejos de nutrición y metas de salud');
+    await tester.ensureVisible(nutritionToggle);
+    await tester.pumpAndSettle();
+    await tester.tap(nutritionToggle);
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(BackButton));
@@ -79,13 +85,16 @@ void main() {
 
     expect(
       tester.getTopLeft(find.text('Lista y registro de ingredientes')).dy,
-      lessThan(tester.getTopLeft(find.text('Pantalla principal')).dy),
+      lessThan(tester.getTopLeft(find.text('Modo y funciones')).dy),
     );
 
     // Enable auto-return and reset tooltips
     await tester.tap(find.text('Volver automáticamente a la lista'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Restablecer consejos'));
+    final resetBtn = find.text('Restablecer consejos');
+    await tester.ensureVisible(resetBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(resetBtn);
     await tester.pumpAndSettle();
 
     // Return to AddIngredientScreen

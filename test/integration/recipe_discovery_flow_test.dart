@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:food_friend/core/settings/settings_controller.dart';
 import 'package:food_friend/core/theme/app_theme.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
@@ -25,7 +26,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      SettingsController.hasCompletedModeSelectionKey: true,
+    });
+    SettingsController.instance.resetToDefaults();
   });
 
   testWidgets('E2E Full Flow US-4.2: Clean state -> Add ingredients -> Select -> Discover Recipes -> Recipe Detail',

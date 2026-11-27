@@ -6,8 +6,9 @@ import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
 
 /// Application customization screen accessible from the hamburger menu.
-/// Orders setting sections dynamically so options relevant to the screen
-/// from which the user opened settings appear at the top.
+/// Allows switching experience modes (`Simple`, `Completa`, `Personalizada`),
+/// toggling individual optional features by category, and configuring core
+/// ingredient/appearance preferences.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
@@ -65,25 +66,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: ListenableBuilder(
             listenable: Listenable.merge([_controller, ThemeController.instance]),
             builder: (context, _) {
-              final orderedSections = widget.initialSection == SettingsSection.ingredients
-                  ? [
-                      _buildIngredientsSection(context),
-                      const SizedBox(height: 20),
-                      _buildHomeSection(context),
-                    ]
-                  : [
-                      _buildHomeSection(context),
-                      const SizedBox(height: 20),
-                      _buildIngredientsSection(context),
-                    ];
+              final orderedSections =
+                  widget.initialSection == SettingsSection.ingredients
+                      ? [
+                          _buildIngredientsSection(context),
+                          const SizedBox(height: 20),
+                          _buildExperienceAndFeaturesSection(context),
+                        ]
+                      : [
+                          _buildExperienceAndFeaturesSection(context),
+                          const SizedBox(height: 20),
+                          _buildIngredientsSection(context),
+                        ];
 
-              return ListView(
-                children: [
-                  ...orderedSections,
-                  const SizedBox(height: 20),
-                  _buildAppearanceSection(context),
-                  const SizedBox(height: 16),
-                ],
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ...orderedSections,
+                    const SizedBox(height: 20),
+                    _buildAppearanceSection(context),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               );
             },
           ),
@@ -124,68 +129,158 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildHomeSection(BuildContext context) {
+  Widget _buildExperienceAndFeaturesSection(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final activeMode = _controller.experienceMode;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildSectionHeader(
           context,
-          iconName: 'home',
-          title: 'Pantalla principal',
+          iconName: 'settings',
+          title: 'Modo y funciones',
         ),
         Card(
           margin: EdgeInsets.zero,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-                child: Text(
-                  'Ocultar paneles',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Modo de uso',
+                  style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-              SwitchListTile(
-                secondary: AppSvgIcon(
-                  assetName: 'nutrition',
-                  size: 20,
-                  color: colorScheme.primary,
+                const SizedBox(height: 4),
+                Text(
+                  activeMode.description,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                title: const Text('Ocultar Consejos de Nutrición'),
-                subtitle: const Text(
-                  'Oculta el panel de Consejos de Nutrición en la pantalla principal.',
+                const SizedBox(height: 12),
+                SegmentedButton<ExperienceMode>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment<ExperienceMode>(
+                      value: ExperienceMode.simple,
+                      label: Text('Simple'),
+                    ),
+                    ButtonSegment<ExperienceMode>(
+                      value: ExperienceMode.full,
+                      label: Text('Completa'),
+                    ),
+                    ButtonSegment<ExperienceMode>(
+                      value: ExperienceMode.custom,
+                      label: Text('Personalizada'),
+                    ),
+                  ],
+                  selected: {activeMode},
+                  onSelectionChanged: (selected) {
+                    if (selected.isNotEmpty) {
+                      _controller.applyExperienceMode(selected.first);
+                    }
+                  },
                 ),
-                value: _controller.hideNutritionTipsPanel,
-                onChanged: (value) {
-                  _controller.setHideNutritionTipsPanel(value);
-                },
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              SwitchListTile(
-                secondary: AppSvgIcon(
-                  assetName: 'heart',
-                  size: 20,
-                  color: colorScheme.primary,
-                ),
-                title: const Text('Ocultar Gestión de recetas'),
-                subtitle: const Text(
-                  'Oculta el panel de Gestión de recetas en la pantalla principal.',
-                ),
-                value: _controller.hideRecipeManagementPanel,
-                onChanged: (value) {
-                  _controller.setHideRecipeManagementPanel(value);
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+        const SizedBox(height: 12),
+        for (int i = 0; i < FeatureCategory.values.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          _buildFeatureCategoryCard(context, FeatureCategory.values[i]),
+        ],
       ],
+    );
+  }
+
+  Widget _buildFeatureCategoryCard(
+    BuildContext context,
+    FeatureCategory category,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final features = category.features;
+    final allEnabled = _controller.isCategoryEnabled(category);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 12, 8),
+            child: Row(
+              children: [
+                AppSvgIcon(
+                  assetName: category.iconName,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category.label,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        category.description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (features.length > 1)
+                  Switch(
+                    value: allEnabled,
+                    onChanged: (value) {
+                      _controller.setCategoryEnabled(category, value);
+                    },
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          for (int i = 0; i < features.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+            _buildFeatureSwitchTile(context, features[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureSwitchTile(
+    BuildContext context,
+    OptionalFeature feature,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final enabled = _controller.isFeatureEnabled(feature);
+
+    return SwitchListTile(
+      secondary: AppSvgIcon(
+        assetName: feature.iconName,
+        size: 20,
+        color: enabled ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      ),
+      title: Text(feature.title),
+      subtitle: Text(feature.description),
+      value: enabled,
+      onChanged: (value) {
+        _controller.setFeatureEnabled(feature, value);
+      },
     );
   }
 

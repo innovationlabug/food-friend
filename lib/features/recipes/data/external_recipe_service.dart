@@ -53,6 +53,9 @@ class ExternalRecipeService {
     required RecipeSearchService localSearchService,
     Map<String, RecipeHistoryRecord>? history,
     Set<HealthGoal> activeHealthGoals = const <HealthGoal>{},
+    bool enableExternalAi = true,
+    bool includeAvailabilityReplacements = true,
+    bool includeHealthGoalReplacements = true,
   }) async {
     if (selectedIngredients.isEmpty) {
       return const RecipeDiscoveryResponse(
@@ -67,6 +70,8 @@ class ExternalRecipeService {
       minMatchCount: 1,
       history: history,
       activeHealthGoals: activeHealthGoals,
+      includeAvailabilityReplacements: includeAvailabilityReplacements,
+      includeHealthGoalReplacements: includeHealthGoalReplacements,
     );
 
     if (localMatches.isNotEmpty) {
@@ -76,30 +81,34 @@ class ExternalRecipeService {
       );
     }
 
-    // 2. Zero local matches: automatically query external recipe API
-    try {
-      final externalRecipes = await fetchExternalRecipes(selectedIngredients);
+    // 2. Zero local matches: query external recipe API when AI generation is enabled
+    if (enableExternalAi) {
+      try {
+        final externalRecipes = await fetchExternalRecipes(selectedIngredients);
 
-      if (externalRecipes.isNotEmpty) {
-        final externalResults = localSearchService.searchRecipes(
-          selectedIngredientNames: selectedIngredients,
-          recipePool: externalRecipes,
-          minMatchCount: 0,
-          history: history,
-          activeHealthGoals: activeHealthGoals,
-        );
+        if (externalRecipes.isNotEmpty) {
+          final externalResults = localSearchService.searchRecipes(
+            selectedIngredientNames: selectedIngredients,
+            recipePool: externalRecipes,
+            minMatchCount: 0,
+            history: history,
+            activeHealthGoals: activeHealthGoals,
+            includeAvailabilityReplacements: includeAvailabilityReplacements,
+            includeHealthGoalReplacements: includeHealthGoalReplacements,
+          );
 
-        final resolvedSource = (externalRecipes.first.source == 'gemini')
-            ? 'gemini'
-            : 'external';
+          final resolvedSource = (externalRecipes.first.source == 'gemini')
+              ? 'gemini'
+              : 'external';
 
-        return RecipeDiscoveryResponse(
-          results: externalResults,
-          source: resolvedSource,
-        );
+          return RecipeDiscoveryResponse(
+            results: externalResults,
+            source: resolvedSource,
+          );
+        }
+      } catch (_) {
+        // Offline, network timeout, or server error -> trigger local fallback below
       }
-    } catch (_) {
-      // Offline, network timeout, or server error -> trigger local fallback below
     }
 
     // 3. Graceful fallback: closest partial matches from local dataset
@@ -108,6 +117,8 @@ class ExternalRecipeService {
           selectedIngredients,
           limit: 5,
           activeHealthGoals: activeHealthGoals,
+          includeAvailabilityReplacements: includeAvailabilityReplacements,
+          includeHealthGoalReplacements: includeHealthGoalReplacements,
         )
         .where((r) => history?[r.recipe.id]?.preference != RecipePreference.never)
         .toList();
@@ -115,8 +126,9 @@ class ExternalRecipeService {
     return RecipeDiscoveryResponse(
       results: partials,
       source: 'fallback',
-      fallbackMessage:
-          'No se encontraron recetas exactas en el recetario externo o te encuentras sin conexión. Te mostramos las alternativas locales más cercanas.',
+      fallbackMessage: enableExternalAi
+          ? 'No se encontraron recetas exactas en el recetario externo o te encuentras sin conexión. Te mostramos las alternativas locales más cercanas.'
+          : 'No se encontraron recetas exactas con tus ingredientes. Te mostramos las alternativas locales más cercanas.',
     );
   }
 

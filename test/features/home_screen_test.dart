@@ -23,7 +23,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      SettingsController.hasCompletedModeSelectionKey: true,
+    });
     SettingsController.instance.resetToDefaults();
     ThemeController.instance.resetToLight();
   });

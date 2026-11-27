@@ -74,8 +74,8 @@ class AddIngredientScreen extends StatefulWidget {
 }
 
 class _AddIngredientScreenState extends State<AddIngredientScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+    with TickerProviderStateMixin {
+  late TabController _tabController;
   late final IngredientStorageService _storageService;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -87,22 +87,44 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
   // Category navigation stack for US-2.3
   final List<CategoryNode> _categoryStack = [];
 
+  bool _showPhotoTab() =>
+      !widget.isShoppingList && SettingsController.instance.enableAnyAiScanner;
+
   @override
   void initState() {
     super.initState();
     _storageService = widget.storageService ?? IngredientStorageService();
-    final tabCount = widget.isShoppingList ? 2 : 3;
+    final tabCount = _showPhotoTab() ? 3 : 2;
     _tabController = TabController(
       length: tabCount,
       vsync: this,
       initialIndex: widget.initialTab.clamp(0, tabCount - 1),
     );
     _searchController.addListener(_onSearchChanged);
+    SettingsController.instance.addListener(_onSettingsChanged);
     SettingsController.instance.load();
+  }
+
+  void _onSettingsChanged() {
+    if (!mounted) return;
+    final desiredLength = _showPhotoTab() ? 3 : 2;
+    if (_tabController.length != desiredLength) {
+      final previousIndex = _tabController.index;
+      _tabController.dispose();
+      _tabController = TabController(
+        length: desiredLength,
+        vsync: this,
+        initialIndex: previousIndex.clamp(0, desiredLength - 1),
+      );
+      setState(() {});
+    } else {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
+    SettingsController.instance.removeListener(_onSettingsChanged);
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -266,7 +288,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
                 icon: AppSvgIcon(assetName: 'category', size: 20),
                 text: 'Categorías',
               ),
-              if (!widget.isShoppingList)
+              if (_showPhotoTab())
                 const Tab(
                   icon: AppSvgIcon(assetName: 'camera', size: 20),
                   text: 'Foto',
@@ -282,7 +304,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
               children: [
                 _buildSearchTab(theme, colorScheme),
                 _buildCategoriesTab(theme, colorScheme),
-                if (!widget.isShoppingList) _buildPhotoTab(theme, colorScheme),
+                if (_showPhotoTab()) _buildPhotoTab(theme, colorScheme),
               ],
             ),
           ),
@@ -752,24 +774,31 @@ class _AddIngredientScreenState extends State<AddIngredientScreen>
       ),
     );
 
+    final settings = SettingsController.instance;
+    final cards = <Widget>[
+      if (settings.enableFridgeScanner) fridgeCard,
+      if (settings.enableReceiptScanner) receiptCard,
+    ];
+
     return SingleChildScrollView(
-      child: context.isDesktop
+      child: context.isDesktop && cards.length == 2
           ? IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(child: fridgeCard),
+                  Expanded(child: cards[0]),
                   const SizedBox(width: 16),
-                  Expanded(child: receiptCard),
+                  Expanded(child: cards[1]),
                 ],
               ),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                fridgeCard,
-                const SizedBox(height: 16),
-                receiptCard,
+                for (int i = 0; i < cards.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 16),
+                  cards[i],
+                ],
               ],
             ),
     );

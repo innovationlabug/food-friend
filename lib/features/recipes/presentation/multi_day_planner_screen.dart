@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive_layout.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../../core/utils/string_normalizer.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
@@ -126,8 +127,20 @@ class _MultiDayPlannerScreenState extends State<MultiDayPlannerScreen> {
         ? widget.initialCategory
         : 'Todos';
     _selectedTimeFilter = widget.initialTimeFilter;
+    SettingsController.instance.addListener(_onSettingsChanged);
 
     _loadData();
+  }
+
+  void _onSettingsChanged() {
+    if (!mounted) return;
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    SettingsController.instance.removeListener(_onSettingsChanged);
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -135,13 +148,32 @@ class _MultiDayPlannerScreenState extends State<MultiDayPlannerScreen> {
       _isLoading = true;
     });
 
+    await SettingsController.instance.load();
+    final settings = SettingsController.instance;
+
     final results = await Future.wait<dynamic>([
       _ingredientStorageService.getIngredients(),
-      _historyService.getHistory(),
-      _healthGoalStorageService.getSelectedGoals(),
+      if (settings.enableRecipeManagement)
+        _historyService.getHistory()
+      else
+        Future<Map<String, RecipeHistoryRecord>>.value(
+          const <String, RecipeHistoryRecord>{},
+        ),
+      if (settings.enableNutritionAndGoals)
+        _healthGoalStorageService.getSelectedGoals()
+      else
+        Future<Set<HealthGoal>>.value(<HealthGoal>{}),
       _shoppingListService.getIngredients(),
-      _priceStorageService.getPrices(),
-      _salesService.getCachedOrFallbackDeals(),
+      if (settings.enableGtqPricing)
+        _priceStorageService.getPrices()
+      else
+        Future<Map<String, IngredientPriceEntry>>.value(
+          const <String, IngredientPriceEntry>{},
+        ),
+      if (settings.enableGtqPricing && settings.enableSupermarketDeals)
+        _salesService.getCachedOrFallbackDeals()
+      else
+        Future<List<SupermarketDeal>>.value(const <SupermarketDeal>[]),
     ]);
 
     if (!mounted) return;
@@ -374,7 +406,8 @@ class _MultiDayPlannerScreenState extends State<MultiDayPlannerScreen> {
         _buildCategoryFilters(context),
         const SizedBox(height: 8),
         _buildTimeFilters(context),
-        if (_activeHealthGoals.isNotEmpty) ...[
+        if (SettingsController.instance.enableNutritionAndGoals &&
+            _activeHealthGoals.isNotEmpty) ...[
           const SizedBox(height: 8),
           _buildActiveGoalsBar(context),
         ],
@@ -692,17 +725,21 @@ class _MultiDayPlannerScreenState extends State<MultiDayPlannerScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final recipe = day.recipe;
-    final costComparison = RecipeCostCalculator.compareRecipe(
-      recipe,
-      savedPrices: _savedPrices,
-      deals: _cachedDeals,
-    );
+    final settings = SettingsController.instance;
+    final showGtqPricing = settings.enableGtqPricing;
+    final costComparison = showGtqPricing
+        ? RecipeCostCalculator.compareRecipe(
+            recipe,
+            savedPrices: _savedPrices,
+            deals: settings.enableSupermarketDeals ? _cachedDeals : const [],
+          )
+        : null;
 
     final metaDetails = <String>[
       if (recipe.category != null) recipe.category!,
       if (recipe.totalTimeMinutes != null) '${recipe.totalTimeMinutes} min',
       if (recipe.servings != null) '${recipe.servings} porciones',
-      if (recipe.ingredients.isNotEmpty)
+      if (showGtqPricing && costComparison != null && recipe.ingredients.isNotEmpty)
         '~${costComparison.formattedHomePerServing} / porción',
     ];
 
@@ -845,7 +882,7 @@ class _MultiDayPlannerScreenState extends State<MultiDayPlannerScreen> {
                   ),
                 ),
               ],
-              if (day.goalMatch.hasMatch) ...[
+              if (settings.enableNutritionAndGoals && day.goalMatch.hasMatch) ...[
                 const SizedBox(height: 10),
                 GoalTooltipBanner(
                   tooltipKey: ValueKey(
