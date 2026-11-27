@@ -9,6 +9,7 @@ import '../data/fridge_vision_service.dart';
 import '../data/ingredient_storage_service.dart';
 import '../domain/fridge_detected_item.dart';
 import '../domain/ingredient.dart';
+import 'widgets/scan_confidence_badge.dart';
 
 /// Screen allowing the user to photograph or upload a picture of their
 /// refrigerator or pantry to automatically detect cooking ingredients (US-3.2).
@@ -516,20 +517,6 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
     FridgeDetectedItem item,
     int index,
   ) {
-    final isDark = theme.brightness == Brightness.dark;
-    Color confidenceColor;
-    switch (item.confidence) {
-      case 'high':
-        confidenceColor = isDark ? Colors.green.shade300 : Colors.green.shade700;
-        break;
-      case 'low':
-        confidenceColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-        break;
-      case 'medium':
-      default:
-        confidenceColor = isDark ? Colors.amber.shade300 : Colors.amber.shade800;
-    }
-
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -574,21 +561,10 @@ class _FridgeScannerScreenState extends State<FridgeScannerScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: confidenceColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  item.confidenceLabel,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: confidenceColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              if (!item.isHighConfidence) ...[
+                const SizedBox(width: 8),
+                ScanConfidenceBadge(confidence: item.confidence),
+              ],
             ],
           ),
         ),

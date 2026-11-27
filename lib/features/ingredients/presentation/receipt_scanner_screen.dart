@@ -10,6 +10,7 @@ import '../data/ingredient_storage_service.dart';
 import '../data/receipt_parser_service.dart';
 import '../domain/ingredient.dart';
 import '../domain/receipt_food_item.dart';
+import 'widgets/scan_confidence_badge.dart';
 
 /// Screen allowing the user to photograph or upload a supermarket receipt
 /// to automatically extract food items and populate their pantry (US-3.4).
@@ -580,20 +581,6 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
     ReceiptFoodItem item,
     int index,
   ) {
-    final isDark = theme.brightness == Brightness.dark;
-    Color confidenceColor;
-    switch (item.confidence) {
-      case 'high':
-        confidenceColor = isDark ? Colors.green.shade300 : Colors.green.shade700;
-        break;
-      case 'low':
-        confidenceColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-        break;
-      case 'medium':
-      default:
-        confidenceColor = isDark ? Colors.amber.shade300 : Colors.amber.shade800;
-    }
-
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -638,37 +625,29 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (item.formattedPrice != null)
-                    Text(
-                      item.formattedPrice!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
+              if (item.formattedPrice != null || !item.isHighConfidence) ...[
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (item.formattedPrice != null)
+                      Text(
+                        item.formattedPrice!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
                       ),
-                    ),
-                  const SizedBox(height: 2),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: confidenceColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      item.confidenceLabel,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: confidenceColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                    if (!item.isHighConfidence) ...[
+                      if (item.formattedPrice != null) const SizedBox(height: 2),
+                      ScanConfidenceBadge(
+                        confidence: item.confidence,
+                        compact: true,
                       ),
-                    ),
-                  ),
-                ],
-              ),
+                    ],
+                  ],
+                ),
+              ],
             ],
           ),
         ),

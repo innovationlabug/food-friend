@@ -542,3 +542,39 @@ Implement a standalone minimal app in `/demos/market-proximity/` to validate the
 - **Branch Isolation:** Before starting implementation, create and switch to a new Git branch (e.g., `demo/market-proximity`) and implement all changes there. At the end, commit all changes to that branch without merging or integrating any changes into `main`.
 - Before starting implementation, ask questions if you need any clarification.
 - Do not modify `SPEC.md`, `FEATURES.md`, or main Flutter app files during this feasibility spike.
+
+
+---
+
+
+Implement `FEAT-7` from `FEATURES.md` end-to-end.
+
+Adhere strictly to all rules in `AGENTS.md` and requirements in `SPEC.md` (Spanish UI, GTQ currency where applicable, SVG icons only, no pseudo-metadata badges, and offline/local resilience).
+
+Work autonomously through the full lifecycle:
+
+1. **Branch Management:** Check the current branches, if no relevant branch exist create a new one. Switch to a relevant branch before making changes.
+2. **Design & Implementation:** Review the existing codebase first, then implement all deliverables in `FEAT-1` so they integrate cleanly with the current architecture.
+3. **Automated Tests:** Create or update unit tests, widget tests, and `package:integration_test` end-to-end tests covering all acceptance criteria in `FEAT-7` (plus backend tests if `/api/*` files are modified).
+4. **Verification:** Run `flutter analyze`, `flutter test`, and the relevant `flutter test integration_test/...` suite. Resolve any lint issues, layout overflows, or test failures before finishing.
+5. **Tracking & Commit:** Update `FEAT-7` and its acceptance criteria with `[x]` in `FEATURES.md`, mark the completed job in `PENDING.md` (and update `SPEC.md` if required by the feature). Stage and commit your changes using Conventional Commits (e.g., `feat(x): ...`).
+
+When finished, provide a concise summary of the changes, files touched, and exact test results. Execute `[console]::beep(800, 800)` to notify me when complete.
+
+
+---
+
+
+Implement `FEAT-9` from `FEATURES.md` end-to-end.
+
+Adhere strictly to all rules in `AGENTS.md` and requirements in `SPEC.md` (Spanish UI, GTQ currency where applicable, SVG icons only, no pseudo-metadata badges, and offline/local resilience).
+
+Work autonomously through the full lifecycle:
+
+1. **Branch Management:** Check the current branches, if no relevant branch exist create a new one. Switch to a relevant branch before making changes.
+2. **Design & Implementation:** Review the existing codebase first, then implement all deliverables in `FEAT-1` so they integrate cleanly with the current architecture.
+3. **Automated Tests:** Create or update unit tests, widget tests, and `package:integration_test` end-to-end tests covering all acceptance criteria in `FEAT-9` (plus backend tests if `/api/*` files are modified).
+4. **Verification:** Run `flutter analyze`, `flutter test`, and the relevant `flutter test integration_test/...` suite. Resolve any lint issues, layout overflows, or test failures before finishing.
+5. **Tracking & Commit:** Update `FEAT-9` and its acceptance criteria with `[x]` in `FEATURES.md`, mark the completed job in `PENDING.md` (and update `SPEC.md` if required by the feature). Stage and commit your changes using Conventional Commits (e.g., `feat(x): ...`).
+
+When finished, provide a concise summary of the changes, files touched, and exact test results. Execute `[console]::beep(800, 800)` to notify me when complete.

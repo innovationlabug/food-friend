@@ -285,6 +285,25 @@ void main() {
       expect(galletaIndex, isNonNegative);
       expect(huevosIndex, lessThan(lecheIndex));
       expect(lecheIndex, lessThan(galletaIndex));
+
+      // High-confidence "Alta" tag is hidden; uncertain items use short Spanish labels with tooltips
+      expect(find.text('Alta'), findsNothing);
+      expect(find.text('Media'), findsNothing);
+      expect(find.text('Baja'), findsNothing);
+      expect(find.text('Por verificar'), findsOneWidget);
+      expect(find.text('Poco claro'), findsOneWidget);
+      expect(
+        find.byTooltip(
+          'La detección no es completamente segura; confirma si corresponde al ingrediente.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byTooltip(
+          'No estamos seguros de este producto; verifica que sea correcto antes de agregarlo.',
+        ),
+        findsOneWidget,
+      );
     });
   });
 }
