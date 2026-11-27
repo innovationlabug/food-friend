@@ -4,8 +4,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/amount_unit.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/ingredients/domain/receipt_food_item.dart';
 import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
 import 'package:food_friend/features/nutrition/domain/health_goal.dart';
+import 'package:food_friend/features/pricing/data/ingredient_price_storage_service.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
 import 'package:food_friend/features/recipes/domain/recipe_ingredient.dart';
@@ -892,5 +894,58 @@ void main() {
     await pantry.clearIngredients();
     await shopping.clearIngredients();
     await goalStorage.clearGoals();
+  });
+
+  testWidgets(
+      'E2E integration test FEAT-7: uses persisted receipt GTQ prices + baseline/deals to display home vs. takeout cost and nutrition comparison',
+      (WidgetTester tester) async {
+    final pantry = IngredientStorageService();
+    final priceStorage = IngredientPriceStorageService();
+    await pantry.clearIngredients();
+    await priceStorage.clearPrices();
+
+    await pantry.saveIngredients(const [
+      Ingredient(name: 'Aguacate'),
+      Ingredient(name: 'Tomate'),
+      Ingredient(name: 'Pepino'),
+    ]);
+    await priceStorage.savePricesFromReceipt(
+      const [
+        ReceiptFoodItem(
+          rawName: 'AGUACATE HASS 2UDS',
+          standardIngredient: 'Aguacate',
+          quantity: '2 unidades',
+          priceGtq: 12.00,
+          totalPriceGtq: 12.00,
+          confidence: 'high',
+        ),
+      ],
+      supermarket: 'La Torre',
+    );
+
+    app.main();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ingredientes disponibles').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Buscar recetas'));
+    await tester.pumpAndSettle();
+
+    // Suggestion card shows GTQ cost per serving
+    expect(find.textContaining('~Q '), findsAtLeastNWidgets(1));
+
+    await tester.tap(find.text('Ensalada Chapina de Aguacate y Tomate'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('recipe_home_vs_takeout_card')), findsOneWidget);
+    expect(find.text('En casa vs. pedir comida'), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_cost_per_serving_text')), findsOneWidget);
+    expect(find.byKey(const ValueKey('takeout_cost_per_serving_text')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_savings_summary_text')), findsOneWidget);
+    expect(find.text('Calidad nutricional en casa'), findsOneWidget);
+
+    // Cleanup
+    await pantry.clearIngredients();
+    await priceStorage.clearPrices();
   });
 }

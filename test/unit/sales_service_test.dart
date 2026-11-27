@@ -118,5 +118,47 @@ void main() {
       expect(stores.firstWhere((s) => s.id == 'latorre').isFavorite, isTrue);
       expect(stores.firstWhere((s) => s.id == 'walmart').isFavorite, isFalse);
     });
+
+    test('getCachedOrFallbackDeals returns fallback offline and cached snapshot when present without HTTP calls', () async {
+      int httpCalls = 0;
+      final service = SalesService(
+        client: MockClient((_) async {
+          httpCalls++;
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'sourceMode': 'live-cache',
+              'fetchedAt': DateTime.now().toIso8601String(),
+              'deals': [
+                {
+                  'id': 'cached-deal-1',
+                  'supermarketId': 'latorre',
+                  'supermarketName': 'La Torre',
+                  'productName': 'Arroz Precocido',
+                  'regularPriceGtq': 19.50,
+                  'salePriceGtq': 15.60,
+                  'discountPercent': 20,
+                  'savingsGtq': 3.90,
+                  'queryTerm': 'arroz',
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+
+      final initial = await service.getCachedOrFallbackDeals();
+      expect(initial.length, FallbackSalesData.deals.length);
+      expect(httpCalls, 0);
+
+      await service.fetchDeals();
+      expect(httpCalls, 1);
+
+      final fromCache = await service.getCachedOrFallbackDeals();
+      expect(fromCache.length, 1);
+      expect(fromCache.first.id, 'cached-deal-1');
+      expect(httpCalls, 1);
+    });
   });
 }

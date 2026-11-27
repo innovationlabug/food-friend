@@ -5,6 +5,7 @@ import '../../../core/responsive/responsive_layout.dart';
 import '../../../core/settings/settings_controller.dart';
 import '../../../core/widgets/app_navigation_drawer.dart';
 import '../../../core/widgets/app_svg_icon.dart';
+import '../../pricing/data/ingredient_price_storage_service.dart';
 import '../data/ingredient_storage_service.dart';
 import '../data/receipt_parser_service.dart';
 import '../domain/ingredient.dart';
@@ -16,12 +17,14 @@ class ReceiptScannerScreen extends StatefulWidget {
   const ReceiptScannerScreen({
     super.key,
     this.storageService,
+    this.priceStorageService,
     this.parserService,
     this.imagePicker,
     this.initialImageBytes,
   });
 
   final IngredientStorageService? storageService;
+  final IngredientPriceStorageService? priceStorageService;
   final ReceiptParserService? parserService;
   final ImagePicker? imagePicker;
   final Uint8List? initialImageBytes;
@@ -29,6 +32,7 @@ class ReceiptScannerScreen extends StatefulWidget {
   static Future<List<Ingredient>?> navigate(
     BuildContext context, {
     IngredientStorageService? storageService,
+    IngredientPriceStorageService? priceStorageService,
     ReceiptParserService? parserService,
     ImagePicker? imagePicker,
     Uint8List? initialImageBytes,
@@ -37,6 +41,7 @@ class ReceiptScannerScreen extends StatefulWidget {
       MaterialPageRoute(
         builder: (_) => ReceiptScannerScreen(
           storageService: storageService,
+          priceStorageService: priceStorageService,
           parserService: parserService,
           imagePicker: imagePicker,
           initialImageBytes: initialImageBytes,
@@ -51,6 +56,7 @@ class ReceiptScannerScreen extends StatefulWidget {
 
 class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
   late final IngredientStorageService _storageService;
+  late final IngredientPriceStorageService _priceStorageService;
   late final ReceiptParserService _parserService;
   late final ImagePicker _imagePicker;
 
@@ -66,6 +72,8 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
   void initState() {
     super.initState();
     _storageService = widget.storageService ?? IngredientStorageService();
+    _priceStorageService =
+        widget.priceStorageService ?? IngredientPriceStorageService();
     _parserService = widget.parserService ?? ReceiptParserService();
     _imagePicker = widget.imagePicker ?? ImagePicker();
 
@@ -201,6 +209,10 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
         .toList();
 
     await _storageService.addIngredients(newIngredients);
+    await _priceStorageService.savePricesFromReceipt(
+      selected,
+      supermarket: _supermarket,
+    );
 
     if (!mounted) return;
 

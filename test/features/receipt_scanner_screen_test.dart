@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/data/receipt_parser_service.dart';
 import 'package:food_friend/features/ingredients/presentation/receipt_scanner_screen.dart';
+import 'package:food_friend/features/pricing/data/ingredient_price_storage_service.dart';
+import 'package:food_friend/features/pricing/domain/ingredient_price_entry.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -179,6 +181,14 @@ void main() {
       expect(stored.length, 3);
       expect(stored.map((i) => i.name),
           containsAll(['Arroz blanco', 'Frijol negro', 'Snack dulce']));
+
+      // FEAT-7: Verify GTQ prices were persisted for confirmed receipt items
+      final priceStorage = IngredientPriceStorageService();
+      final savedPrices = await priceStorage.getPrices();
+      expect(savedPrices.containsKey('arroz blanco'), isTrue);
+      expect(savedPrices['arroz blanco']!.source, PriceSource.receipt);
+      expect(savedPrices['arroz blanco']!.supermarket, 'Despensa Familiar Villa Nueva');
+      expect(savedPrices.containsKey('frijol negro'), isTrue);
     });
 
     testWidgets('shows client-side fallback on error and allows navigating to manual entry',

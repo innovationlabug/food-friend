@@ -8,6 +8,11 @@ import '../../ingredients/domain/ingredient.dart';
 import '../../nutrition/data/health_goal_evaluator.dart';
 import '../../nutrition/data/health_goal_storage_service.dart';
 import '../../nutrition/domain/recipe_goal_match.dart';
+import '../../pricing/data/ingredient_price_storage_service.dart';
+import '../../pricing/data/recipe_cost_calculator.dart';
+import '../../pricing/domain/recipe_comparison.dart';
+import '../../sales/data/fallback_sales_data.dart';
+import '../../sales/data/sales_service.dart';
 import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../data/ingredient_replacement_service.dart';
 import '../data/local_recipe_dataset.dart';
@@ -18,6 +23,7 @@ import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
 import '../domain/recipe_preference.dart';
 import '../domain/recipe_search_result.dart';
+import 'widgets/home_vs_takeout_card.dart';
 import 'widgets/pantry_depletion_sheet.dart';
 import 'widgets/recipe_preference_style.dart';
 
@@ -38,6 +44,8 @@ class RecipeDetailScreen extends StatefulWidget {
     this.shoppingListService,
     this.ingredientStorageService,
     this.healthGoalStorageService,
+    this.priceStorageService,
+    this.salesService,
   });
 
   /// Factory constructor when navigating with a [RecipeSearchResult].
@@ -49,6 +57,8 @@ class RecipeDetailScreen extends StatefulWidget {
     ShoppingListStorageService? shoppingListService,
     IngredientStorageService? ingredientStorageService,
     HealthGoalStorageService? healthGoalStorageService,
+    IngredientPriceStorageService? priceStorageService,
+    SalesService? salesService,
   }) {
     return RecipeDetailScreen(
       key: key,
@@ -63,6 +73,8 @@ class RecipeDetailScreen extends StatefulWidget {
       shoppingListService: shoppingListService,
       ingredientStorageService: ingredientStorageService,
       healthGoalStorageService: healthGoalStorageService,
+      priceStorageService: priceStorageService,
+      salesService: salesService,
     );
   }
 
@@ -78,6 +90,8 @@ class RecipeDetailScreen extends StatefulWidget {
   final ShoppingListStorageService? shoppingListService;
   final IngredientStorageService? ingredientStorageService;
   final HealthGoalStorageService? healthGoalStorageService;
+  final IngredientPriceStorageService? priceStorageService;
+  final SalesService? salesService;
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -88,9 +102,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   late final ShoppingListStorageService _shoppingListService;
   late final IngredientStorageService _ingredientStorageService;
   late final HealthGoalStorageService _healthGoalStorageService;
+  late final IngredientPriceStorageService _priceStorageService;
+  late final SalesService _salesService;
   late RecipeGoalMatch _goalMatch;
   late List<AvailabilityReplacement> _availabilityReplacements;
   late List<HealthGoalReplacement> _healthGoalReplacements;
+  late RecipeHomeVsTakeoutComparison _homeVsTakeoutComparison;
   bool _isCookedToday = false;
   int _timesCooked = 0;
   RecipePreference _preference = RecipePreference.none;
@@ -115,17 +132,42 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         );
     _healthGoalStorageService =
         widget.healthGoalStorageService ?? HealthGoalStorageService();
+    _priceStorageService =
+        widget.priceStorageService ?? IngredientPriceStorageService();
+    _salesService = widget.salesService ?? SalesService();
     _goalMatch = widget.goalMatch;
     _availabilityReplacements = widget.availabilityReplacements;
     _healthGoalReplacements = widget.healthGoalReplacements;
+    _homeVsTakeoutComparison = RecipeCostCalculator.compareRecipe(
+      widget.recipe,
+      deals: FallbackSalesData.deals,
+    );
     _loadHistoryStatus();
     _loadShoppingListStatus();
+    _loadPricingComparison();
     if (!_goalMatch.hasMatch || _healthGoalReplacements.isEmpty) {
       _loadGoalMatchAndSwaps();
     }
     if (widget.matchedIngredients.isEmpty && widget.missingIngredients.isEmpty) {
       _resolveIngredientsFromPantry();
     }
+  }
+
+  Future<void> _loadPricingComparison() async {
+    final results = await Future.wait<dynamic>([
+      _priceStorageService.getPrices(),
+      _salesService.getCachedOrFallbackDeals(),
+    ]);
+    if (!mounted) return;
+    final savedPrices = results[0] as Map<String, dynamic>;
+    final deals = results[1] as List<dynamic>;
+    setState(() {
+      _homeVsTakeoutComparison = RecipeCostCalculator.compareRecipe(
+        widget.recipe,
+        savedPrices: savedPrices.cast(),
+        deals: deals.cast(),
+      );
+    });
   }
 
   Future<void> _loadGoalMatchAndSwaps() async {
@@ -452,6 +494,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ],
                 const SizedBox(height: 16),
                 _buildActionButtons(context),
+                const SizedBox(height: 16),
+                HomeVsTakeoutCard(comparison: _homeVsTakeoutComparison),
                 const SizedBox(height: 24),
                 if (isDesktop)
                   Row(
@@ -926,6 +970,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                               shoppingListService: _shoppingListService,
                                               ingredientStorageService: _ingredientStorageService,
                                               healthGoalStorageService: _healthGoalStorageService,
+                                              priceStorageService: _priceStorageService,
+                                              salesService: _salesService,
                                             ),
                                           ),
                                         );
@@ -942,6 +988,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                               shoppingListService: _shoppingListService,
                                               ingredientStorageService: _ingredientStorageService,
                                               healthGoalStorageService: _healthGoalStorageService,
+                                              priceStorageService: _priceStorageService,
+                                              salesService: _salesService,
                                             ),
                                           ),
                                         );

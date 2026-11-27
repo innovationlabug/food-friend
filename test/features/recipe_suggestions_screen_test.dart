@@ -1043,6 +1043,29 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('FEAT-7: GTQ Cost Per Serving on RecipeSuggestionsScreen', () {
+    testWidgets(
+        'displays clutter-free GTQ cost per serving in recipe cards on mobile and desktop without overflow',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget(
+        selectedIngredients: const ['Aguacate', 'Tomate', 'Pepino'],
+      ));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('~Q '), findsAtLeastNWidgets(1));
+      expect(find.textContaining('/ porción'), findsAtLeastNWidgets(1));
+
+      tester.view.physicalSize = const Size(1280, 800);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
 
 class _SinglePoolRecipeSearchService extends RecipeSearchService {

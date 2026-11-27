@@ -168,9 +168,9 @@ Users frequently forget they have pending items on their shopping list (`"Por co
 
 ---
 
-## - [ ] FEAT-7: Scoped Supermarket Price Lookup, Home Savings & Nutrition vs. Takeout & Practical Substitutions
+## - [x] FEAT-7: Scoped Supermarket Price Lookup, Home Savings & Nutrition vs. Takeout & Practical Substitutions
 - **Source Issue:** [#2 — Acotar scraping parcial de supermercados y sumar ahorro vs. pedir comida + sustituciones prácticas](https://github.com/innovationlabug/food-friend/issues/2)
-- **Status:** In Progress (`enhancement`)
+- **Status:** Completed (`enhancement`)
 - **Suggested Branch:** `feat/scoped-prices-savings-substitutions`
 
 ### Product Problem
@@ -193,9 +193,9 @@ Previous planning included broad supermarket scraping and GPS proximity alerts n
 ### Acceptance Criteria (Definition of Done)
 - [x] `SPEC.md` is updated to reflect the scoped-down supermarket lookup and removal of GPS proximity alerts.
 - [x] Users can view real or fallback `GTQ` prices/deals for items in `"Por comprar"` or basic staples from the single scoped supermarket without the app crashing or blocking if the external source fails.
-- [ ] Recipes display a clear, clutter-free `GTQ` cost-per-serving estimate and nutritional quality comparison vs. ordering takeout/delivery.
+- [x] Recipes display a clear, clutter-free `GTQ` cost-per-serving estimate and nutritional quality comparison vs. ordering takeout/delivery.
 - [x] Recipe detail surfaces practical local substitutions for single missing ingredients or healthier swaps without making LLM calls.
-- [ ] Unit, widget, and backend/proxy tests verify fallback behavior, `GTQ` calculations, nutritional comparison, and substitution matching.
+- [x] Unit, widget, and backend/proxy tests verify fallback behavior, `GTQ` calculations, nutritional comparison, and substitution matching.
 
 ---
 

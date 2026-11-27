@@ -101,6 +101,16 @@ class SalesService {
     );
   }
 
+  /// Returns locally cached supermarket deals or [FallbackSalesData.deals]
+  /// without performing network requests (safe for non-blocking UI rendering).
+  Future<List<SupermarketDeal>> getCachedOrFallbackDeals() async {
+    final cached = await _readCachedSnapshot();
+    if (cached != null && cached.deals.isNotEmpty) {
+      return cached.deals;
+    }
+    return FallbackSalesData.deals;
+  }
+
   /// Retrieves the user's preferred supermarket ID if set.
   Future<String?> getFavoriteSupermarketId() async {
     final prefs = await _prefs;

@@ -4,8 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:food_friend/core/widgets/app_svg_icon.dart';
 import 'package:food_friend/features/ingredients/data/ingredient_storage_service.dart';
 import 'package:food_friend/features/ingredients/domain/ingredient.dart';
+import 'package:food_friend/features/ingredients/domain/receipt_food_item.dart';
 import 'package:food_friend/features/nutrition/data/health_goal_storage_service.dart';
 import 'package:food_friend/features/nutrition/domain/health_goal.dart';
+import 'package:food_friend/features/pricing/data/ingredient_price_storage_service.dart';
 import 'package:food_friend/features/recipes/data/local_recipe_dataset.dart';
 import 'package:food_friend/features/recipes/data/recipe_history_service.dart';
 import 'package:food_friend/features/recipes/domain/recipe.dart';
@@ -928,6 +930,83 @@ void main() {
         find.byKey(const ValueKey('detail_health_goal_replacements_card')),
         findsNothing,
       );
+    });
+  });
+
+  group('FEAT-7: Home Cost & Nutritional Comparison vs. Takeout in RecipeDetailScreen', () {
+    testWidgets(
+        'renders GTQ cost per serving, savings summary, nutritional comparison vs. takeout, and updates from persisted receipt prices without layout overflows',
+        (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final priceStorage = IngredientPriceStorageService(preferences: prefs);
+
+      // Persist scanned receipt GTQ price for Pechuga de pollo
+      await priceStorage.savePricesFromReceipt(
+        const [
+          ReceiptFoodItem(
+            rawName: 'PECH/DESH 1LB',
+            standardIngredient: 'Pechuga de pollo',
+            quantity: '1 lb',
+            priceGtq: 28.00,
+            totalPriceGtq: 28.00,
+            confidence: 'high',
+          ),
+        ],
+        supermarket: 'La Torre',
+      );
+
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecipeDetailScreen(
+            recipe: sampleRecipe,
+            priceStorageService: priceStorage,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+
+      final comparisonCard =
+          find.byKey(const ValueKey('recipe_home_vs_takeout_card'));
+      expect(comparisonCard, findsOneWidget);
+      expect(find.text('En casa vs. pedir comida'), findsOneWidget);
+      expect(find.text('En casa (4 porciones)'), findsOneWidget);
+      expect(find.text('Calidad nutricional en casa'), findsOneWidget);
+
+      final homeCostText = tester
+          .widget<Text>(find.byKey(const ValueKey('home_cost_per_serving_text')))
+          .data!;
+      final takeoutCostText = tester
+          .widget<Text>(
+              find.byKey(const ValueKey('takeout_cost_per_serving_text')))
+          .data!;
+      final savingsText = tester
+          .widget<Text>(find.byKey(const ValueKey('home_savings_summary_text')))
+          .data!;
+
+      expect(homeCostText, matches(RegExp(r'^Q \d+\.\d{2} / porción$')));
+      expect(takeoutCostText, matches(RegExp(r'^~Q \d+\.\d{2} / porción$')));
+      expect(savingsText, contains('Ahorras aprox. Q '));
+      expect(find.textContaining('Menos sodio y sin ultraprocesados'), findsOneWidget);
+
+      // Clutter-free: only 1 SVG icon inside the comparison card
+      expect(
+        find.descendant(
+          of: comparisonCard,
+          matching: find.byWidgetPredicate((w) => w is AppSvgIcon || w is Icon),
+        ),
+        findsOneWidget,
+      );
+
+      // Verify desktop viewport renders cleanly without overflow
+      tester.view.physicalSize = const Size(1280, 800);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
     });
   });
 }

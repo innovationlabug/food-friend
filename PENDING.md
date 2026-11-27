@@ -9,10 +9,10 @@ A consolidated checklist of remaining items across [SPEC.md](file:///c:/Users/lu
 ### Issue #2 / FEAT-7 — Home Savings vs. Takeout & Spec Alignment
 *(Note: Supermarket deals lookup via `/api/sales` and practical ingredient substitutions on `RecipeDetailScreen` are already implemented.)*
 
-- [ ] **Home cooking cost & nutrition vs. takeout/delivery comparison (`GTQ` + nutrition):**
-  - [ ] Persist `GTQ` prices from scanned receipts (`ReceiptScannerScreen`) and/or supermarket deals, backed by a local baseline `GTQ` price table for staples.
-  - [ ] Compute estimated cost per serving (`Q / porción`) for recipes and display a comparison against typical fast-food/delivery costs and nutritional quality on `RecipeDetailScreen` (see `FEAT-7`).
-  - [ ] Add unit and widget tests for `GTQ` cost calculations, nutritional comparison, and UI display.
+- [x] **Home cooking cost & nutrition vs. takeout/delivery comparison (`GTQ` + nutrition):**
+  - [x] Persist `GTQ` prices from scanned receipts (`ReceiptScannerScreen`) and/or supermarket deals, backed by a local baseline `GTQ` price table for staples.
+  - [x] Compute estimated cost per serving (`Q / porción`) for recipes and display a comparison against typical fast-food/delivery costs and nutritional quality on `RecipeDetailScreen` (see `FEAT-7`).
+  - [x] Add unit and widget tests for `GTQ` cost calculations, nutritional comparison, and UI display.
 - [x] **Update `SPEC.md` for scope alignment:**
   - [x] Document the scoped supermarket price/deals implementation and reflect that GPS proximity alerts are out of scope (per Issue #2).
 

@@ -9,6 +9,12 @@ import '../../nutrition/data/health_goal_storage_service.dart';
 import '../../nutrition/domain/health_goal.dart';
 import '../../nutrition/presentation/nutrition_tips_screen.dart';
 import '../../nutrition/presentation/widgets/goal_tooltip_banner.dart';
+import '../../pricing/data/ingredient_price_storage_service.dart';
+import '../../pricing/data/recipe_cost_calculator.dart';
+import '../../pricing/domain/ingredient_price_entry.dart';
+import '../../sales/data/fallback_sales_data.dart';
+import '../../sales/data/sales_service.dart';
+import '../../sales/domain/supermarket_deal.dart';
 import '../../shopping_list/data/shopping_list_storage_service.dart';
 import '../../shopping_list/presentation/shopping_list_screen.dart';
 import '../data/external_recipe_service.dart';
@@ -32,6 +38,8 @@ class RecipeSuggestionsScreen extends StatefulWidget {
     this.ingredientStorageService,
     this.shoppingListService,
     this.healthGoalStorageService,
+    this.priceStorageService,
+    this.salesService,
     this.openedFromIngredientList = false,
   });
 
@@ -56,6 +64,12 @@ class RecipeSuggestionsScreen extends StatefulWidget {
   /// Optional injected health goal storage service for goal-based ranking and tooltips.
   final HealthGoalStorageService? healthGoalStorageService;
 
+  /// Optional injected ingredient GTQ price storage service.
+  final IngredientPriceStorageService? priceStorageService;
+
+  /// Optional injected sales service for cached supermarket deals.
+  final SalesService? salesService;
+
   /// Whether this screen was pushed from [ShoppingListScreen].
   final bool openedFromIngredientList;
 
@@ -69,6 +83,8 @@ class RecipeSuggestionsScreen extends StatefulWidget {
     IngredientStorageService? ingredientStorageService,
     ShoppingListStorageService? shoppingListService,
     HealthGoalStorageService? healthGoalStorageService,
+    IngredientPriceStorageService? priceStorageService,
+    SalesService? salesService,
     bool openedFromIngredientList = false,
   }) {
     return Navigator.of(context).push(
@@ -81,6 +97,8 @@ class RecipeSuggestionsScreen extends StatefulWidget {
           ingredientStorageService: ingredientStorageService,
           shoppingListService: shoppingListService,
           healthGoalStorageService: healthGoalStorageService,
+          priceStorageService: priceStorageService,
+          salesService: salesService,
           openedFromIngredientList: openedFromIngredientList,
         ),
       ),
@@ -98,10 +116,14 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   late final IngredientStorageService _ingredientStorageService;
   late final ShoppingListStorageService _shoppingListService;
   late final HealthGoalStorageService _healthGoalStorageService;
+  late final IngredientPriceStorageService _priceStorageService;
+  late final SalesService _salesService;
 
   late List<String> _selectedIngredientNames;
   List<Ingredient> _pantryIngredients = const [];
   Set<HealthGoal> _activeHealthGoals = <HealthGoal>{};
+  Map<String, IngredientPriceEntry> _savedPrices = const {};
+  List<SupermarketDeal> _cachedDeals = FallbackSalesData.deals;
   bool _isLoading = true;
   bool _isGeneratingAi = false;
   RecipeDiscoveryResponse? _discoveryResponse;
@@ -171,6 +193,9 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
         );
     _healthGoalStorageService =
         widget.healthGoalStorageService ?? HealthGoalStorageService();
+    _priceStorageService =
+        widget.priceStorageService ?? IngredientPriceStorageService();
+    _salesService = widget.salesService ?? SalesService();
     _selectedIngredientNames = List<String>.from(widget.selectedIngredientNames);
     _performDiscovery();
   }
@@ -183,15 +208,21 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     final pantryFuture = _ingredientStorageService.getIngredients();
     final historyFuture = _historyService.getHistory();
     final goalsFuture = _healthGoalStorageService.getSelectedGoals();
+    final pricesFuture = _priceStorageService.getPrices();
+    final dealsFuture = _salesService.getCachedOrFallbackDeals();
     final pantry = await pantryFuture;
     final history = await historyFuture;
     final activeGoals = await goalsFuture;
+    final savedPrices = await pricesFuture;
+    final cachedDeals = await dealsFuture;
 
     if (_selectedIngredientNames.isEmpty) {
       if (!mounted) return;
       setState(() {
         _pantryIngredients = pantry;
         _activeHealthGoals = activeGoals;
+        _savedPrices = savedPrices;
+        _cachedDeals = cachedDeals;
         _discoveryResponse = null;
         _results = [];
         _isLoading = false;
@@ -217,6 +248,8 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
       setState(() {
         _pantryIngredients = pantry;
         _activeHealthGoals = activeGoals;
+        _savedPrices = savedPrices;
+        _cachedDeals = cachedDeals;
         _discoveryResponse = response;
         _results = filteredResults;
         _isLoading = false;
@@ -271,6 +304,8 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
   Future<void> _showAllLocalRecipes() async {
     final history = await _historyService.getHistory();
     final activeGoals = await _healthGoalStorageService.getSelectedGoals();
+    final savedPrices = await _priceStorageService.getPrices();
+    final cachedDeals = await _salesService.getCachedOrFallbackDeals();
     if (!mounted) return;
 
     final all = _searchService.searchRecipes(
@@ -286,6 +321,8 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
 
     setState(() {
       _activeHealthGoals = activeGoals;
+      _savedPrices = savedPrices;
+      _cachedDeals = cachedDeals;
       _results = all;
       _showingAllRecipes = true;
       _selectedCategory = 'Todos';
@@ -935,11 +972,19 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final recipe = result.recipe;
+    final costComparison = RecipeCostCalculator.compareRecipe(
+      recipe,
+      savedPrices: _savedPrices,
+      deals: _cachedDeals,
+    );
 
     final metaDetails = <String>[];
     if (recipe.category != null) metaDetails.add(recipe.category!);
     if (recipe.totalTimeMinutes != null) metaDetails.add('${recipe.totalTimeMinutes} min');
     if (recipe.servings != null) metaDetails.add('${recipe.servings} porciones');
+    if (recipe.ingredients.isNotEmpty) {
+      metaDetails.add('~${costComparison.formattedHomePerServing} / porción');
+    }
 
     return Card(
       elevation: 0,
@@ -967,6 +1012,8 @@ class _RecipeSuggestionsScreenState extends State<RecipeSuggestionsScreen> {
                 shoppingListService: _shoppingListService,
                 ingredientStorageService: _ingredientStorageService,
                 healthGoalStorageService: _healthGoalStorageService,
+                priceStorageService: _priceStorageService,
+                salesService: _salesService,
               ),
             ),
           ).then((_) {
