@@ -327,46 +327,127 @@ class BaselineGtqPriceCatalog {
   /// Estimates typical Guatemalan fast-food or delivery cost per serving (GTQ)
   /// for an equivalent meal to [recipe].
   static double estimateTakeoutCostPerServing(Recipe recipe) {
+    return resolveTakeoutBenchmark(recipe).costPerServingGtq;
+  }
+
+  /// Short Spanish descriptor of the takeout benchmark used for [recipe].
+  static String takeoutReferenceLabel(Recipe recipe) {
+    return resolveTakeoutBenchmark(recipe).label;
+  }
+
+  /// Resolves both the Spanish reference label and benchmark GTQ price per
+  /// serving for [recipe] based on its meal category, dish style, and protein.
+  static ({String label, double costPerServingGtq}) resolveTakeoutBenchmark(
+    Recipe recipe,
+  ) {
     final cat = StringNormalizer.normalize(recipe.category ?? '');
+    final title = StringNormalizer.normalize(recipe.title);
     final ingText = recipe.ingredients
         .map((i) => StringNormalizer.normalize(i.name))
         .join(' ');
 
     if (cat.contains('desayuno')) {
-      return 42.00;
-    }
-    if (cat.contains('ensalada')) {
-      if (_matchesAny(ingText, ['camaron', 'salmon', 'pollo', 'pechuga', 'atun'])) {
-        return 58.00;
+      if (_matchesAny(title, ['avena', 'panqueque'])) {
+        return (
+          label: 'Desayuno de avena o panqueques a domicilio',
+          costPerServingGtq: 38.00,
+        );
       }
-      return 50.00;
-    }
-    if (cat.contains('sopa') || cat.contains('caldo')) {
-      return 48.00;
+      return (
+        label: 'Desayuno típico o con huevos a domicilio',
+        costPerServingGtq: 42.00,
+      );
     }
 
-    // Almuerzo / Cena or uncategorized main dish
-    if (_matchesAny(ingText, ['salmon', 'camaron', 'robalo', 'lomo de res'])) {
-      return 78.00;
+    if (cat.contains('ensalada')) {
+      if (_matchesAny(ingText, ['camaron', 'salmon'])) {
+        return (
+          label: 'Ensalada con mariscos a domicilio',
+          costPerServingGtq: 68.00,
+        );
+      }
+      if (_matchesAny(ingText, ['pollo', 'pechuga', 'atun'])) {
+        return (
+          label: 'Ensalada con pollo o atún a domicilio',
+          costPerServingGtq: 58.00,
+        );
+      }
+      return (
+        label: 'Ensalada fresca o ceviche a domicilio',
+        costPerServingGtq: 48.00,
+      );
     }
-    if (_matchesAny(ingText, ['pollo', 'pechuga', 'carne', 'res', 'cerdo', 'pescado', 'tilapia', 'atun'])) {
-      return 58.00;
-    }
-    if (_matchesAny(ingText, ['pasta', 'espagueti', 'fideos'])) {
-      return 54.00;
-    }
-    return 46.00;
-  }
 
-  /// Short Spanish descriptor of the takeout benchmark used for [recipe].
-  static String takeoutReferenceLabel(Recipe recipe) {
-    final cat = StringNormalizer.normalize(recipe.category ?? '');
-    if (cat.contains('desayuno')) return 'Desayuno típico a domicilio';
-    if (cat.contains('ensalada')) return 'Ensalada o bowl a domicilio';
     if (cat.contains('sopa') || cat.contains('caldo')) {
-      return 'Sopa o caldo a domicilio';
+      if (_matchesAny(ingText, ['pollo', 'pechuga', 'pescado', 'tilapia'])) {
+        return (
+          label: 'Caldo o sopa con proteína a domicilio',
+          costPerServingGtq: 52.00,
+        );
+      }
+      return (
+        label: 'Sopa o crema casera a domicilio',
+        costPerServingGtq: 44.00,
+      );
     }
-    return 'Combo o plato similar a domicilio';
+
+    // Main dishes (Almuerzo / Cena)
+    if (_matchesAny(ingText, ['salmon', 'camaron', 'robalo'])) {
+      return (
+        label: 'Plato de mariscos o salmón a domicilio',
+        costPerServingGtq: 82.00,
+      );
+    }
+    if (_matchesAny(title, ['pasta']) ||
+        _matchesAny(ingText, ['pasta', 'espagueti', 'fideos'])) {
+      return (
+        label: 'Plato de pasta a domicilio',
+        costPerServingGtq: 55.00,
+      );
+    }
+    if (_matchesAny(title, ['pepian', 'hilachas', 'salpicon', 'guiso']) ||
+        _matchesAny(title, ['arroz con pollo', 'tortitas de ejote'])) {
+      return (
+        label: 'Plato típico guatemalteco a domicilio',
+        costPerServingGtq: 56.00,
+      );
+    }
+    if (_matchesAny(ingText, [
+      'lomo de res',
+      'posta de res',
+      'carne de res',
+      'carne molida',
+      'lomo de cerdo',
+    ])) {
+      return (
+        label: 'Plato de res o cerdo a domicilio',
+        costPerServingGtq: 64.00,
+      );
+    }
+    if (_matchesAny(ingText, ['filete de pescado', 'tilapia', 'atun'])) {
+      return (
+        label: 'Plato de pescado a domicilio',
+        costPerServingGtq: 62.00,
+      );
+    }
+    if (_matchesAny(ingText, ['pollo', 'pechuga'])) {
+      return (
+        label: 'Plato de pollo a domicilio',
+        costPerServingGtq: 58.00,
+      );
+    }
+    if (_matchesAny(ingText, ['frijoles', 'garbanzos', 'lentejas', 'huevo']) ||
+        _matchesAny(title, ['salteado de verduras'])) {
+      return (
+        label: 'Plato vegetariano o tazón a domicilio',
+        costPerServingGtq: 46.00,
+      );
+    }
+
+    return (
+      label: 'Plato similar a domicilio',
+      costPerServingGtq: 54.00,
+    );
   }
 
   static bool _containsPhrase(String haystack, String needle) {

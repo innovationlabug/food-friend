@@ -175,6 +175,11 @@ void main() {
         );
         expect(comparison.hasSavings, isTrue, reason: recipe.id);
         expect(comparison.nutritionHighlights.length, inInclusiveRange(2, 3), reason: recipe.id);
+        expect(
+          comparison.takeoutReferenceLabel,
+          isNot(equals('Plato similar a domicilio')),
+          reason: '${recipe.id} should match a specific takeout benchmark category',
+        );
       }
     });
 
