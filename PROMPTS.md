@@ -578,3 +578,16 @@ Work autonomously through the full lifecycle:
 5. **Tracking & Commit:** Update `FEAT-9` and its acceptance criteria with `[x]` in `FEATURES.md`, mark the completed job in `PENDING.md` (and update `SPEC.md` if required by the feature). Stage and commit your changes using Conventional Commits (e.g., `feat(x): ...`).
 
 When finished, provide a concise summary of the changes, files touched, and exact test results. Execute `[console]::beep(800, 800)` to notify me when complete.
+
+
+---
+
+
+Make a list of this app features. Do not create it from the documentation, but from the real implementation. Present a short list, with a one or two line description of each feature, save that list in `IMPLEMENTED_FEATURES.md`.
+
+Identify which features are core and which are optional. After I manually review the list, we will implement the following changes:
+
+- When the user first enters the app, the app will ask which mode the user wants. `Simple` will give only the most core features. `Full` will give all the features. `Custom` will allow the user to customize their experience.
+- The optional features will have a selector in `Settings` which will allow to turn them on or off. When they are off, they will not be shown in the UI and all their interactions with other features or part of the app should not apply.
+
+Do not code this yet, just create the list. I'm just explaining so you can create the list in the best way possible.
